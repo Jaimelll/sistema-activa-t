@@ -31,15 +31,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
-      {/* Logo Top-Right */}
-      <div className="absolute top-4 right-4 h-12 w-40">
-        <Image src="/logo_fondoempleo.jpg" alt="Fondoempleo" fill style={{ objectFit: 'contain', objectPosition: 'right' }} priority />
-      </div>
-
-      <div className="card w-full max-w-md p-8 space-y-6 z-10">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="card w-full max-w-md p-8 space-y-6 bg-white shadow-lg rounded-lg border border-gray-200">
         <h2 className="text-2xl font-bold text-center text-gray-900">Iniciar Sesión</h2>
-        <div className="text-center text-sm text-gray-500 -mt-4 mb-4">Sistema ACTIVA-T</div>
+        <div className="text-center text-sm text-gray-500 mb-6">Sistema ACTIVA-T</div>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded text-sm border border-red-200">
@@ -47,31 +42,31 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4 relative">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="label">Correo Electrónico</label>
+            <label className="label block text-sm font-medium text-gray-700">Correo Electrónico</label>
             <input
               type="email"
               required
-              className="input relative z-20"
+              className="input w-full p-2 border border-gray-300 rounded mt-1"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="user@fondoempleo.com.pe"
             />
           </div>
           <div>
-            <label className="label">Contraseña</label>
+            <label className="label block text-sm font-medium text-gray-700">Contraseña</label>
             <input
               type="password"
               required
-              className="input relative z-20"
+              className="input w-full p-2 border border-gray-300 rounded mt-1"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <button
             type="submit"
-            className="btn btn-primary w-full justify-center relative z-20"
+            className="btn btn-primary w-full py-2 px-4 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold"
             disabled={loading}
           >
             {loading ? 'Ingresando...' : 'Ingresar'}

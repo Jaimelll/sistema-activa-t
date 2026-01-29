@@ -44,13 +44,24 @@ async function migrate() {
         console.log(`Found ${rows.length} rows.`);
 
         // 3. Process Rows
-        for (const row of rows) {
+        let insertedInst = 0;
+        let insertedProy = 0;
+        let insertedMet = 0;
+
+        if (rows.length > 0) {
+            console.log('First Row Keys:', Object.keys(rows[0]));
+        }
+
+        for (const [index, row] of rows.entries()) {
             // MAPPING
             // Institucion
-            const nombreInst = row['Razón Social'] || row['Nombre comercial'] || row['INSTITUCIÓN'];
-            const correoInst = row['CORREO ELECTRÓNICO'];
+            const nombreInst = row['Nombre de la Institución:'] || row['Nombre comercial de la Institución:'] || row['INSTITUCIÓN'];
+            const correoInst = row['Correo principal'];
 
-            if (!nombreInst) continue;
+            if (!nombreInst) {
+                if (index < 5) console.log(`Skipping row ${index}: No Inst Name. Keys found: ${Object.keys(row).join(', ')}`);
+                continue;
+            }
 
             // Upsert Institucion
             let instId = null;
@@ -70,26 +81,28 @@ async function migrate() {
                     .single();
 
                 if (createInstError) {
-                    // Maybe already exists by unique constraint race condition or name?
-                    // Just fetch again
                     const { data: retryInst } = await supabase.from('instituciones').select('id').eq('nombre', nombreInst).single();
                     if (retryInst) instId = retryInst.id;
                     else console.error('Failed to create Institucion:', nombreInst, createInstError.message);
                 } else {
                     instId = newInst.id;
+                    insertedInst++;
                 }
             }
 
             // Proyecto
-            const nombreProy = row['PROYECTO'];
-            const region = row['REGIÓN'];
+            const nombreProy = row['Nombre del proyecto:'];
+            const region = row['Región'];
             // Estado: Look for keys that might match
-            let estado = row['SELECCIÓN FINAL'] || row['Estado'] || 'Registrado';
+            let estado = row['SELECCIÓN FINAL'] || 'Registrado';
             // Clean state
             if (estado === 'NO SELECCIONADO') estado = 'Rechazado';
             if (estado === 'SELECCIONADO') estado = 'Aprobado';
 
-            if (!nombreProy) continue;
+            if (!nombreProy) {
+                console.log(`Row ${index}: No project name.`);
+                continue;
+            }
 
             const { data: proyData, error: proyError } = await supabase
                 .from('proyectos')
@@ -106,15 +119,16 @@ async function migrate() {
                 console.error('Error creating project:', nombreProy, proyError.message);
                 continue;
             }
+            insertedProy++;
             const proyId = proyData.id;
 
             // Metricas
-            // Keys from inspection: "Monto Financiado por FE", "Contrapartida", "VAN", "TIR", "N° de beneficiarios"
-            const montoFE = parseFloat(row['Monto Financiado por FE'] || 0);
-            const montoContra = parseFloat(row['Contrapartida'] || 0);
-            const van = parseFloat(row['VAN'] || 0);
-            const tir = parseFloat(row['TIR'] || 0);
-            const benef = parseInt(row['N° de beneficiarios'] || 0);
+            // Keys: FONDOEMPLEO, Contrapartidas, BENEFICIARIOS
+            const montoFE = parseFloat(row['FONDOEMPLEO'] || 0);
+            const montoContra = parseFloat(row['Contrapartidas'] || 0);
+            const van = 0; // Not found in recent log
+            const tir = 0; // Not found
+            const benef = parseInt(row['BENEFICIARIOS'] || 0);
 
             const { error: metError } = await supabase
                 .from('metricas')
@@ -127,10 +141,14 @@ async function migrate() {
                     beneficiarios: isNaN(benef) ? 0 : benef
                 });
 
-            if (metError) console.error('Error creating metrics for:', nombreProy, metError.message);
+            if (metError) {
+                console.error('Error creating metrics for:', nombreProy, metError.message);
+            } else {
+                insertedMet++;
+            }
         }
 
-        console.log('Migration Completed.');
+        console.log(`Migration Completed. Stats: Inst=${insertedInst}, Proy=${insertedProy}, Met=${insertedMet}`);
 
     } catch (e) {
         console.error('Migration Error:', e);
