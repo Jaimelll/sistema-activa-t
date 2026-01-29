@@ -36,9 +36,7 @@ export default async function DashboardPage() {
                 {/* Header with Logo */}
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-2xl font-bold text-gray-800">Dashboard de Control</h1>
-                    <div className="relative h-16 w-48">
-                        <Image src="/activate.jpg" alt="ACTIVA-T" fill style={{ objectFit: 'contain', objectPosition: 'right' }} />
-                    </div>
+                    {/* Logo Removed */}
                 </div>
 
 

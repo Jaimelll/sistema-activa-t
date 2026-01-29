@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: 'Gestión de proyectos Fondoempleo',
 }
 
+import { BrowserCheck } from '@/components/BrowserCheck'
+
 export default function RootLayout({
   children,
 }: {
@@ -13,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <BrowserCheck />
+        {children}
+      </body>
     </html>
   )
 }

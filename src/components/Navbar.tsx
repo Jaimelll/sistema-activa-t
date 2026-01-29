@@ -19,10 +19,8 @@ export function Navbar() {
         <nav className="bg-white border-b border-gray-200">
             <div className="container flex items-center justify-between h-16">
                 <div className="flex items-center">
-                    {/* Using activate.jpg as brand logo as requested */}
-                    <div className="relative h-10 w-32 mr-8">
-                        <Image src="/activate.jpg" alt="ACTIVA-T" fill style={{ objectFit: 'contain', objectPosition: 'left' }} priority />
-                    </div>
+                    {/* Logo Removed as requested */}
+
 
                     <div className="hidden md:flex space-x-6">
                         <Link href="/dashboard" className={`flex items-center space-x-2 text-sm font-medium ${pathname === '/dashboard' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -41,9 +39,7 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center space-x-6">
-                    <div className="relative h-10 w-32 hidden sm:block">
-                        <Image src="/logo_fondoempleo.jpg" alt="Fondoempleo" fill style={{ objectFit: 'contain', objectPosition: 'right' }} />
-                    </div>
+                    {/* Logo Removed as requested */}
 
                     <button onClick={handleSignOut} className="flex items-center space-x-2 text-sm text-gray-600 hover:text-red-600">
                         <LogOut size={18} />
