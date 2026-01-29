@@ -1,66 +1,89 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
+import { useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
-export default function Home() {
+export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      router.push('/dashboard')
+    }
+  }
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="card w-full max-w-md p-8 space-y-6">
+        <div className="flex justify-center mb-4">
+          {/* Logo display */}
+          <div className="relative h-20 w-56">
+            <Image src="/activate.jpg" alt="ACTIVA-T" fill style={{ objectFit: 'contain' }} priority />
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <h2 className="text-2xl font-bold text-center text-gray-900">Iniciar Sesión</h2>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded text-sm border border-red-200">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="label">Correo Electrónico</label>
+            <input
+              type="email"
+              required
+              className="input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@fondoempleo.com.pe"
             />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div>
+            <label className="label">Contraseña</label>
+            <input
+              type="password"
+              required
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-full justify-center"
+            disabled={loading}
           >
-            Documentation
-          </a>
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
+
+        <div className="flex justify-center mt-6">
+          <div className="relative h-10 w-32 opacity-80">
+            <Image src="/logo_fondoempleo.jpg" alt="Fondoempleo" fill style={{ objectFit: 'contain' }} />
+          </div>
         </div>
-      </main>
+      </div>
     </div>
-  );
+  )
 }
