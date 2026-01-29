@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { Navbar } from '@/components/Navbar'
 import { Footer } from '@/components/Footer'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,14 @@ export default async function DashboardPage() {
         <div className="min-h-screen flex flex-col">
             <Navbar />
             <main className="container py-8 flex-grow">
-                <h1 className="text-2xl font-bold mb-6 text-gray-800">Dashboard de Control</h1>
+                {/* Header with Logo */}
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-2xl font-bold text-gray-800">Dashboard de Control</h1>
+                    <div className="relative h-16 w-48">
+                        <Image src="/activate.jpg" alt="ACTIVA-T" fill style={{ objectFit: 'contain', objectPosition: 'right' }} />
+                    </div>
+                </div>
+
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

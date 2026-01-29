@@ -40,7 +40,11 @@ export function Navbar() {
                     </div>
                 </div>
 
-                <div>
+                <div className="flex items-center space-x-6">
+                    <div className="relative h-10 w-32 hidden sm:block">
+                        <Image src="/logo_fondoempleo.jpg" alt="Fondoempleo" fill style={{ objectFit: 'contain', objectPosition: 'right' }} />
+                    </div>
+
                     <button onClick={handleSignOut} className="flex items-center space-x-2 text-sm text-gray-600 hover:text-red-600">
                         <LogOut size={18} />
                         <span>Salir</span>
