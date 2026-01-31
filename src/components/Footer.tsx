@@ -7,9 +7,6 @@ export function Footer() {
                 <div className="text-sm text-gray-500">
                     © {new Date().getFullYear()} Sistema ACTIVA-T. Todos los derechos reservados.
                 </div>
-                <div className="mt-4 md:mt-0 relative h-10 w-32">
-                    <Image src="/logo_fondoempleo.jpg" alt="Fondoempleo" fill style={{ objectFit: 'contain', objectPosition: 'right' }} />
-                </div>
             </div>
         </footer>
     )
