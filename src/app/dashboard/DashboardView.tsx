@@ -24,10 +24,16 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
 
     // Filter Logic
     const filteredData = useMemo(() => {
+        console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
-            const matchYear = selectedYear === 'all' || String(item.year) === selectedYear;
+            // Strict normalization
+            const itemYear = String(item.year || '');
+            const filterYear = String(selectedYear);
+
+            const matchYear = filterYear === 'all' || itemYear === filterYear;
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
+
             return matchYear && matchLinea && matchEje;
         });
     }, [initialData, selectedYear, selectedLinea, selectedEje]);
