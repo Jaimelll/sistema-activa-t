@@ -5,10 +5,11 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Fix: ensure we use the service role key for admin access (bypassing RLS)
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    console.error('Missing Supabase Config');
+    console.error('CRITICAL: Missing Supabase Config (URL or SERVICE_ROLE_KEY)');
     process.exit(1);
 }
 
@@ -20,109 +21,113 @@ async function importDataV3() {
         console.log('Reading Excel file from:', FILE_PATH);
         const workbook = xlsx.readFile(FILE_PATH);
 
-        // 1. Catalogs
-        const catalogMap = {
-            'eje': 'ejes',
-            'linea': 'lineas',
-            'región': 'regiones',
-            'etapa': 'etapas',
-            'modalidad': 'modalidades'
-        };
+        // Find the correct sheet
+        let sheetName = workbook.SheetNames.find(s => s.toLowerCase().includes('proyecto') || s.toLowerCase().includes('servicio'));
+        if (!sheetName) {
+            console.log('Sheet checking:', workbook.SheetNames);
+            sheetName = workbook.SheetNames[0]; // Fallback
+        }
+        console.log(`Using Sheet: ${sheetName}`);
 
-        // Cache: Table -> Key (Numero or Desc depends) -> ID
-        const idCache = {};
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = xlsx.utils.sheet_to_json(worksheet, { defval: null });
+        console.log(`Found ${rows.length} rows.`);
 
-        for (const [sheet, table] of Object.entries(catalogMap)) {
-            if (!workbook.SheetNames.includes(sheet)) continue;
-            console.log(`Importing ${sheet} -> ${table}...`);
-            const rows = xlsx.utils.sheet_to_json(workbook.Sheets[sheet]);
-            idCache[table] = {};
+        // 0. Clean Table
+        console.log('Cleaning table public.proyectos_servicios...');
+        const { error: delError } = await supabase.from('proyectos_servicios').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        if (delError) console.error('Error deleting:', delError);
 
-            for (const row of rows) {
-                const payload = {};
-                if (row['Numero'] !== undefined) payload.numero = row['Numero'];
-                if (row['descripcion'] !== undefined) payload.descripcion = row['descripcion'];
-                // Ensure unique constraint satisfaction on upsert
-                // If table has unique 'numero', use that? Or 'descripcion'? 
-                // V3 schema defines 'numero' as unique for Ejes/Lineas. 
-                // Let's rely on 'descripcion' for text-based ones, but 'numero' for Eje/Linea.
+        // 1. Catalogs Cache (We need IDs for Eje/Linea)
+        // Schema: Ejes(id, numero), Lineas(id, numero) using the 'numero' column for matching
+        const idCache = { ejes: {}, lineas: {} };
 
-                let uniqueKey = 'descripcion'; // Default
-                if (['ejes', 'lineas'].includes(table) && payload.numero) uniqueKey = 'numero';
+        // Pre-fetch catalogs
+        const { data: ejes } = await supabase.from('ejes').select('id, numero');
+        if (ejes) ejes.forEach(e => idCache.ejes[e.numero] = e.id);
 
-                const { data, error } = await supabase
-                    .from(table)
-                    .upsert(payload, { onConflict: uniqueKey })
-                    .select('id, numero, descripcion')
-                    .single(); // .maybeSingle() if risk of dupe return?
+        const { data: lineas } = await supabase.from('lineas').select('id, numero');
+        if (lineas) lineas.forEach(l => idCache.lineas[l.numero] = l.id);
 
-                if (!error && data) {
-                    if (['ejes', 'lineas'].includes(table)) {
-                        // Cache by number
-                        if (data.numero) idCache[table][data.numero] = data.id;
-                    } else {
-                        // Cache by description
-                        if (data.descripcion) idCache[table][data.descripcion.trim().toLowerCase()] = data.id;
-                    }
-                }
+        console.log('Cache loaded. Ejes:', Object.keys(idCache.ejes).length, 'Lineas:', Object.keys(idCache.lineas).length);
+
+        let count = 0;
+        for (const row of rows) {
+            // Strict Column Mapping
+            // Keys: 'periodo', 'eje', 'línea', 'nombre proyecto o servicio', 'fondoempleo ', 'contrapartida ', 'cantidad de beneficiarios'
+
+            // Helper to clean keys (trim)
+            const getVal = (key) => {
+                // Try exact match first
+                if (row[key] !== undefined) return row[key];
+                // Try trimmed match
+                const foundKey = Object.keys(row).find(k => k.trim().toLowerCase() === key.trim().toLowerCase());
+                return foundKey ? row[foundKey] : undefined;
+            };
+
+            const periodoRaw = getVal('periodo') || getVal('año');
+            const ejeRaw = getVal('eje');
+            const lineaRaw = getVal('línea') || getVal('linea'); // Try with and without accent
+            const nombreRaw = getVal('nombre proyecto o servicio') || getVal('proyecto');
+            const montoFERaw = getVal('fondoempleo') || getVal('fondoempleo '); // try with space
+            const montoContraRaw = getVal('contrapartida') || getVal('contrapartida ');
+            const benefRaw = getVal('cantidad de beneficiarios') || getVal('beneficiarios');
+
+            // Sanitize & Convert
+            const anio = periodoRaw ? parseInt(String(periodoRaw).trim()) : 2024;
+            const ejeNum = ejeRaw ? parseInt(String(ejeRaw).trim()) : null;
+            const lineaNum = lineaRaw ? parseInt(String(lineaRaw).trim()) : null;
+
+            // Clean Money (remove commas, spaces, S/.)
+            const cleanMoney = (val) => {
+                if (!val) return 0;
+                const s = String(val).replace(/[^0-9.-]/g, '');
+                return parseFloat(s) || 0;
+            };
+
+            const montoFE = cleanMoney(montoFERaw);
+            const montoContra = cleanMoney(montoContraRaw);
+            const montoTotal = montoFE + montoContra;
+
+            const benef = benefRaw ? parseInt(String(benefRaw).replace(/[^0-9]/g, '')) : 0;
+
+            // Relations
+            // If Eje 1 exists in DB as number 1, we get its ID.
+            let ejeId = ejeNum ? idCache.ejes[ejeNum] : null;
+            let lineaId = lineaNum ? idCache.lineas[lineaNum] : null;
+
+            // If relation missing in cache, maybe valid?
+            // User said: "Usa los números... para las relaciones". 
+            // This implies the values in CSV are just indices like 1, 2.
+
+            const payload = {
+                codigo_proyecto: `PROJ-${count + 1}-${anio}`, // Generate if missing
+                nombre: nombreRaw || 'Sin Nombre',
+                eje_id: ejeId,
+                linea_id: lineaId,
+                monto_fondoempleo: montoFE,
+                monto_contrapartida: montoContra,
+                monto_total: montoTotal,
+                beneficiarios: benef,
+                año: anio, // The critical column for filtering
+                estado: 'En Ejecución' // Default
+            };
+
+            const { error } = await supabase.from('proyectos_servicios').upsert(payload, { onConflict: 'codigo_proyecto' });
+            if (!error) {
+                count++;
+            } else {
+                console.error('Error row:', payload.codigo_proyecto, error.message);
             }
         }
+        console.log(`Imported ${count} records successfully.`);
 
-        // 2. Import Detalle
-        if (workbook.SheetNames.includes('detalle')) {
-            console.log('Importing detalle (V3 Numeric Logic)...');
-            const rows = xlsx.utils.sheet_to_json(workbook.Sheets['detalle']);
-            console.log(`Found ${rows.length} rows.`);
-
-            let count = 0;
-            for (const row of rows) {
-                // Institucion
-                const instName = row['INSTITUCION_EJECUTORA'];
-                let instId = null;
-                if (instName) {
-                    const { data: iData } = await supabase.from('instituciones_ejecutoras').upsert({ nombre: instName }, { onConflict: 'nombre' }).select('id').single();
-                    if (iData) instId = iData.id;
-                }
-
-                // Resolve numeric FKs
-                const ejeNum = row['EJE_INTERVENCION'] || row['eje'];
-                const lineaNum = row['LINEA_INTERVENCION'] || row['linea'];
-                // If excel uses "1" for eje, map using cache
-                const ejeId = idCache['ejes']?.[ejeNum] || null;
-                const lineaId = idCache['lineas']?.[lineaNum] || null;
-
-                // Text FKs
-                const regName = row['REGION'];
-                const regionId = regName ? (idCache['regiones']?.[String(regName).trim().toLowerCase()] || null) : null;
-
-                // Periodo/Año - Accept 'PERIODO' or 'AÑO'
-                let anio = row['AÑO'] || row['PERIODO'] || row['año'] || 2024;
-                if (typeof anio === 'string') anio = parseInt(anio);
-
-                const payload = {
-                    codigo_proyecto: row['CODIGO_PROYECTO'],
-                    nombre: row['PROYECTO'],
-                    eje_id: ejeId,
-                    linea_id: lineaId,
-                    region_id: regionId,
-                    institucion_ejecutora_id: instId,
-                    monto_fondoempleo: row['MONTO_FONDOEMPLEO'] || 0,
-                    monto_contrapartida: row['MONTO_CONTRAPARTIDA'] || 0,
-                    monto_total: row['MONTO_TOTAL'] || 0,
-                    beneficiarios: row['BENEFICIARIOS'] || 0,
-                    estado: row['ESTADO'],
-                    año: anio
-                };
-
-                const { error } = await supabase.from('proyectos_servicios').upsert(payload, { onConflict: 'codigo_proyecto' });
-                if (!error) count++;
-                else console.log('Error row:', row['CODIGO_PROYECTO'], error.message);
-            }
-            console.log(`Imported ${count} records.`);
-        }
+        // Verification Log
+        const { data: verif } = await supabase.from('proyectos_servicios').select('año, monto_fondoempleo').limit(3);
+        console.log('Verification Sample:', verif);
 
     } catch (e) {
-        console.error('Import V3 Error:', e);
+        console.error('Import Error:', e);
     }
 }
 
