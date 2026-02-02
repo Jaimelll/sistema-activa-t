@@ -12,8 +12,8 @@ export function Sidebar() {
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-        { name: 'Proyectos', icon: FolderOpen, href: '/dashboard/proyectos' },
-        { name: 'Instituciones', icon: Users, href: '/dashboard/instituciones' },
+        { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
+        { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];
 
@@ -32,7 +32,7 @@ export function Sidebar() {
                 "lg:translate-x-0 lg:static"
             )}>
                 <div className="p-6 border-b border-primary-light">
-                    <h1 className="text-2xl font-bold tracking-tight">ACTIVA-T</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">FONDOEMPLEO</h1>
                     <p className="text-xs text-gray-400 mt-1">Gestión Fondoempleo</p>
                 </div>
 

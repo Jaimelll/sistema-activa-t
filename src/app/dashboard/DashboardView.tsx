@@ -14,23 +14,23 @@ interface DashboardViewProps {
 export default function DashboardView({ initialData }: DashboardViewProps) {
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>('all');
-    const [selectedRegion, setSelectedRegion] = useState<string>('all');
-    const [selectedStatus, setSelectedStatus] = useState<string>('all');
+    const [selectedLinea, setSelectedLinea] = useState<string>('all');
+    const [selectedEje, setSelectedEje] = useState<string>('all');
 
-    // Extract unique options for dropdowns
+    // Extract unique options
     const years = useMemo(() => Array.from(new Set(initialData.map(d => d.year))).sort(), [initialData]);
-    const regions = useMemo(() => Array.from(new Set(initialData.map(d => d.region))).sort(), [initialData]);
-    const statuses = useMemo(() => Array.from(new Set(initialData.map(d => d.estado))).sort(), [initialData]);
+    const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
+    const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
 
     // Filter Logic
     const filteredData = useMemo(() => {
         return initialData.filter(item => {
             const matchYear = selectedYear === 'all' || item.year === selectedYear;
-            const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
-            const matchStatus = selectedStatus === 'all' || item.estado === selectedStatus;
-            return matchYear && matchRegion && matchStatus;
+            const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
+            const matchEje = selectedEje === 'all' || item.eje === selectedEje;
+            return matchYear && matchLinea && matchEje;
         });
-    }, [initialData, selectedYear, selectedRegion, selectedStatus]);
+    }, [initialData, selectedYear, selectedLinea, selectedEje]);
 
     // Aggregate Metrics
     const metrics = useMemo(() => {
@@ -38,20 +38,19 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
             totalFunding: acc.totalFunding + (curr.monto_fondoempleo + curr.monto_contrapartida),
             totalProjects: acc.totalProjects + 1,
             totalBeneficiaries: acc.totalBeneficiaries + curr.beneficiarios,
-            avgFunding: 0 // calc later
+            avgFunding: 0
         }), { totalFunding: 0, totalProjects: 0, totalBeneficiaries: 0, avgFunding: 0 });
     }, [filteredData]);
 
     metrics.avgFunding = metrics.totalProjects > 0 ? metrics.totalFunding / metrics.totalProjects : 0;
 
-    // Chart Data Preparation
+    // Chart Data
     const fundingByRegion = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
-            if (!map.has(d.region)) {
-                map.set(d.region, { name: d.region, fondoempleo: 0, contrapartida: 0 });
-            }
-            const entry = map.get(d.region);
+            const r = d.region;
+            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0 });
+            const entry = map.get(r);
             entry.fondoempleo += d.monto_fondoempleo;
             entry.contrapartida += d.monto_contrapartida;
         });
@@ -61,19 +60,19 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
     const projectsByStatus = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
-            if (!map.has(d.estado)) map.set(d.estado, 0);
-            map.set(d.estado, map.get(d.estado) + 1);
+            const s = d.estado;
+            if (!map.has(s)) map.set(s, 0);
+            map.set(s, map.get(s) + 1);
         });
         return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
     }, [filteredData]);
-
 
     return (
         <div className="space-y-6">
             {/* Header & Filters */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">FONDOEMPLEO</h1>
                     <p className="text-gray-500">Vista general de indicadores y proyectos</p>
                 </div>
 
@@ -92,21 +91,21 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
                     </select>
 
                     <select
-                        className="input py-1 text-sm border-gray-300 w-32"
-                        value={selectedRegion}
-                        onChange={(e) => setSelectedRegion(e.target.value)}
+                        className="input py-1 text-sm border-gray-300 w-48"
+                        value={selectedLinea}
+                        onChange={(e) => setSelectedLinea(e.target.value)}
                     >
-                        <option value="all">Todas Regiones</option>
-                        {regions.map(r => <option key={String(r)} value={String(r)}>{String(r)}</option>)}
+                        <option value="all">Todas las Líneas</option>
+                        {lineas.map(l => <option key={String(l)} value={String(l)}>{String(l)}</option>)}
                     </select>
 
                     <select
-                        className="input py-1 text-sm border-gray-300 w-32"
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="input py-1 text-sm border-gray-300 w-48"
+                        value={selectedEje}
+                        onChange={(e) => setSelectedEje(e.target.value)}
                     >
-                        <option value="all">Todos Estados</option>
-                        {statuses.map(s => <option key={String(s)} value={String(s)}>{String(s)}</option>)}
+                        <option value="all">Todos los Ejes</option>
+                        {ejes.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                     </select>
                 </div>
             </div>
