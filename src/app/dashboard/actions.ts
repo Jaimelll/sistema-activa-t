@@ -31,8 +31,7 @@ export async function getDashboardData() {
 
   if (!data || data.length === 0) return [];
 
-  // Map to flattened structure
-  return data.map((p: any) => {
+  const mappedData = data.map((p: any) => {
     // Helper to extract year
     let year = p.año ? String(p.año) : 'Unknown';
     if (year === 'Unknown' && p.fecha_inicio) {
@@ -57,4 +56,7 @@ export async function getDashboardData() {
       beneficiarios: Number(p.beneficiarios) || 0
     };
   });
+
+  console.log("Debug Data Sample (Year):", mappedData[0]?.year, "Total Rows:", mappedData.length);
+  return mappedData;
 }

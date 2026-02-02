@@ -18,14 +18,14 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
     const [selectedEje, setSelectedEje] = useState<string>('all');
 
     // Extract unique options
-    const years = useMemo(() => Array.from(new Set(initialData.map(d => d.year))).sort(), [initialData]);
+    const years = useMemo(() => Array.from(new Set(initialData.map(d => String(d.year)))).sort().reverse(), [initialData]);
     const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
     const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
 
     // Filter Logic
     const filteredData = useMemo(() => {
         return initialData.filter(item => {
-            const matchYear = selectedYear === 'all' || item.year === selectedYear;
+            const matchYear = selectedYear === 'all' || String(item.year) === selectedYear;
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
             return matchYear && matchLinea && matchEje;
