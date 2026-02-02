@@ -22,13 +22,17 @@ export default function EdicionPage() {
     }, [selectedId, supabase])
 
     const fetchProjects = async () => {
-        const { data } = await supabase.from('proyectos').select('id, nombre')
-        if (data) setProjects(data)
+        // const { data } = await supabase.from('proyectos').select('id, nombre')
+        // const { data } = await supabase.from('proyectos').select('id, nombre')
+        const data: any[] = [];
     }
 
     const loadProjectDetails = async (id: string) => {
-        const { data: p } = await supabase.from('proyectos').select('*').eq('id', id).single()
-        const { data: m } = await supabase.from('metricas').select('*').eq('proyecto_id', id).single()
+        // const { data: p } = await supabase.from('proyectos').select('*').eq('id', id).single()
+        // const { data: p } = await supabase.from('proyectos').select('*').eq('id', id).single()
+        // const { data: m } = await supabase.from('metricas').select('*').eq('proyecto_id', id).single()
+        const p: any = {};
+        const m: any = {};
 
         setFormData({
             estado: p.estado || 'Registrado',

@@ -26,11 +26,11 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
     const filteredData = useMemo(() => {
         console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
-            // Strict normalization
-            const itemYear = String(item.year || '');
-            const filterYear = String(selectedYear);
+            // Numeric normalization
+            const itemYear = Number(item.year);
+            const filterYear = Number(selectedYear);
 
-            const matchYear = filterYear === 'all' || itemYear === filterYear;
+            const matchYear = selectedYear === 'all' || (!isNaN(itemYear) && itemYear === filterYear);
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
 
