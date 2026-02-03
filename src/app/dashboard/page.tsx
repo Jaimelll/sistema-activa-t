@@ -1,13 +1,14 @@
 
 import DashboardView from './DashboardView';
-import { getDashboardData } from './actions';
+import { getDashboardData, getAvailableYears } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
     const data = await getDashboardData();
+    const availableYears = await getAvailableYears();
 
     return (
-        <DashboardView initialData={data} />
+        <DashboardView initialData={data} availableYears={availableYears} />
     );
 }

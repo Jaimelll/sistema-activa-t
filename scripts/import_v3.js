@@ -29,20 +29,12 @@ async function importDataV3() {
         const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false });
         console.log(`Found ${data.length} raw rows.`);
 
-        if (data.length > 0) {
-            console.log('--- ROW 0 (Header?) ---');
-            console.log(JSON.stringify(data[0]));
-            if (data.length > 1) {
-                console.log('--- ROW 1 (Data Sample) ---');
-                console.log(JSON.stringify(data[1]));
-            }
-        }
-
+        // Limpieza Previa: Ejecuta el TRUNCATE -> Using delete() as proxy
         console.log('Cleaning table public.proyectos_servicios...');
         const { error: delError } = await supabase.from('proyectos_servicios').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (delError) console.error('Error deleting:', delError);
 
-        // Cache
+        // Cache for relations (Indices 2 and 3)
         const idCache = { ejes: {}, lineas: {} };
         const { data: ejes } = await supabase.from('ejes').select('id, numero');
         if (ejes) ejes.forEach(e => idCache.ejes[e.numero] = e.id);
@@ -51,82 +43,62 @@ async function importDataV3() {
 
         let count = 0;
 
-        // Iterate starting from row 1 (assuming row 0 is header)
+        // Iterate starting from row 1 (skipping header)
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             if (!row || row.length === 0) continue;
 
-            // Strict Indices (Base 0)
-            // 1: Periodo (Año)
-            // 2: Eje (Assuming)
-            // 3: Linea (Assuming)
-            // 9: Beneficiarios
-            // 10: Fondoempleo
-            // 11: Contrapartida
+            // USER PROVIDED EXACT LOGIC
+            const v_año = parseInt(row[1]); // Columna 'periodo' (Index 1)
+            const v_beneficiarios = parseInt(row[9]) || 0;
 
-            const rawPeriodo = row[1];
-            const rawEje = row[2];
-            const rawLinea = row[3];
-            const rawNombre = row[4]; // Guessing name is earlier.
+            // Clean floats
+            const v_fondo = parseFloat(String(row[10]).replace(/[^0-9.-]+/g, '')) || 0;
+            const v_contra = parseFloat(String(row[11]).replace(/[^0-9.-]+/g, '')) || 0;
 
-            const rawBenef = row[9];
-            const rawFE = row[10];
-            const rawContra = row[11];
+            const v_nombre = row[4]; // nombre proyecto o servicio (Assuming Index 4 based on previous logs context)
 
-            // Conversions
-            const cleanInt = (v) => {
-                if (v === null || v === undefined) return null;
-                const s = String(v).replace(/[^0-9]/g, '');
-                return s ? parseInt(s) : 0;
-            };
+            // Relation IDs
+            const v_eje = parseInt(row[2]);
+            const v_linea = parseInt(row[3]);
 
-            const cleanFloat = (v) => {
-                if (v === null || v === undefined) return 0;
-                const s = String(v).replace(/[^0-9.-]/g, '');
-                return s ? parseFloat(s) : 0;
-            };
-
-            const anio = cleanInt(rawPeriodo);
-            const ejeNum = cleanInt(rawEje);
-            const lineaNum = cleanInt(rawLinea);
-            const benef = cleanInt(rawBenef);
-
-            const montoFE = cleanFloat(rawFE);
-            const montoContra = cleanFloat(rawContra);
-            const montoTotal = montoFE + montoContra;
-
-            // Debug first valid row
-            if (count === 0 && anio) {
-                console.log(`DEBUG MAPPING ROW ${i}:`);
-                console.log(`Periodo (Idx 1): ${rawPeriodo} -> ${anio}`);
-                console.log(`Benef (Idx 9): ${rawBenef} -> ${benef}`);
-                console.log(`FE (Idx 10): ${rawFE} -> ${montoFE}`);
-                console.log(`Contra (Idx 11): ${rawContra} -> ${montoContra}`);
+            // Debug Obligatorio
+            if (count < 5 || v_fondo > 1000000) {
+                console.log('Insertando:', v_año, v_fondo, `(Contra: ${v_contra})`);
             }
 
-            if (!anio) continue;
+            // Validar
+            if (!v_año) continue;
 
             const payload = {
-                codigo_proyecto: `PROJ-S-${i}-${anio}`,
-                nombre: rawNombre ? String(rawNombre).substring(0, 200) : `Proyecto ${i}`,
-                eje_id: ejeNum ? idCache.ejes[ejeNum] : null,
-                linea_id: lineaNum ? idCache.lineas[lineaNum] : null,
-                monto_fondoempleo: montoFE,
-                monto_contrapartida: montoContra,
-                monto_total: montoTotal,
-                beneficiarios: benef,
-                año: anio,
+                codigo_proyecto: `PROJ-USER-${i}-${v_año}`,
+                año: v_año,
+                beneficiarios: v_beneficiarios,
+                monto_fondoempleo: v_fondo,
+                monto_contrapartida: v_contra,
+                monto_total: v_fondo + v_contra,
+                nombre: v_nombre ? String(v_nombre).substring(0, 200) : `Proyecto ${i}`,
+                // Foreign Keys
+                eje_id: v_eje ? idCache.ejes[v_eje] : null,
+                linea_id: v_linea ? idCache.lineas[v_linea] : null,
                 estado: 'En Ejecución'
             };
 
             const { error } = await supabase.from('proyectos_servicios').upsert(payload, { onConflict: 'codigo_proyecto' });
-            if (!error) count++;
-            else console.error(`Error Row ${i}:`, error.message);
+            if (!error) {
+                count++;
+            } else {
+                console.error(`Error Row ${i}:`, error.message);
+            }
         }
         console.log(`Imported ${count} rows.`);
 
-        const { data: check } = await supabase.from('proyectos_servicios').select('año, monto_fondoempleo').gt('monto_fondoempleo', 0).limit(3);
-        console.log('Check > 0:', check);
+        // Final Verify
+        const { data: verif } = await supabase.from('proyectos_servicios')
+            .select('año, monto_fondoempleo')
+            .gt('monto_fondoempleo', 0)
+            .limit(3);
+        console.log('DB Verify (>0):', verif);
 
     } catch (e) {
         console.error('Import Error:', e);

@@ -60,3 +60,23 @@ export async function getDashboardData() {
   console.log("Debug Data Sample (Year):", mappedData[0]?.year, "Total Rows:", mappedData.length);
   return mappedData;
 }
+
+export async function getAvailableYears() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('proyectos_servicios')
+    .select('año')
+    .order('año', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching years:", error);
+    return [];
+  }
+
+  // Extract unique years using Set, filter nulls
+  const uniqueYears = Array.from(new Set((data as any[]).map(d => d.año))).filter(Boolean);
+  return uniqueYears;
+}

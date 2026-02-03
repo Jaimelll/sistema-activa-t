@@ -9,16 +9,22 @@ import { clsx } from 'clsx';
 
 interface DashboardViewProps {
     initialData: any[]; // The raw data from server action
+    availableYears?: any[]; // Years passed from server
 }
 
-export default function DashboardView({ initialData }: DashboardViewProps) {
+export default function DashboardView({ initialData, availableYears = [] }: DashboardViewProps) {
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
 
     // Extract unique options
-    const years = useMemo(() => Array.from(new Set(initialData.map(d => String(d.year)))).sort().reverse(), [initialData]);
+    // Use passed availableYears, or fallback to data derived if empty (though logic suggests server provides it)
+    const years = useMemo(() => {
+        if (availableYears && availableYears.length > 0) return availableYears.map(String);
+        return Array.from(new Set(initialData.map(d => String(d.year)))).sort().reverse();
+    }, [initialData, availableYears]);
+
     const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
     const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
 
@@ -27,16 +33,16 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
         console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
             // Numeric normalization
-            const itemYear = Number(item.year);
-            const filterYear = Number(selectedYear);
-
-            const matchYear = selectedYear === 'all' || (!isNaN(itemYear) && itemYear === filterYear);
+            const matchYear = selectedYear === 'all' || String(item.year) === String(selectedYear);
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
 
             return matchYear && matchLinea && matchEje;
         });
     }, [initialData, selectedYear, selectedLinea, selectedEje]);
+
+    // Debug logging requested by user
+    console.log('Datos filtrados:', filteredData.length);
 
     // Aggregate Metrics
     const metrics = useMemo(() => {
@@ -93,7 +99,8 @@ export default function DashboardView({ initialData }: DashboardViewProps) {
                         onChange={(e) => setSelectedYear(e.target.value)}
                     >
                         <option value="all">Todos los años</option>
-                        {years.map(y => <option key={String(y)} value={String(y)}>{String(y)}</option>)}
+
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
 
                     <select
