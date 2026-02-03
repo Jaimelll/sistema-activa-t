@@ -155,7 +155,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 />
                 <KPICard
                     title="Beneficiarios"
-                    value={metrics.totalBeneficiaries.toLocaleString()}
+                    value={metrics.totalBeneficiaries.toLocaleString('es-PE')}
                     icon={Users} // Using generic users icon, locally defined in KPICard import but we passed the component
                 // We need to fix the icon import if Users is not imported in this file. 
                 // Users IS imported from lucide-react above.

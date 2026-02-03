@@ -17,7 +17,7 @@ export function KPICard({ title, value, icon: Icon, trend, trendUp }: KPICardPro
             </div>
             <div>
                 <p className="text-sm font-medium text-gray-500">{title}</p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-1">{value}</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mt-1" suppressHydrationWarning>{value}</h3>
                 {trend && (
                     <p className={`text-xs mt-1 ${trendUp ? 'text-green-600' : 'text-red-600'}`}>
                         {trend}
