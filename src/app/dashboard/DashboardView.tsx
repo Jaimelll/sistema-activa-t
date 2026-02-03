@@ -11,9 +11,11 @@ interface DashboardViewProps {
     initialData: any[];
     years?: any[]; // Changed to allow objects {value, label}
     stages?: string[];
+    lines?: any[];
+    ejesList?: any[];
 }
 
-export default function DashboardView({ initialData, years = [], stages = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, years = [], stages = [], lines = [], ejesList = [] }: DashboardViewProps) {
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
@@ -23,8 +25,8 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
     // Use passed years directly - NO LOGIC HERE
     // years prop comes from server as sorted number array or objects
 
-    const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
-    const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
+    // const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]); // DEPRECATED: Using props
+    // const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]); // DEPRECATED: Using props
     // stages passed from props now
 
     // Filter Logic
@@ -33,8 +35,9 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
         return initialData.filter(item => {
             // Numeric normalization
             const matchYear = selectedYear === '' || selectedYear === 'all' || String(item.year) === String(selectedYear);
-            const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
-            const matchEje = selectedEje === 'all' || item.eje === selectedEje;
+            // Strict ID check (both are UUID strings now)
+            const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
+            const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
             return matchYear && matchLinea && matchEje && matchEtapa;
@@ -113,7 +116,7 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
                         onChange={(e) => setSelectedLinea(e.target.value)}
                     >
                         <option value="all">Todas las Líneas</option>
-                        {lineas.map(l => <option key={String(l)} value={String(l)}>{String(l)}</option>)}
+                        {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
                     </select>
 
                     <select
@@ -122,7 +125,7 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
                         onChange={(e) => setSelectedEje(e.target.value)}
                     >
                         <option value="all">Todos los Ejes</option>
-                        {ejes.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                        {ejesList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
                     </select>
 
                     <select

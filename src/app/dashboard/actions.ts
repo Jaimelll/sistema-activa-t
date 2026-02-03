@@ -36,18 +36,15 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   // --- 2. Universal 'All' Logic for other filters ---
   const applyFilter = (column: string, value?: string) => {
     if (value && value !== 'all' && value !== 'todos') {
+      // Schema check confirmed UUID strings for linea_id/eje_id. No numeric conversion needed.
       query = query.eq(column, value);
     }
   };
 
-  applyFilter('eje', filters?.eje); // Assuming DB column is 'eje' (foreign key ID?) or related. User said .eq('eje', ...)
-  applyFilter('linea', filters?.linea); // Assuming DB column is 'linea'
-  // Note: 'etapa' maps to 'estado' in mappedData, but user said "Lógica Universal... Para Ejes, Líneas, Etapas".
-  // If 'etapa' is passed, we should check what column it filters.
-  // In mappedData: etapa: p.estado.
-  // So if filter is 'etapa', we presumably filter on 'estado'?
-  // BUT we also have the hardcoded exclusion of 'no habilitada'.
-  // If the user selects an etapa, we should filter by it.
+  applyFilter('eje_id', filters?.eje); // Correct column name from schema check: eje_id
+  applyFilter('linea_id', filters?.linea); // Correct column name from schema check: linea_id
+
+  // Note: 'etapa' maps to 'estado'
   if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
     query = query.eq('estado', filters.etapa);
   }
@@ -80,7 +77,9 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       codigo: p.codigo_proyecto,
       region: p.regiones?.descripcion || p.region || 'Desconocido', // Fallback if still using text column? No, using FK join
       linea: p.lineas?.descripcion || 'Sin Linea',
+      lineaId: p.linea_id, // Correct column: linea_id
       eje: p.ejes?.descripcion || 'Sin Eje',
+      ejeId: p.eje_id, // Correct column: eje_id
       etapa: p.estado || 'Sin Etapa', // Map 'estado' (DB) to 'etapa' (Frontend)
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       estado: p.estado || 'Activo',
@@ -94,6 +93,48 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
 
   console.log("Debug Data Sample (Year):", mappedData[0]?.year, "Total Rows:", mappedData.length);
   return mappedData;
+}
+
+export async function getLineas() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('lineas')
+    .select('id, descripcion, numero')
+    .order('numero', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching lines:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id, // Revert to UUID as schema confirms linea_id is UUID
+    label: `L${item.numero} - ${item.descripcion}`
+  }));
+}
+
+export async function getEjes() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('ejes')
+    .select('id, numero, descripcion')
+    .order('numero', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching ejes:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id, // Revert to UUID
+    label: `${item.numero} - ${item.descripcion}`
+  }));
 }
 
 export async function fetchDynamicYears() {
