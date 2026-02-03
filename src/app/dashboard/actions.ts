@@ -12,6 +12,8 @@ export async function getDashboardData() {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  console.log("Env Check: URL=", supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "MISSING");
+
 
   const { data, error } = await supabase
     .from('proyectos_servicios')
@@ -21,7 +23,8 @@ export async function getDashboardData() {
       ejes (descripcion),
       regiones (descripcion),
       instituciones_ejecutoras (nombre)
-    `);
+    `)
+    .not('estado', 'ilike', 'no habilitada'); // Case insensitive exclusion
 
   if (error) {
     console.error("Error fetching dashboard data:", error);
@@ -46,6 +49,7 @@ export async function getDashboardData() {
       region: p.regiones?.descripcion || p.region || 'Desconocido', // Fallback if still using text column? No, using FK join
       linea: p.lineas?.descripcion || 'Sin Linea',
       eje: p.ejes?.descripcion || 'Sin Eje',
+      etapa: p.estado || 'Sin Etapa', // Map 'estado' (DB) to 'etapa' (Frontend)
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       estado: p.estado || 'Activo',
       year: year,
@@ -79,4 +83,29 @@ export async function fetchDynamicYears() {
   // Extract unique years using Set, filter nulls and sort
   const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
   return uniqueYears;
+}
+
+export async function getEtapas() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('proyectos_servicios')
+    .select('estado')
+    .not('estado', 'ilike', 'no habilitada');
+
+  if (error) {
+    console.error("Error fetching stages:", error);
+    return [];
+  }
+
+  if (!data) return [];
+
+  // Extract unique stages
+  const uniqueStages = Array.from(new Set(data.map((d: any) => d.estado)))
+    .filter(Boolean)
+    .sort();
+
+  return uniqueStages;
 }
