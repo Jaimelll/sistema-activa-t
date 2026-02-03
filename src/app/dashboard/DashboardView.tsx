@@ -10,13 +10,15 @@ import { clsx } from 'clsx';
 interface DashboardViewProps {
     initialData: any[];
     years?: number[];
+    stages?: string[];
 }
 
-export default function DashboardView({ initialData, years = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, years = [], stages = [] }: DashboardViewProps) {
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
+    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
 
     // Use passed years directly - NO LOGIC HERE
     // years prop comes from server as sorted number array
@@ -25,6 +27,7 @@ export default function DashboardView({ initialData, years = [] }: DashboardView
 
     const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
     const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
+    // stages passed from props now
 
     // Filter Logic
     const filteredData = useMemo(() => {
@@ -34,10 +37,11 @@ export default function DashboardView({ initialData, years = [] }: DashboardView
             const matchYear = selectedYear === '' || selectedYear === 'all' || String(item.year) === String(selectedYear);
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
+            const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
-            return matchYear && matchLinea && matchEje;
+            return matchYear && matchLinea && matchEje && matchEtapa;
         });
-    }, [initialData, selectedYear, selectedLinea, selectedEje]);
+    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa]);
 
     // Debug logging requested by user
     console.log('Datos filtrados:', filteredData.length);
@@ -117,6 +121,15 @@ export default function DashboardView({ initialData, years = [] }: DashboardView
                     >
                         <option value="all">Todos los Ejes</option>
                         {ejes.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                    </select>
+
+                    <select
+                        className="input py-1 text-sm border-gray-300 w-48"
+                        value={selectedEtapa}
+                        onChange={(e) => setSelectedEtapa(e.target.value)}
+                    >
+                        <option value="all">Todas las Etapas</option>
+                        {stages.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                     </select>
                 </div>
             </div>
