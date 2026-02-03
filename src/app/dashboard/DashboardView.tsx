@@ -8,23 +8,18 @@ import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lu
 import { clsx } from 'clsx';
 
 interface DashboardViewProps {
-    initialData: any[]; // The raw data from server action
-    availableYears?: any[]; // Years passed from server
+    initialData: any[];
+    years?: number[];
 }
 
-export default function DashboardView({ initialData, availableYears = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, years = [] }: DashboardViewProps) {
     // State for filters
-    const [selectedYear, setSelectedYear] = useState<string>('all');
+    const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
 
-    // Extract unique options
-    // Use passed availableYears, or fallback to data derived if empty (though logic suggests server provides it)
-    // Extract unique options
-    // FORCE USE OF PROPS - Debugging mode
-    const years = availableYears && availableYears.length > 0 ? availableYears.map(String) : [];
-    // Fallback only if absolutely necessary for dev, but request asked to rely on props. 
-    // If props empty, show empty to detect issue.
+    // Use passed years directly - NO LOGIC HERE
+    // years prop comes from server as sorted number array
 
 
 
@@ -36,7 +31,7 @@ export default function DashboardView({ initialData, availableYears = [] }: Dash
         console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
             // Numeric normalization
-            const matchYear = selectedYear === 'all' || String(item.year) === String(selectedYear);
+            const matchYear = selectedYear === '' || selectedYear === 'all' || String(item.year) === String(selectedYear);
             const matchLinea = selectedLinea === 'all' || item.linea === selectedLinea;
             const matchEje = selectedEje === 'all' || item.eje === selectedEje;
 
@@ -95,17 +90,13 @@ export default function DashboardView({ initialData, availableYears = [] }: Dash
                     <div className="flex items-center px-2 text-gray-400">
                         <Filter className="w-5 h-5" />
                     </div>
-                    {/* DEBUG INFO: REMOVE AFTER FIX */}
-                    <span className="text-xs text-red-500 font-mono hidden lg:block">
-                        DEBUG YEARS: {JSON.stringify(availableYears)}
-                    </span>
+
 
                     <select
                         className="input py-1 text-sm border-gray-300 w-32"
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(e.target.value)}
                     >
-                        <option value="all">Todos los años</option>
 
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>

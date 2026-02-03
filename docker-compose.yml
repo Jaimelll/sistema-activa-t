@@ -1,17 +1,23 @@
-version: '3.8'
+
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: deps
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
       - "8080:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
     restart: always

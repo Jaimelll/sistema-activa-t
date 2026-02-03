@@ -1,6 +1,9 @@
 import { getDashboardData } from "../actions";
 import ProjectsTable from "../../../components/ProjectsTable";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function ProyectosPage() {
     const data = await getDashboardData();
     return (

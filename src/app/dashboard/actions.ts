@@ -1,8 +1,4 @@
-
 "use server";
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -64,30 +60,22 @@ export async function getDashboardData() {
   return mappedData;
 }
 
-export async function getAvailableYears() {
+export async function fetchDynamicYears() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  console.log('--- AUDIT START: getAvailableYears ---');
-  console.log('Consultando tabla: proyectos_servicios (SELECT año)');
+  console.log('--- AUDIT START: fetchDynamicYears (No Cache) ---');
 
   const { data, error } = await supabase
     .from('proyectos_servicios')
-    .select('año');
-
-  console.log('Datos crudos recibidos (Length):', data?.length);
-  if (data && data.length > 0) {
-    console.log('Sample Data:', JSON.stringify(data.slice(0, 5)));
-  }
-  if (error) console.error('Supabase Error:', error);
+    .select('*');
 
   if (error) {
     console.error("Error fetching years:", error);
     return [];
   }
 
-  // Extract unique years using Set, filter nulls
   // Extract unique years using Set, filter nulls and sort
   const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
   return uniqueYears;
