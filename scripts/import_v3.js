@@ -13,7 +13,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-// Accept file path from args or default to /app/Base.xlsx (Docker path)
 const FILE_PATH = process.argv[2] || '/app/Base.xlsx';
 
 async function importDataV3() {
@@ -27,44 +26,48 @@ async function importDataV3() {
 
         const worksheet = workbook.Sheets[sheetName];
         // FORCE INDEX MAPPING (Array of Arrays)
-        const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        const data = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false });
         console.log(`Found ${data.length} raw rows.`);
 
-        // 0. Clean Table (Delete ALL)
-        // Using DELETE because we don't have direct SQL access for TRUNCATE, and IDs are UUIDs so Identity reset is not needed.
+        if (data.length > 0) {
+            console.log('--- ROW 0 (Header?) ---');
+            console.log(JSON.stringify(data[0]));
+            if (data.length > 1) {
+                console.log('--- ROW 1 (Data Sample) ---');
+                console.log(JSON.stringify(data[1]));
+            }
+        }
+
         console.log('Cleaning table public.proyectos_servicios...');
         const { error: delError } = await supabase.from('proyectos_servicios').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (delError) console.error('Error deleting:', delError);
 
-        // 1. Catalogs Cache
+        // Cache
         const idCache = { ejes: {}, lineas: {} };
         const { data: ejes } = await supabase.from('ejes').select('id, numero');
         if (ejes) ejes.forEach(e => idCache.ejes[e.numero] = e.id);
-
         const { data: lineas } = await supabase.from('lineas').select('id, numero');
         if (lineas) lineas.forEach(l => idCache.lineas[l.numero] = l.id);
 
         let count = 0;
 
-        // Skip header (row 0)
+        // Iterate starting from row 1 (assuming row 0 is header)
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             if (!row || row.length === 0) continue;
 
-            // STRICT INDICES MAPPING (0-based)
-            // User provided:
-            // Index 1 -> Periodo (Año)
-            // Index 9 -> Beneficiarios
-            // Index 10 -> Fondoempleo
-            // Index 11 -> Contrapartida
-            // Index 2 -> Eje (Assuming from previous context, user didn't explicitly change this but likely valid)
-            // Index 3 -> Linea (Assuming from previous context)
-            // Index 5? -> Nombre (Guessing/Scanning, or using safe fallback)
+            // Strict Indices (Base 0)
+            // 1: Periodo (Año)
+            // 2: Eje (Assuming)
+            // 3: Linea (Assuming)
+            // 9: Beneficiarios
+            // 10: Fondoempleo
+            // 11: Contrapartida
 
             const rawPeriodo = row[1];
             const rawEje = row[2];
             const rawLinea = row[3];
-            const rawNombre = row[4] || row[5] || 'Proyecto Importado';
+            const rawNombre = row[4]; // Guessing name is earlier.
 
             const rawBenef = row[9];
             const rawFE = row[10];
@@ -79,33 +82,35 @@ async function importDataV3() {
 
             const cleanFloat = (v) => {
                 if (v === null || v === undefined) return 0;
-                const s = String(v).replace(/[^0-9.-]/g, ''); // Keep dots and minus
+                const s = String(v).replace(/[^0-9.-]/g, '');
                 return s ? parseFloat(s) : 0;
             };
 
             const anio = cleanInt(rawPeriodo);
             const ejeNum = cleanInt(rawEje);
             const lineaNum = cleanInt(rawLinea);
+            const benef = cleanInt(rawBenef);
 
-            const benef = cleanInt(rawBenef); // Ensure integer for beneficiaries
             const montoFE = cleanFloat(rawFE);
             const montoContra = cleanFloat(rawContra);
             const montoTotal = montoFE + montoContra;
 
-            if (!anio) continue; // Skip if no year
-
-            if (count === 0) {
-                console.log(`FIRST ROW DEBUG: Year=${anio}, Benef=${benef}, FE=${montoFE}, Contra=${montoContra}, Total=${montoTotal}`);
+            // Debug first valid row
+            if (count === 0 && anio) {
+                console.log(`DEBUG MAPPING ROW ${i}:`);
+                console.log(`Periodo (Idx 1): ${rawPeriodo} -> ${anio}`);
+                console.log(`Benef (Idx 9): ${rawBenef} -> ${benef}`);
+                console.log(`FE (Idx 10): ${rawFE} -> ${montoFE}`);
+                console.log(`Contra (Idx 11): ${rawContra} -> ${montoContra}`);
             }
 
-            let ejeId = ejeNum ? idCache.ejes[ejeNum] : null;
-            let lineaId = lineaNum ? idCache.lineas[lineaNum] : null;
+            if (!anio) continue;
 
             const payload = {
-                codigo_proyecto: `PROJ-V3-${i}-${anio}`,
-                nombre: String(rawNombre).substring(0, 200),
-                eje_id: ejeId,
-                linea_id: lineaId,
+                codigo_proyecto: `PROJ-S-${i}-${anio}`,
+                nombre: rawNombre ? String(rawNombre).substring(0, 200) : `Proyecto ${i}`,
+                eje_id: ejeNum ? idCache.ejes[ejeNum] : null,
+                linea_id: lineaNum ? idCache.lineas[lineaNum] : null,
                 monto_fondoempleo: montoFE,
                 monto_contrapartida: montoContra,
                 monto_total: montoTotal,
@@ -116,16 +121,12 @@ async function importDataV3() {
 
             const { error } = await supabase.from('proyectos_servicios').upsert(payload, { onConflict: 'codigo_proyecto' });
             if (!error) count++;
-            else console.error('Row Error:', error.message);
+            else console.error(`Error Row ${i}:`, error.message);
         }
         console.log(`Imported ${count} rows.`);
 
-        // Final verify log
-        const { data: last } = await supabase.from('proyectos_servicios')
-            .select('año, monto_fondoempleo, monto_contrapartida, monto_total')
-            .order('monto_fondoempleo', { ascending: false })
-            .limit(1);
-        console.log('Highest Funding Sample:', last);
+        const { data: check } = await supabase.from('proyectos_servicios').select('año, monto_fondoempleo').gt('monto_fondoempleo', 0).limit(3);
+        console.log('Check > 0:', check);
 
     } catch (e) {
         console.error('Import Error:', e);
