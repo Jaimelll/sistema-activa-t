@@ -1,0 +1,195 @@
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+> sistema-activa-t@0.1.0 dev
+> next dev
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.2:3000
+- Environments: .env.local, .env
+
+Ô£ô Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+Ô£ô Ready in 1410ms
+Ôùï Compiling /dashboard ...
+Env Check: URL= https://zhtujzu...
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 6.3s (compile: 4.6s, proxy.ts: 102ms, render: 1510ms)
+Env Check: URL= https://zhtujzu...
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+  details: null,
+  hint: null,
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 1016ms (compile: 20ms, proxy.ts: 52ms, render: 944ms)
+Env Check: URL= https://zhtujzu...
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 905ms (compile: 19ms, proxy.ts: 51ms, render: 834ms)
+Env Check: URL= https://zhtujzu...
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 939ms (compile: 13ms, proxy.ts: 45ms, render: 881ms)
+
+> sistema-activa-t@0.1.0 dev
+> next dev
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.2:3000
+- Environments: .env.local, .env
+
+Ô£ô Starting...
+Ô£ô Ready in 1266ms
+Env Check: URL= https://zhtujzu...
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 5.2s (compile: 2.6s, proxy.ts: 181ms, render: 2.4s)
+Env Check: URL= https://zhtujzu...
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching dashboard data: {
+  code: '42703',
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Error fetching stages: {
+  code: '42703',
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+  details: null,
+  hint: null,
+  message: 'column proyectos_servicios.etapa does not exist'
+}
+Filtrando por a├▒o: 
+Datos filtrados: 0
+ GET /dashboard 200 in 1358ms (compile: 40ms, proxy.ts: 51ms, render: 1267ms)
+
+> sistema-activa-t@0.1.0 dev
+> next dev
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.2:3000
+- Environments: .env.local, .env
+
+Ô£ô Starting...
+Ô£ô Ready in 2s
+Env Check: URL= https://zhtujzu...
+Debug Data Sample (Year): 2026 Total Rows: 117
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+Datos filtrados: 117
+ GET /dashboard 200 in 4.2s (compile: 2.6s, proxy.ts: 81ms, render: 1486ms)
+Env Check: URL= https://zhtujzu...
+Debug Data Sample (Year): 2026 Total Rows: 117
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 117
+ GET /dashboard 200 in 2.0s (compile: 19ms, proxy.ts: 89ms, render: 1904ms)
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ GET / 307 in 1810ms (compile: 1629ms, proxy.ts: 60ms, render: 121ms)
+Env Check: URL= https://zhtujzu...
+Debug Data Sample (Year): 2026 Total Rows: 117
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 117
+ GET /dashboard 200 in 1815ms (compile: 6ms, proxy.ts: 13ms, render: 1796ms)
+
+> sistema-activa-t@0.1.0 dev
+> next dev
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.2:3000
+- Environments: .env.local, .env
+
+Ô£ô Starting...
+Ô£ô Ready in 1648ms
+Env Check: URL= https://zhtujzu...
+Debug Data Sample (Year): 2026 Total Rows: 117
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 117
+ GET /dashboard 500 in 5.1s (compile: 2.2s, proxy.ts: 70ms, render: 2.8s)
+Env Check: URL= https://zhtujzu...
+Ô¿» Error: Objects are not valid as a React child (found: object with keys {value, label}). If you meant to render a collection of children, use an array instead.
+    at ignore-listed frames {
+  digest: '138540548'
+}
+Debug Data Sample (Year): 2026 Total Rows: 117
+--- AUDIT START: fetchDynamicYears (No Cache) ---
+Filtrando por a├▒o: 
+Datos filtrados: 117
+Ô¿» Error: Objects are not valid as a React child (found: object with keys {value, label}). If you meant to render a collection of children, use an array instead.
+    at ignore-listed frames {
+  digest: '138540548'
+}
+ HEAD /dashboard 500 in 1628ms (compile: 12ms, proxy.ts: 37ms, render: 1580ms)

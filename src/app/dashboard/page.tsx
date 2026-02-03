@@ -4,12 +4,23 @@ import { getDashboardData, fetchDynamicYears, getEtapas } from './actions';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function DashboardPage() {
-    const data = await getDashboardData();
+export default async function DashboardPage(props: { searchParams: Promise<any> }) {
+    const searchParams = await props.searchParams;
+    const filters = {
+        periodo: searchParams?.periodo,
+        eje: searchParams?.eje,
+        linea: searchParams?.linea,
+        etapa: searchParams?.etapa,
+    };
+
+    const data = await getDashboardData(filters);
     const years = await fetchDynamicYears();
     const stages = await getEtapas();
 
+    // Inyectar opción "Todos"
+    const yearOptions: any[] = [{ value: 'all', label: 'Todos los años' }, ...years];
+
     return (
-        <DashboardView initialData={data} years={years} stages={stages} />
+        <DashboardView initialData={data} years={yearOptions} stages={stages} />
     );
 }

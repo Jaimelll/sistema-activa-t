@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-export async function getDashboardData() {
+export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -14,8 +14,7 @@ export async function getDashboardData() {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   console.log("Env Check: URL=", supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "MISSING");
 
-
-  const { data, error } = await supabase
+  let query = supabase
     .from('proyectos_servicios')
     .select(`
       *,
@@ -23,8 +22,41 @@ export async function getDashboardData() {
       ejes (descripcion),
       regiones (descripcion),
       instituciones_ejecutoras (nombre)
-    `)
-    .not('estado', 'ilike', 'no habilitada'); // Case insensitive exclusion
+    `);
+
+  // --- 1. Filter by Year (Periodo) ---
+  if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
+    const yearVal = Number(filters.periodo);
+    if (!isNaN(yearVal)) {
+      // Assuming the DB column is 'año' based on existing code mapping
+      query = query.eq('año', yearVal);
+    }
+  }
+
+  // --- 2. Universal 'All' Logic for other filters ---
+  const applyFilter = (column: string, value?: string) => {
+    if (value && value !== 'all' && value !== 'todos') {
+      query = query.eq(column, value);
+    }
+  };
+
+  applyFilter('eje', filters?.eje); // Assuming DB column is 'eje' (foreign key ID?) or related. User said .eq('eje', ...)
+  applyFilter('linea', filters?.linea); // Assuming DB column is 'linea'
+  // Note: 'etapa' maps to 'estado' in mappedData, but user said "Lógica Universal... Para Ejes, Líneas, Etapas".
+  // If 'etapa' is passed, we should check what column it filters.
+  // In mappedData: etapa: p.estado.
+  // So if filter is 'etapa', we presumably filter on 'estado'?
+  // BUT we also have the hardcoded exclusion of 'no habilitada'.
+  // If the user selects an etapa, we should filter by it.
+  if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
+    query = query.eq('estado', filters.etapa);
+  }
+
+  // --- 3. Status Exclusion (Always applied at end as requested) ---
+  // "La exclusión de .not('estado', 'ilike', 'no habilitada') debe estar siempre presente al final"
+  query = query.not('estado', 'ilike', 'no habilitada');
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching dashboard data:", error);

@@ -9,7 +9,7 @@ import { clsx } from 'clsx';
 
 interface DashboardViewProps {
     initialData: any[];
-    years?: number[];
+    years?: any[]; // Changed to allow objects {value, label}
     stages?: string[];
 }
 
@@ -21,9 +21,7 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
 
     // Use passed years directly - NO LOGIC HERE
-    // years prop comes from server as sorted number array
-
-
+    // years prop comes from server as sorted number array or objects
 
     const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
     const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
@@ -102,7 +100,11 @@ export default function DashboardView({ initialData, years = [], stages = [] }: 
                         onChange={(e) => setSelectedYear(e.target.value)}
                     >
 
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        {years.map((y: any) => {
+                            const val = y.value ?? y;
+                            const lab = y.label ?? y;
+                            return <option key={val} value={val}>{lab}</option>
+                        })}
                     </select>
 
                     <select
