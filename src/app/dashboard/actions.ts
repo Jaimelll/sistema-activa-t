@@ -66,9 +66,18 @@ export async function getAvailableYears() {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+  console.log('--- AUDIT START: getAvailableYears ---');
+  console.log('Consultando tabla: proyectos_servicios (SELECT año)');
+
   const { data, error } = await supabase
     .from('proyectos_servicios')
     .select('año');
+
+  console.log('Datos crudos recibidos (Length):', data?.length);
+  if (data && data.length > 0) {
+    console.log('Sample Data:', JSON.stringify(data.slice(0, 5)));
+  }
+  if (error) console.error('Supabase Error:', error);
 
   if (error) {
     console.error("Error fetching years:", error);
