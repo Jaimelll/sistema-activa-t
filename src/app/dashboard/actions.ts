@@ -77,6 +77,7 @@ export async function getAvailableYears() {
   }
 
   // Extract unique years using Set, filter nulls
-  const uniqueYears = Array.from(new Set((data as any[]).map(d => d.año))).filter(Boolean);
+  // Extract unique years using Set, filter nulls and sort
+  const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
   return uniqueYears;
 }

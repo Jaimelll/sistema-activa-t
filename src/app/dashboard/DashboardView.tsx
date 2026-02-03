@@ -20,10 +20,13 @@ export default function DashboardView({ initialData, availableYears = [] }: Dash
 
     // Extract unique options
     // Use passed availableYears, or fallback to data derived if empty (though logic suggests server provides it)
-    const years = useMemo(() => {
-        if (availableYears && availableYears.length > 0) return availableYears.map(String);
-        return Array.from(new Set(initialData.map(d => String(d.year)))).sort().reverse();
-    }, [initialData, availableYears]);
+    // Extract unique options
+    // FORCE USE OF PROPS - Debugging mode
+    const years = availableYears && availableYears.length > 0 ? availableYears.map(String) : [];
+    // Fallback only if absolutely necessary for dev, but request asked to rely on props. 
+    // If props empty, show empty to detect issue.
+
+
 
     const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]);
     const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]);
@@ -92,6 +95,10 @@ export default function DashboardView({ initialData, availableYears = [] }: Dash
                     <div className="flex items-center px-2 text-gray-400">
                         <Filter className="w-5 h-5" />
                     </div>
+                    {/* DEBUG INFO: REMOVE AFTER FIX */}
+                    <span className="text-xs text-red-500 font-mono hidden lg:block">
+                        DEBUG YEARS: {JSON.stringify(availableYears)}
+                    </span>
 
                     <select
                         className="input py-1 text-sm border-gray-300 w-32"
