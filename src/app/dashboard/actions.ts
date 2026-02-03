@@ -68,8 +68,7 @@ export async function getAvailableYears() {
 
   const { data, error } = await supabase
     .from('proyectos_servicios')
-    .select('año')
-    .order('año', { ascending: false });
+    .select('año');
 
   if (error) {
     console.error("Error fetching years:", error);
