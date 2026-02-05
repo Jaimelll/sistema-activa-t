@@ -10,7 +10,7 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
-      - "8080:3000"
+      - "8081:3000"
     volumes:
       - ./:/app
       - /app/node_modules
@@ -20,4 +20,5 @@ services:
       - .env
     environment:
       - NODE_ENV=development
+      - WATCHPACK_POLLING=true
     restart: always

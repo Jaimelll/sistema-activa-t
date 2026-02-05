@@ -6,7 +6,15 @@ export function createClient() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             auth: {
-                persistSession: false
+                persistSession: true,
+            },
+            cookieOptions: {
+                name: 'sb-auth-token',
+                maxAge: 60 * 60 * 24 * 7,
+                domain: '',
+                path: '/',
+                sameSite: 'lax',
+                secure: false,
             }
         }
     )

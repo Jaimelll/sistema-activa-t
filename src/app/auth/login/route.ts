@@ -1,0 +1,26 @@
+import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request) {
+    const formData = await request.formData();
+    const email = String(formData.get('email'));
+    const password = String(formData.get('password'));
+    const supabase = await createClient();
+
+    const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+
+    const requestUrl = new URL(request.url);
+
+    if (error) {
+        return NextResponse.redirect(new URL('/?error=CredencialesInvalidas', requestUrl.origin), {
+            status: 302,
+        });
+    }
+
+    return NextResponse.redirect(new URL('/dashboard', requestUrl.origin), {
+        status: 302,
+    });
+}
