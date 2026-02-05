@@ -1,7 +1,7 @@
 "use client";
 // Force Update: 2026-02-05 07:15 - Visual Refresh
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts';
 
 interface FundingChartProps {
     data: any[];
@@ -18,7 +18,7 @@ export function FundingChart({ data }: FundingChartProps) {
                         top: 20,
                         right: 30,
                         left: 20,
-                        bottom: 60, // Increased bottom margin for rotated labels
+                        bottom: 100, // Increased bottom margin for rotated labels
                     }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -28,11 +28,14 @@ export function FundingChart({ data }: FundingChartProps) {
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
-                        angle={-90}
+                        angle={-45}
                         textAnchor="end"
                         interval={0}
+                        height={80}
                         dy={5} // Push labels down slightly
-                    />
+                    >
+                        <Label value="Región" offset={-10} position="insideBottom" />
+                    </XAxis>
                     <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `S/ ${value / 1000}k`} />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
