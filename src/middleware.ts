@@ -2,53 +2,48 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-    // FORCE PASS-THROUGH FOR DEBUGGING
-    return NextResponse.next();
+    let response = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    })
 
-    // let response = NextResponse.next({
-    //     request: {
-    //         headers: request.headers,
-    //     },
-    // })
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return request.cookies.getAll()
+                },
+                setAll(cookiesToSet) {
+                    cookiesToSet.forEach(({ name, value, options }) => {
+                        request.cookies.set(name, value)
+                        response = NextResponse.next({
+                            request: {
+                                headers: request.headers,
+                            },
+                        })
+                        response.cookies.set(name, value, {
+                            ...options,
+                            secure: false, // Force false for localhost
+                            sameSite: 'lax',
+                        })
+                    })
+                },
+            },
+        }
+    )
 
-    // const supabase = createServerClient(
-    //     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    //     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    //     {
-    //         cookies: {
-    //             getAll() {
-    //                 return request.cookies.getAll()
-    //             },
-    //             setAll(cookiesToSet) {
-    //                 cookiesToSet.forEach(({ name, value, options }) => {
-    //                     request.cookies.set(name, value)
-    //                     response = NextResponse.next({
-    //                         request: {
-    //                             headers: request.headers,
-    //                         },
-    //                     })
-    //                     response.cookies.set(name, value, options)
-    //                 })
-    //             },
-    //         },
-    //     }
-    // )
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // const { data: { user } } = await supabase.auth.getUser()
+    console.log('MIDDLEWARE: Ruta:', request.nextUrl.pathname, 'Usuario:', user?.email || 'No user')
 
-    // // if (request.nextUrl.pathname.startsWith('/dashboard') ||
-    // //     request.nextUrl.pathname.startsWith('/maestro') ||
-    // //     request.nextUrl.pathname.startsWith('/edicion')) {
-    // //     if (!user) {
-    // //         return NextResponse.redirect(new URL('/', request.url))
-    // //     }
-    // // }
+    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+        return NextResponse.redirect(new URL('/', request.url))
+    }
 
-    // if (request.nextUrl.pathname === '/' && user) {
-    //     return NextResponse.redirect(new URL('/dashboard', request.url))
-    // }
-
-    // return response
+    return response
 }
 
 export const config = {

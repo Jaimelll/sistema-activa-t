@@ -12,11 +12,6 @@ export function Navbar() {
     const supabase = createClient()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-    const handleSignOut = async () => {
-        await supabase.auth.signOut()
-        router.push('/')
-    }
-
     return (
         <nav className="bg-white border-b border-gray-200">
             <div className="container flex items-center justify-between h-16">
@@ -41,10 +36,12 @@ export function Navbar() {
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <button onClick={handleSignOut} className="hidden md:flex items-center space-x-2 text-sm text-gray-600 hover:text-red-600">
-                        <LogOut size={18} />
-                        <span>Salir</span>
-                    </button>
+                    <form action="/auth/signout" method="post">
+                        <button type="submit" className="hidden md:flex items-center space-x-2 text-sm text-gray-600 hover:text-red-600">
+                            <LogOut size={18} />
+                            <span>Salir</span>
+                        </button>
+                    </form>
 
                     {/* Mobile Menu Button */}
                     <button className="md:hidden p-2 text-gray-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -69,10 +66,12 @@ export function Navbar() {
                             <Edit size={18} />
                             <span>Edición</span>
                         </Link>
-                        <button onClick={() => { setIsMenuOpen(false); handleSignOut(); }} className="flex items-center space-x-2 text-sm text-red-600 font-medium pt-2 border-t border-gray-100">
-                            <LogOut size={18} />
-                            <span>Salir</span>
-                        </button>
+                        <form action="/auth/signout" method="post" className="border-t border-gray-100 pt-2">
+                            <button type="submit" className="flex items-center space-x-2 text-sm text-red-600 font-medium w-full text-left">
+                                <LogOut size={18} />
+                                <span>Salir</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
             )}

@@ -6,9 +6,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 
+import { createClient } from '@/utils/supabase/client';
+
 export function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(true);
+    const supabase = createClient();
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -59,10 +62,15 @@ export function Sidebar() {
                 </nav>
 
                 <div className="p-4 border-t border-primary-light">
-                    <button className="flex items-center space-x-3 px-4 py-3 w-full text-gray-300 hover:text-white hover:bg-primary-light rounded-lg transition-colors">
-                        <LogOut className="w-5 h-5" />
-                        <span className="font-medium">Cerrar Sesión</span>
-                    </button>
+                    <form action="/auth/signout" method="post">
+                        <button
+                            type="submit"
+                            className="w-full text-left flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-primary-light rounded-lg transition-colors"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            <span className="font-medium">Cerrar Sesión</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </>
