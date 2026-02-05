@@ -1,4 +1,5 @@
 "use client";
+// Force Update: 2026-02-05 07:15 - Visual Refresh
 
 import { useState, useMemo } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -34,7 +35,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
             // Numeric normalization
-            const matchYear = selectedYear === '' || selectedYear === 'all' || String(item.year) === String(selectedYear);
+            // User requested: (!selectedYear || String(item.año) === String(selectedYear))
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año || item.year) === String(selectedYear);
+
             // Strict ID check (both are UUID strings now)
             const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
             const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;

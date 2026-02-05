@@ -1,4 +1,5 @@
 "use client";
+// Force Update: 2026-02-05 07:15 - Visual Refresh
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -17,19 +18,29 @@ export function FundingChart({ data }: FundingChartProps) {
                         top: 20,
                         right: 30,
                         left: 20,
-                        bottom: 5,
+                        bottom: 60, // Increased bottom margin for rotated labels
                     }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
+                    <XAxis
+                        dataKey="name"
+                        stroke="#6b7280"
+                        fontSize={10}
+                        tickLine={false}
+                        axisLine={false}
+                        angle={-90}
+                        textAnchor="end"
+                        interval={0}
+                        dy={5} // Push labels down slightly
+                    />
                     <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `S/ ${value / 1000}k`} />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => [`S/ ${value.toLocaleString()}`, 'Monto']}
+                        formatter={(value: number, name: string) => [`S/ ${value.toLocaleString()}`, name === 'contrapartida' ? 'Ejecutado' : name]}
                     />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                    <Bar dataKey="fondoempleo" name="Fondoempleo" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={30} />
-                    <Bar dataKey="contrapartida" name="Contrapartida" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={30} />
+                    <Bar dataKey="fondoempleo" name="Fondoempleo" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
+                    <Bar dataKey="contrapartida" name="Ejecutado" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={20} />
                 </BarChart>
             </ResponsiveContainer>
         </div>
