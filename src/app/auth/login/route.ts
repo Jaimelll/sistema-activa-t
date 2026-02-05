@@ -12,15 +12,17 @@ export async function POST(request: Request) {
         password,
     });
 
-    const requestUrl = new URL(request.url);
+    const host = request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const base = `${protocol}://${host}`;
 
     if (error) {
-        return NextResponse.redirect(new URL('/?error=CredencialesInvalidas', requestUrl.origin), {
+        return NextResponse.redirect(new URL('/?error=CredencialesInvalidas', base), {
             status: 302,
         });
     }
 
-    return NextResponse.redirect(new URL('/dashboard', requestUrl.origin), {
+    return NextResponse.redirect(new URL('/dashboard', base), {
         status: 302,
     });
 }
