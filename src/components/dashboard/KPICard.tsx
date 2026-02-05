@@ -7,11 +7,12 @@ interface KPICardProps {
     icon: LucideIcon;
     trend?: string;
     trendUp?: boolean;
+    className?: string;
 }
 
-export function KPICard({ title, value, icon: Icon, trend, trendUp }: KPICardProps) {
+export function KPICard({ title, value, icon: Icon, trend, trendUp, className = "bg-white" }: KPICardProps) {
     return (
-        <div className="card flex items-center p-6 bg-white shadow-sm rounded-lg border border-gray-100">
+        <div className={`card flex items-center p-6 shadow-sm rounded-lg border border-gray-100 ${className}`}>
             <div className="p-3 bg-blue-50 rounded-full mr-4">
                 <Icon className="w-6 h-6 text-accent" />
             </div>

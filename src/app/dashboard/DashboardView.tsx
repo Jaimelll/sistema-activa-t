@@ -17,6 +17,10 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ initialData, years = [], stages = [], lines = [], ejesList = [] }: DashboardViewProps) {
+    if (initialData && initialData.length > 0) {
+        console.log('PRIMER REGISTRO:', initialData[0]);
+    }
+
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
@@ -36,7 +40,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         return initialData.filter(item => {
             // Numeric normalization
             // User requested: (!selectedYear || String(item.año) === String(selectedYear))
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año || item.year) === String(selectedYear);
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
 
             // Strict ID check (both are UUID strings now)
             const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
@@ -50,17 +54,22 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     // Debug logging requested by user
     console.log('Datos filtrados:', filteredData.length);
 
-    // Aggregate Metrics
+    // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
-        return filteredData.reduce((acc, curr) => ({
-            totalFunding: acc.totalFunding + (curr.monto_fondoempleo + curr.monto_contrapartida),
-            totalProjects: acc.totalProjects + 1,
-            totalBeneficiaries: acc.totalBeneficiaries + curr.beneficiarios,
-            avgFunding: 0
-        }), { totalFunding: 0, totalProjects: 0, totalBeneficiaries: 0, avgFunding: 0 });
-    }, [filteredData]);
+        const totalFondo = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_fondoempleo) || 0), 0);
+        const totalContra = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_contrapartida) || 0), 0);
+        const totalBen = filteredData.reduce((acc, curr) => acc + (Number(curr.beneficiarios) || 0), 0);
+        const totalProjects = filteredData.length;
 
-    metrics.avgFunding = metrics.totalProjects > 0 ? metrics.totalFunding / metrics.totalProjects : 0;
+        console.log('SUMA FORZADA:', { totalFondo, totalContra });
+
+        return {
+            totalFondo: totalFondo,
+            totalContra: totalContra,
+            totalProjects: totalProjects,
+            totalBeneficiaries: totalBen
+        };
+    }, [filteredData]);
 
     // Chart Data
     const fundingByRegion = useMemo(() => {
@@ -69,8 +78,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             const r = d.region;
             if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0 });
             const entry = map.get(r);
-            entry.fondoempleo += d.monto_fondoempleo;
-            entry.contrapartida += d.monto_contrapartida;
+            entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
+            entry.contrapartida += (Number(d.monto_contrapartida) || 0);
         });
         return Array.from(map.values());
     }, [filteredData]);
@@ -98,7 +107,6 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <div className="flex items-center px-2 text-gray-400">
                         <Filter className="w-5 h-5" />
                     </div>
-
 
                     <select
                         className="input py-1 text-sm border-gray-300 w-32"
@@ -145,8 +153,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KPICard
-                    title="Total Financiamiento"
-                    value={`S/ ${metrics.totalFunding.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                    title="Monto Fondoempleo"
+                    value={`S/ ${metrics.totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                     icon={DollarSign}
                     trend="+12% vs año anterior"
                     trendUp={true}
@@ -164,8 +172,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 // Users IS imported from lucide-react above.
                 />
                 <KPICard
-                    title="Ticket Promedio"
-                    value={`S/ ${metrics.avgFunding.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
+                    title="Contrapartida"
+                    value={`S/ ${metrics.totalContra.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
                     icon={TrendingUp} // Or BarChart3
                 />
             </div>
