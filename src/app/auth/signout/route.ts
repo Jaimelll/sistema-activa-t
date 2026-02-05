@@ -5,6 +5,7 @@ export async function POST(request: Request) {
     const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const base = `${protocol}://${host}`;
+    const supabase = await createClient();
 
     // Sign out on the server side (clears httpOnly cookies)
     await supabase.auth.signOut();
@@ -18,6 +19,7 @@ export async function GET(request: Request) {
     const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const base = `${protocol}://${host}`;
+    const supabase = await createClient();
 
     // Sign out on the server side (clears httpOnly cookies)
     await supabase.auth.signOut();
