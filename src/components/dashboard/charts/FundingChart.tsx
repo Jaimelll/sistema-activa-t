@@ -36,7 +36,7 @@ export function FundingChart({ data }: FundingChartProps) {
                     >
                         <Label value="Región" offset={-10} position="insideBottom" />
                     </XAxis>
-                    <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `S/ ${value / 1000}k`} />
+                    <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${(value / 1000000).toFixed(1)} mill`} />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         formatter={(value: number, name: string) => [`S/ ${value.toLocaleString()}`, name === 'contrapartida' ? 'Ejecutado' : name]}
