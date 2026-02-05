@@ -6,6 +6,7 @@ import { KPICard } from '@/components/dashboard/KPICard';
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
 import { StatusChart } from '@/components/dashboard/charts/StatusChart';
 import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lucide-react';
+import Image from 'next/image';
 import { clsx } from 'clsx';
 
 interface DashboardViewProps {
@@ -98,13 +99,30 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         <div className="space-y-6">
             {/* Header & Filters */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">FONDOEMPLEO</h1>
-                    <p className="text-gray-500">Vista general de indicadores y proyectos</p>
-                </div>
+                {/* Header Text Moved Inside Filter Box for cleanliness, or we keep 2 divs but user asked to push filters */}
+                {/* User Req: "En la parte superior derecha (área blanca donde están los filtros), añade a la izquierda de los selectores..." */}
 
-                <div className="flex flex-wrap gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                    <div className="flex items-center px-2 text-gray-400">
+                <div className="w-full flex flex-wrap gap-4 bg-white header-container-v2 p-3 rounded-lg border border-gray-200 shadow-sm items-center">
+                    {/* New Integrated Header */}
+                    <div className="mr-auto px-4 py-1 border-r border-gray-100 flex items-center">
+                        <div style={{ display: 'flex', alignItems: 'center', height: 'auto' }}>
+                            {/* Logo PROD */}
+                            <img
+                                src="/fondoempleo.jpg"
+                                alt="Fondoempleo"
+                                style={{
+                                    height: '85px',
+                                    width: 'auto',
+                                    filter: 'contrast(1.1) saturate(1.2) brightness(1.02)',
+                                    imageRendering: '-webkit-optimize-contrast',
+                                    objectFit: 'contain',
+                                    marginRight: '20px'
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center px-2 text-gray-400 border-l border-gray-100 pl-4">
                         <Filter className="w-5 h-5" />
                     </div>
 
@@ -172,7 +190,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 // Users IS imported from lucide-react above.
                 />
                 <KPICard
-                    title="Contrapartida"
+                    title="Ejecutado"
                     value={`S/ ${metrics.totalContra.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
                     icon={TrendingUp} // Or BarChart3
                 />

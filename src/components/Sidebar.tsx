@@ -8,6 +8,8 @@ import { clsx } from 'clsx';
 
 import { createClient } from '@/utils/supabase/client';
 
+
+
 export function Sidebar() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(true);
@@ -34,9 +36,8 @@ export function Sidebar() {
                 isOpen ? "translate-x-0" : "-translate-x-full",
                 "lg:translate-x-0 lg:static"
             )}>
-                <div className="p-6 border-b border-primary-light">
-                    <h1 className="text-2xl font-bold tracking-tight">FONDOEMPLEO</h1>
-                    <p className="text-xs text-gray-400 mt-1">Gestión Fondoempleo</p>
+                <div className="p-6 border-b border-primary-light flex justify-center items-center h-24">
+                    {/* Espacio limpio */}
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1">
