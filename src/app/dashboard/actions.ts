@@ -84,6 +84,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       estado: p.estado || 'Activo',
       year: year,
+      año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
       monto_contrapartida: Number(p.monto_contrapartida) || 0,
       monto_total: Number(p.monto_total) || 0,
@@ -144,17 +145,22 @@ export async function fetchDynamicYears() {
 
   console.log('--- AUDIT START: fetchDynamicYears (No Cache) ---');
 
+  // Optimize select to only fetch 'año'
   const { data, error } = await supabase
     .from('proyectos_servicios')
-    .select('*');
+    .select('año'); // Optimized
 
   if (error) {
     console.error("Error fetching years:", error);
     return [];
   }
 
-  // Extract unique years using Set, filter nulls and sort
-  const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año)))).filter(y => !isNaN(y)).sort((a, b) => b - a);
+  // Extract unique years using Set, filter nulls and sort descending
+  const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año))))
+    .filter(y => !isNaN(y) && y > 0)
+    .sort((a, b) => b - a);
+
+  console.log("Unique Years Found:", uniqueYears);
   return uniqueYears;
 }
 
