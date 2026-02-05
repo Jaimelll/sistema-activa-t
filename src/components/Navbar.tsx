@@ -16,10 +16,16 @@ export function Navbar() {
         <nav className="bg-white border-b border-gray-200">
             <div className="container flex items-center justify-between h-16">
                 <div className="flex items-center">
-                    {/* Logo Removed as requested */}
-
-
-                    <div className="hidden md:flex space-x-6">
+                    <Link href="/dashboard" className="flex items-center mr-6">
+                        <Image
+                            src="/logo fondoempleo.jpg"
+                            alt="Fondoempleo Logo"
+                            width={300} // Aspect ratio placeholder
+                            height={85}
+                            className="h-[85px] w-auto object-contain"
+                            priority
+                        />
+                    </Link>                    <div className="hidden md:flex space-x-6">
                         <Link href="/dashboard" className={`flex items-center space-x-2 text-sm font-medium ${pathname === '/dashboard' ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}>
                             <LayoutDashboard size={18} />
                             <span>Dashboard</span>
