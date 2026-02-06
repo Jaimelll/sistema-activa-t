@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
 import { StatusChart } from '@/components/dashboard/charts/StatusChart';
+import { EjeChart } from '@/components/dashboard/charts/EjeChart';
 import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lucide-react';
 import Image from 'next/image';
 import { clsx } from 'clsx';
@@ -94,6 +95,31 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         });
         return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
     }, [filteredData]);
+
+    const projectsByEje = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            // EjeId is used in data. Link to ejesList labels.
+            // d.eje_id (or ejeId depending on how it's mapped)
+            // InitialData likely has 'eje_id'. Filter logic uses 'ejeId'. Need to check data structure logic.
+            // Assuming item.ejeId based on filter logic: `const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;`
+            // But verify initialData mapping. `initialData` comes from server.
+            // Let's assume `ejeId` is the key.
+            const eid = d.ejeId || d.eje_id || d.eje;
+
+            if (!map.has(eid)) map.set(eid, 0);
+            map.set(eid, map.get(eid) + 1);
+        });
+
+        // Map ID to Label from ejesList
+        // ejesList structure: { value: id, label: "1. Name" }
+        return Array.from(map.entries()).map(([id, value]) => {
+            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id); // Handle likely structures
+            // If check `ejesList` pass logic from page.tsx: likely { value, label }
+            const name = ejeObj ? ejeObj.label : `Eje ${id}`;
+            return { name, value };
+        }).sort((a, b) => a.name.localeCompare(b.name)); // Sort by name (1. ..., 2. ...)
+    }, [filteredData, ejesList]);
 
     return (
         <div className="space-y-6">
@@ -203,6 +229,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 </div>
                 <div>
                     <StatusChart data={projectsByStatus} />
+                    <div className="mt-6">
+                        <EjeChart data={projectsByEje} />
+                    </div>
                 </div>
             </div>
         </div>
