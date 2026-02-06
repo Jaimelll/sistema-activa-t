@@ -113,8 +113,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                                 style={{
                                     height: '85px',
                                     width: 'auto',
-                                    filter: 'contrast(1.1) saturate(1.2) brightness(1.02)',
-                                    imageRendering: '-webkit-optimize-contrast',
+                                    filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
+                                    imageRendering: 'crisp-edges', // Requested: crisp-edges
                                     objectFit: 'contain',
                                     marginRight: '20px'
                                 }}
