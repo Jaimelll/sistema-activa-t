@@ -124,73 +124,70 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     return (
         <div className="space-y-6">
             {/* Header & Filters */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                {/* Header Text Moved Inside Filter Box for cleanliness, or we keep 2 divs but user asked to push filters */}
-                {/* User Req: "En la parte superior derecha (área blanca donde están los filtros), añade a la izquierda de los selectores..." */}
+            {/* Header & Filters */}
+            <div className="flex flex-col space-y-4 mb-6">
 
-                <div className="w-full flex flex-wrap gap-4 bg-white header-container-v2 p-3 rounded-lg border border-gray-200 shadow-sm items-center">
-                    {/* New Integrated Header */}
-                    <div className="mr-auto px-4 py-1 border-r border-gray-100 flex items-center">
-                        <div style={{ display: 'flex', alignItems: 'center', height: 'auto' }}>
-                            {/* Logo PROD */}
-                            <img
-                                src="/fondoempleo.jpg"
-                                alt="Fondoempleo"
-                                style={{
-                                    height: '85px',
-                                    width: 'auto',
-                                    filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
-                                    imageRendering: 'crisp-edges', // Requested: crisp-edges
-                                    objectFit: 'contain',
-                                    marginRight: '20px'
-                                }}
-                            />
+                {/* Fila Superior: Logo + Filtros (ALINEADOS A LA IZQUIERDA) */}
+                <div className="flex flex-row items-center justify-start gap-6">
+
+                    {/* 1. Logo */}
+                    <img
+                        src="/fondoempleo.jpg"
+                        alt="Fondoempleo"
+                        className="h-[85px] object-contain"
+                        style={{
+                            filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
+                            imageRendering: 'crisp-edges'
+                        }}
+                    />
+
+                    {/* 2. Contenedor de Filtros (Pegado al logo) */}
+                    <div className="flex flex-row items-center gap-4">
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-32"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(e.target.value)}
+                        >
+                            {years.map((y: any) => {
+                                const val = y.value ?? y;
+                                const lab = y.label ?? y;
+                                return <option key={val} value={val}>{lab}</option>
+                            })}
+                        </select>
+
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-48"
+                            value={selectedLinea}
+                            onChange={(e) => setSelectedLinea(e.target.value)}
+                        >
+                            <option value="all">Todas las Líneas</option>
+                            {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                        </select>
+
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-48"
+                            value={selectedEje}
+                            onChange={(e) => setSelectedEje(e.target.value)}
+                        >
+                            <option value="all">Todos los Ejes</option>
+                            {ejesList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                        </select>
+
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-48"
+                            value={selectedEtapa}
+                            onChange={(e) => setSelectedEtapa(e.target.value)}
+                        >
+                            <option value="all">Todas las Etapas</option>
+                            {stages.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                        </select>
+
+                        {/* Reset Filter Button (Optional but good UX, keeping consistent with clear filters icon if present) */}
+                        <div className="flex items-center px-2 text-gray-400">
+                            <Filter className="w-5 h-5" />
                         </div>
                     </div>
 
-                    <div className="flex items-center px-2 text-gray-400 border-l border-gray-100 pl-4">
-                        <Filter className="w-5 h-5" />
-                    </div>
-
-                    <select
-                        className="input py-1 text-sm border-gray-300 w-32"
-                        value={selectedYear}
-                        onChange={(e) => setSelectedYear(e.target.value)}
-                    >
-
-                        {years.map((y: any) => {
-                            const val = y.value ?? y;
-                            const lab = y.label ?? y;
-                            return <option key={val} value={val}>{lab}</option>
-                        })}
-                    </select>
-
-                    <select
-                        className="input py-1 text-sm border-gray-300 w-48"
-                        value={selectedLinea}
-                        onChange={(e) => setSelectedLinea(e.target.value)}
-                    >
-                        <option value="all">Todas las Líneas</option>
-                        {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                    </select>
-
-                    <select
-                        className="input py-1 text-sm border-gray-300 w-48"
-                        value={selectedEje}
-                        onChange={(e) => setSelectedEje(e.target.value)}
-                    >
-                        <option value="all">Todos los Ejes</option>
-                        {ejesList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
-                    </select>
-
-                    <select
-                        className="input py-1 text-sm border-gray-300 w-48"
-                        value={selectedEtapa}
-                        onChange={(e) => setSelectedEtapa(e.target.value)}
-                    >
-                        <option value="all">Todas las Etapas</option>
-                        {stages.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
-                    </select>
                 </div>
             </div>
 
