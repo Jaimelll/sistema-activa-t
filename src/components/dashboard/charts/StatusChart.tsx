@@ -8,10 +8,10 @@ interface StatusChartProps {
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
-export function StatusChart({ data }: StatusChartProps) {
+export function StatusChart({ data, title = "Proyectos por Estado" }: StatusChartProps & { title?: string }) {
     return (
         <div className="card h-[400px] w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Proyectos por Estado</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
