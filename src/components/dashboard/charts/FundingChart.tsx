@@ -7,7 +7,7 @@ interface FundingChartProps {
     data: any[];
 }
 
-export function FundingChart({ data }: FundingChartProps) {
+export function FundingChart({ data, rotateX = -45, formatY = 'millions' }: FundingChartProps & { rotateX?: number, formatY?: 'millions' | 'currency' }) {
     return (
         <div className="card h-[400px] w-full">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Financiamiento por Región</h3>
@@ -28,7 +28,7 @@ export function FundingChart({ data }: FundingChartProps) {
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
-                        angle={-45}
+                        angle={rotateX}
                         textAnchor="end"
                         interval={0}
                         height={80}
@@ -36,7 +36,7 @@ export function FundingChart({ data }: FundingChartProps) {
                     >
                         <Label value="Región" offset={-10} position="insideBottom" />
                     </XAxis>
-                    <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${(value / 1000000).toFixed(1)} mill`} />
+                    <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatY === 'millions' ? `${(value / 1000000).toFixed(1)} mill` : `S/ ${value.toLocaleString()}`} />
                     <Tooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         formatter={(value: number, name: string) => [`S/ ${value.toLocaleString()}`, name === 'contrapartida' ? 'Ejecutado' : name]}

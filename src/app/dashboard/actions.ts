@@ -188,3 +188,98 @@ export async function getEtapas() {
 
   return uniqueStages;
 }
+
+// --- BECAS ACTIONS ---
+
+export async function getBecasData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string }) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  let query = supabase
+    .from('becas')
+    .select(`
+      *,
+      lineas (descripcion),
+      ejes (descripcion),
+      regiones (descripcion),
+      instituciones_ejecutoras (nombre)
+    `);
+
+  // 1. Filter by Year
+  if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
+    const yearVal = Number(filters.periodo);
+    if (!isNaN(yearVal)) {
+      query = query.eq('año', yearVal);
+    }
+  }
+
+  // 2. Other Filters
+  if (filters?.eje && filters.eje !== 'all') query = query.eq('eje_id', filters.eje);
+  if (filters?.linea && filters.linea !== 'all') query = query.eq('linea_id', filters.linea);
+  if (filters?.etapa && filters.etapa !== 'all') query = query.eq('estado', filters.etapa);
+
+  query = query.not('estado', 'ilike', 'no habilitada');
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching becas data:", error);
+    return [];
+  }
+
+  if (!data || data.length === 0) return [];
+
+  return data.map((p: any) => ({
+    id: p.id,
+    nombre: p.nombre || 'Sin Nombre',
+    codigo: p.codigo_beca,
+    region: p.regiones?.descripcion || 'Desconocido',
+    linea: p.lineas?.descripcion || 'Sin Linea',
+    lineaId: p.linea_id,
+    eje: p.ejes?.descripcion || 'Sin Eje',
+    ejeId: p.eje_id,
+    etapa: p.estado || 'Sin Etapa',
+    institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
+    estado: p.estado || 'Activo',
+    year: p.año ? String(p.año) : 'Unknown',
+    año: Number(p.año) || 0,
+    monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
+    monto_contrapartida: Number(p.monto_contrapartida) || 0,
+    monto_total: Number(p.monto_total) || 0,
+    beneficiarios: Number(p.beneficiarios) || 0
+  }));
+}
+
+export async function fetchDynamicYearsBecas() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase.from('becas').select('año');
+
+  if (error) {
+    console.error("Error fetching becas years:", error);
+    return [];
+  }
+
+  return Array.from(new Set((data as any[]).map(d => Number(d.año))))
+    .filter(y => !isNaN(y) && y > 0)
+    .sort((a, b) => b - a);
+}
+
+export async function getEtapasBecas() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('becas')
+    .select('estado')
+    .not('estado', 'ilike', 'no habilitada');
+
+  if (error) return [];
+  if (!data) return [];
+
+  return Array.from(new Set(data.map((d: any) => d.estado))).filter(Boolean).sort();
+}
