@@ -16,8 +16,8 @@ export function Sidebar() {
     const supabase = createClient();
 
     const menuItems = [
-        { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-        { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
+        { name: 'Dashboard Proyectos', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Dashboard Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
@@ -33,7 +33,7 @@ export function Sidebar() {
             </button>
 
             <div className={clsx(
-                "fixed inset-y-0 left-0 bg-primary w-64 text-white transition-transform duration-300 transform z-40 flex flex-col",
+                "fixed inset-y-0 left-0 bg-primary w-72 text-white transition-transform duration-300 transform z-40 flex flex-col",
                 isOpen ? "translate-x-0" : "-translate-x-full",
                 "lg:translate-x-0 lg:static"
             )}>
