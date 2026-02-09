@@ -27,7 +27,6 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
-    const [selectedEje, setSelectedEje] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
 
     // Filter Logic
@@ -36,12 +35,11 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         return initialData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
             const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
-            const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
-            return matchYear && matchLinea && matchEje && matchEtapa;
+            return matchYear && matchLinea && matchEtapa;
         });
-    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa]);
+    }, [initialData, selectedYear, selectedLinea, selectedEtapa]);
 
     console.log('Becas filtradas:', filteredData.length);
 
@@ -84,20 +82,37 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
     }, [filteredData]);
 
-    const becasByEje = useMemo(() => {
+    const becasByLinea = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
-            const eid = d.ejeId || d.eje_id || d.eje;
-            if (!map.has(eid)) map.set(eid, 0);
-            map.set(eid, map.get(eid) + 1);
+            const lid = d.lineaId || d.linea_id || d.linea;
+            if (!map.has(lid)) map.set(lid, 0);
+            map.set(lid, map.get(lid) + 1);
         });
 
         return Array.from(map.entries()).map(([id, value]) => {
-            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
-            const name = ejeObj ? ejeObj.label : `Eje ${id}`;
+            const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
+            const name = lineaObj ? lineaObj.label : `Línea ${id}`;
             return { name, value };
         }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [filteredData, ejesList]);
+    }, [filteredData, lines]);
+
+    const inversionByLinea = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const lid = d.lineaId || d.linea_id || d.linea;
+            if (!map.has(lid)) map.set(lid, 0);
+            const current = map.get(lid);
+            // Sumar montos
+            map.set(lid, current + (Number(d.monto_fondoempleo) || 0));
+        });
+
+        return Array.from(map.entries()).map(([id, value]) => {
+            const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
+            const name = lineaObj ? lineaObj.label : `Línea ${id}`;
+            return { name, value };
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [filteredData, lines]);
 
     return (
         <div className="space-y-6">
@@ -142,14 +157,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                             {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
 
-                        <select
-                            className="input py-1 text-sm border-gray-300 w-48"
-                            value={selectedEje}
-                            onChange={(e) => setSelectedEje(e.target.value)}
-                        >
-                            <option value="all">Todos los Ejes</option>
-                            {ejesList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
-                        </select>
+
 
                         <select
                             className="input py-1 text-sm border-gray-300 w-48"
@@ -196,19 +204,27 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    {/* Funding Chart (Regiones) - Needs 45 deg rotation and millions format */}
-                    <FundingChart data={fundingByRegion} rotateX={45} formatY="millions" />
+            {/* Top Row: Donut Charts (50% each) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <StatusChart data={becasByStatus} title="Becas por Estado" />
                 </div>
                 <div>
-                    {/* Status Chart */}
-                    <StatusChart data={becasByStatus} title="Becas por Estado" />
-                    <div className="mt-6">
-                        {/* Eje Chart - Needs legend auto height */}
-                        <EjeChart data={becasByEje} title="Becas por Eje" legendStyle={{ height: 'auto' }} />
-                    </div>
+                    <EjeChart data={becasByLinea} title="Becas por Línea" legendStyle={{ height: 'auto' }} />
                 </div>
+                <div>
+                    <EjeChart
+                        data={inversionByLinea}
+                        title="Inversión por Línea"
+                        legendStyle={{ height: 'auto' }}
+                        tooltipFormat="currency"
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Row: Bar Chart (100% width) */}
+            <div className="w-full">
+                <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
             </div>
         </div>
     );

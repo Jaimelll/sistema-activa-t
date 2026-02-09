@@ -9,7 +9,7 @@ interface EjeChartProps {
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'];
 
 
-export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {} }: EjeChartProps & { title?: string, legendStyle?: any }) {
+export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {}, tooltipFormat = 'number' }: EjeChartProps & { title?: string, legendStyle?: any, tooltipFormat?: 'number' | 'currency' }) {
     return (
         <div className="card h-auto min-h-[400px] w-full flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
@@ -31,6 +31,11 @@ export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {} }
                         </Pie>
                         <Tooltip
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value: number) =>
+                                tooltipFormat === 'currency'
+                                    ? `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+                                    : value
+                            }
                         />
                         <Legend
                             layout="horizontal"
