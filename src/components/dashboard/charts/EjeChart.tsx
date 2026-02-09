@@ -11,17 +11,17 @@ const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'
 
 export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {}, tooltipFormat = 'number' }: EjeChartProps & { title?: string, legendStyle?: any, tooltipFormat?: 'number' | 'currency' }) {
     return (
-        <div className="card h-auto min-h-[400px] w-full flex flex-col">
+        <div className="card h-full min-h-[400px] w-full flex flex-col">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-            <div className="flex-1 w-full relative" style={{ minHeight: '400px' }}>
-                <ResponsiveContainer width="100%" height={400}>
-                    <PieChart margin={{ top: 10, bottom: 50 }}>
+            <div className="flex-1 w-full relative" style={{ minHeight: '350px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart margin={{ top: 10, bottom: 10 }}>
                         <Pie
                             data={data}
                             cx="50%"
-                            cy="40%" // Lowered slightly to center better
-                            innerRadius={60} // Increased from 40
-                            outerRadius={90} // Increased from 65
+                            cy="45%" // Lifted slightly
+                            innerRadius={60}
+                            outerRadius={90}
                             paddingAngle={5}
                             dataKey="value"
                         >
@@ -42,7 +42,7 @@ export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {}, 
                             verticalAlign="bottom"
                             align="center"
                             iconType="circle"
-                            wrapperStyle={{ position: 'relative', marginTop: '-20px', paddingBottom: '20px', fontSize: '10px', width: '100%', lineHeight: '14px', ...legendStyle }}
+                            wrapperStyle={{ paddingTop: '0px', marginTop: '-10px', width: '100%', lineHeight: '14px', ...legendStyle }}
                         />
                     </PieChart>
                 </ResponsiveContainer>
