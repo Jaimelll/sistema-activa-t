@@ -99,26 +99,34 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     const projectsByEje = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
-            // EjeId is used in data. Link to ejesList labels.
-            // d.eje_id (or ejeId depending on how it's mapped)
-            // InitialData likely has 'eje_id'. Filter logic uses 'ejeId'. Need to check data structure logic.
-            // Assuming item.ejeId based on filter logic: `const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;`
-            // But verify initialData mapping. `initialData` comes from server.
-            // Let's assume `ejeId` is the key.
             const eid = d.ejeId || d.eje_id || d.eje;
-
             if (!map.has(eid)) map.set(eid, 0);
             map.set(eid, map.get(eid) + 1);
         });
 
         // Map ID to Label from ejesList
-        // ejesList structure: { value: id, label: "1. Name" }
         return Array.from(map.entries()).map(([id, value]) => {
-            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id); // Handle likely structures
-            // If check `ejesList` pass logic from page.tsx: likely { value, label }
+            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
             const name = ejeObj ? ejeObj.label : `Eje ${id}`;
             return { name, value };
-        }).sort((a, b) => a.name.localeCompare(b.name)); // Sort by name (1. ..., 2. ...)
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [filteredData, ejesList]);
+
+    const inversionByEje = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const eid = d.ejeId || d.eje_id || d.eje;
+            if (!map.has(eid)) map.set(eid, 0);
+            // Sumar montos
+            map.set(eid, map.get(eid) + (Number(d.monto_fondoempleo) || 0));
+        });
+
+        // Map ID to Label from ejesList
+        return Array.from(map.entries()).map(([id, value]) => {
+            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
+            const name = ejeObj ? ejeObj.label : `Eje ${id}`;
+            return { name, value };
+        }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
 
     return (
@@ -220,16 +228,26 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <FundingChart data={fundingByRegion} />
+            {/* Top Row: Donut Charts (50% each) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <StatusChart data={projectsByStatus} title="Proyectos por Estado" />
                 </div>
                 <div>
-                    <StatusChart data={projectsByStatus} />
-                    <div className="mt-6">
-                        <EjeChart data={projectsByEje} />
-                    </div>
+                    <EjeChart data={projectsByEje} title="Proyectos por Eje" />
                 </div>
+                <div>
+                    <EjeChart
+                        data={inversionByEje}
+                        title="Inversión por Eje"
+                        tooltipFormat="currency"
+                    />
+                </div>
+            </div>
+
+            {/* Bottom Row: Bar Chart (100% width) */}
+            <div className="w-full">
+                <FundingChart data={fundingByRegion} />
             </div>
         </div>
     );
