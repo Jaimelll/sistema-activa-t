@@ -45,8 +45,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
 
             // Strict ID check (both are UUID strings now)
-            const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
-            const matchEje = selectedEje === 'all' || item.ejeId === selectedEje;
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchEje = selectedEje === 'all' || String(item.ejeId) === String(selectedEje);
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
             return matchYear && matchLinea && matchEje && matchEtapa;
@@ -222,7 +222,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 />
                 <KPICard
                     title="Ejecutado"
-                    value={`S/ ${metrics.totalContra.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
+                    value={`S/ ${(metrics.totalFondo + metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
                     icon={TrendingUp} // Or BarChart3
                 />
             </div>
@@ -247,7 +247,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
 
             {/* Bottom Row: Bar Chart (100% width) */}
             <div className="w-full">
-                <FundingChart data={fundingByRegion} />
+                <div className="w-full">
+                    <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
+                </div>
             </div>
         </div>
     );

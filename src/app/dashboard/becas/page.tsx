@@ -6,23 +6,17 @@ export const revalidate = 0;
 
 export default async function BecasPage(props: { searchParams: Promise<any> }) {
     const searchParams = await props.searchParams;
-    const filters = {
-        periodo: searchParams?.periodo,
-        eje: searchParams?.eje,
-        linea: searchParams?.linea,
-        etapa: searchParams?.etapa,
-    };
-
-    const data = await getBecasData(filters);
+    // Fetch ALL data for client-side filtering
+    const data = await getBecasData({});
     const years = await fetchDynamicYearsBecas();
     const stages = await getEtapasBecas();
-    const headers = await getLineas();
-    const ejesList = await getEjes();
+    const lines = await getLineas();
+    const ejes = await getEjes();
 
     // Inyectar opción "Todos"
-    const yearOptions: any[] = [{ value: 'all', label: 'Todos los años' }, ...years];
+    const yearOptions: any[] = [{ value: 'all', label: 'Todos los años' }, ...years.map(y => ({ value: y, label: y }))];
 
     return (
-        <BecasView initialData={data} years={yearOptions} stages={stages} lines={headers} ejesList={ejesList} />
+        <BecasView initialData={data} years={yearOptions} stages={stages} lines={lines} ejesList={ejes} />
     );
 }

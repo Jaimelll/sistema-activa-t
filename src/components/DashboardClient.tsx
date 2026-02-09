@@ -5,11 +5,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, B
 import { Filter, Building2, TrendingUp, Users } from 'lucide-react'
 
 // Types
+// Types
 type Proyecto = {
     id: string
+    codigo?: string
     nombre: string
     region: string
-    estado: string
+    estado: string // Text from join or raw
     created_at: string
     // Assuming metricas is joined
     metricas?: {
@@ -78,6 +80,12 @@ export function DashboardClient({ proyectos }: DashboardClientProps) {
     const formatMoney = (amount: number) =>
         new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 }).format(amount)
 
+    const formatMillions = (value: number) => {
+        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+        return value.toString();
+    }
+
     return (
         <div className="space-y-8">
             {/* Filters Bar */}
@@ -135,7 +143,7 @@ export function DashboardClient({ proyectos }: DashboardClientProps) {
                         <TrendingUp size={24} />
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500 font-medium uppercase">Inversión Total</p>
+                        <p className="text-sm text-gray-500 font-medium uppercase">Ejecutado</p>
                         <h3 className="text-3xl font-bold text-gray-900">{formatMoney(totalInvestment)}</h3>
                     </div>
                 </div>
@@ -159,7 +167,7 @@ export function DashboardClient({ proyectos }: DashboardClientProps) {
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={regionData} layout="vertical" margin={{ left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                <XAxis type="number" hide />
+                                <XAxis type="number" tickFormatter={formatMillions} />
                                 <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '12px' }} />
                                 <RechartsTooltip formatter={(value) => formatMoney(Number(value))} />
                                 <Bar dataKey="amount" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Inversión (S/)" />
@@ -189,7 +197,7 @@ export function DashboardClient({ proyectos }: DashboardClientProps) {
                                     ))}
                                 </Pie>
                                 <RechartsTooltip />
-                                <Legend verticalAlign="bottom" height={36} />
+                                <Legend verticalAlign="bottom" align="center" layout="horizontal" height={36} wrapperStyle={{ width: '100%' }} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>

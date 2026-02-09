@@ -6,14 +6,8 @@ export const revalidate = 0;
 
 export default async function DashboardPage(props: { searchParams: Promise<any> }) {
     const searchParams = await props.searchParams;
-    const filters = {
-        periodo: searchParams?.periodo,
-        eje: searchParams?.eje,
-        linea: searchParams?.linea,
-        etapa: searchParams?.etapa,
-    };
-
-    const data = await getDashboardData(filters);
+    // Fetch ALL data for client-side filtering
+    const data = await getDashboardData({});
     const years = await fetchDynamicYears();
     const stages = await getEtapas();
     const headers = await getLineas();
