@@ -1,0 +1,27 @@
+[dotenv@17.2.4] injecting env (5) from .env -- tip: ÔÜÖ´©Å  suppress all logs with { quiet: true }
+Reading Excel file from: c:/trabajo/fondo/Base5.xlsx
+Loading Catalogs with strict IDs...
+Loaded 5 records into ejes from eje
+Loaded 10 records into lineas from linea
+Loaded 6 records into etapas from etapa
+Loaded 24 records into regiones from regi├│n
+Loaded 2 records into modalidades from modalidad de ejecuci├│n
+Processing proyecto_servicio...
+DEBUG SHEET proyecto_servicio ROW 0 KEYS: [
+  'numero',
+  'periodo',
+  'eje',
+  'l├¡nea',
+  'nombre proyecto o servicio',
+  'instituci├│n ejecutora',
+  'c├│digo del proyecto',
+  'modalidad de ejecuci├│n',
+  'regi├│n',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'contrapartida ',
+  'etapa',
+  'avance'
+]
+DEBUG ROW 0 RAW: {"numero":1,"periodo":2025,"eje":1,"l├¡nea":4,"nombre proyecto o servicio":"Mejorar las capacidades t├®cnicas para incrementar la producci├│n y productividad de cacao org├ínico certificado para mercados europeos en 500 hect├íreas, cuatro provincias del departamento de San Mart├¡n","instituci├│n ejecutora":"COOPERATIVA AGRARIA ACOPAGRO LTDA","c├│digo del proyecto":"C-24-01","modalidad de ejecuci├│n":"directa","regi├│n":"San Mart├¡n","cantidad de beneficiarios":500,"fondoempleo ":1000000,"contrapartida ":519227,"etapa":"En ejecuci├│n","avance":0}
+DEBUG EXTRACTED: Eje=1 (Target: 1), Linea=4, Region=null, Etapa=null, Mod=null

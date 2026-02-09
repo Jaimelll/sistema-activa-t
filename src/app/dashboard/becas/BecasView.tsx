@@ -34,7 +34,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         console.log('Filtrando becas por año:', selectedYear);
         return initialData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchLinea = selectedLinea === 'all' || item.lineaId === selectedLinea;
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
             return matchYear && matchLinea && matchEtapa;

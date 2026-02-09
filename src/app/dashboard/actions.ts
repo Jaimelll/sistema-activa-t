@@ -103,8 +103,8 @@ export async function getLineas() {
 
   const { data, error } = await supabase
     .from('lineas')
-    .select('id, descripcion, numero')
-    .order('numero', { ascending: true });
+    .select('id, descripcion')
+    .order('id', { ascending: true }); // ID is the number now
 
   if (error) {
     console.error("Error fetching lines:", error);
@@ -112,8 +112,8 @@ export async function getLineas() {
   }
 
   return data.map((item: any) => ({
-    value: item.id, // Revert to UUID as schema confirms linea_id is UUID
-    label: `L${item.numero} - ${item.descripcion}`
+    value: item.id,
+    label: `L${item.id} - ${item.descripcion}` // Use ID as number
   }));
 }
 
@@ -124,8 +124,8 @@ export async function getEjes() {
 
   const { data, error } = await supabase
     .from('ejes')
-    .select('id, numero, descripcion')
-    .order('numero', { ascending: true });
+    .select('id, descripcion')
+    .order('id', { ascending: true }); // ID is the number now
 
   if (error) {
     console.error("Error fetching ejes:", error);
@@ -133,8 +133,8 @@ export async function getEjes() {
   }
 
   return data.map((item: any) => ({
-    value: item.id, // Revert to UUID
-    label: `${item.numero} - ${item.descripcion}`
+    value: item.id,
+    label: `${item.id} - ${item.descripcion}` // Use ID as number
   }));
 }
 
