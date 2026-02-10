@@ -9,6 +9,7 @@ import { EjeChart } from '@/components/dashboard/charts/EjeChart';
 import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lucide-react';
 import Image from 'next/image';
 import { clsx } from 'clsx';
+import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
 
 interface DashboardViewProps {
     initialData: any[];
@@ -99,6 +100,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
 
     // Debug logging requested by user
     console.log('Datos filtrados:', filteredData.length);
+    console.log('Sample filtered item:', filteredData[0]);
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
@@ -172,6 +174,33 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             return { name, value };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
+
+    const gestoraData = useMemo(() => {
+        const map = new Map();
+        // Filter by existence of gestora field AND modality ID = 2 (Indirecta)
+        const indirectData = filteredData.filter(d =>
+            d.gestora &&
+            d.gestora.trim() !== '' &&
+            Number(d.modalidadId) === 2
+        );
+        console.log('Gestora Calculation - Indirect Data Length:', indirectData.length);
+
+        indirectData.forEach(d => {
+            const name = d.gestora;
+            if (!map.has(name)) map.set(name, { name, value: 0, count: 0 });
+            const entry = map.get(name);
+            entry.value += (Number(d.monto_fondoempleo) || 0);
+            entry.count += 1;
+        });
+
+        return Array.from(map.values())
+            .map((item: any) => ({
+                name: `${item.name} (${item.count})`,
+                value: item.value,
+                count: item.count
+            }))
+            .sort((a, b) => b.value - a.value);
+    }, [filteredData]);
 
     return (
         <div className="space-y-6">
@@ -313,6 +342,13 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
                 </div>
             </div>
+
+            {/* Gestora Chart */}
+            {gestoraData.length > 0 && (
+                <div className="w-full">
+                    <GestoraChart data={gestoraData} />
+                </div>
+            )}
         </div>
     );
 }
