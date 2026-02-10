@@ -28,6 +28,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
 
     // Use passed years directly - NO LOGIC HERE
     // years prop comes from server as sorted number array or objects
@@ -38,9 +39,17 @@ export default function DashboardView({ initialData, years = [], stages = [], li
 
     // Filter Logic for Options (Dynamic Lists)
     const availableFilters = useMemo(() => {
-        // 1. Filter by Year first (Master Filter)
+        // 1. Filter by Year first (Master Filter) & Execution
         const dataForOptions = initialData.filter(item => {
-            return !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+
+            // Execution Logic for Options
+            const eid = Number(item.etapaId || item.etapa_id || 0);
+            let matchExec = true;
+            if (selectedExecution === 'process') matchExec = eid !== 6;
+            if (selectedExecution === 'executed') matchExec = eid === 6;
+
+            return matchYear && matchExec;
         });
 
         // 2. Extract uniques present in this year's data
@@ -58,11 +67,11 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas };
-    }, [initialData, selectedYear, lines, ejesList]);
+    }, [initialData, selectedYear, selectedExecution, lines, ejesList]);
 
     // Main Filter Logic (Applied to Data)
     const filteredData = useMemo(() => {
-        console.log('Filtrando por año:', selectedYear);
+        console.log('Filtrando por año:', selectedYear, 'Ejecución:', selectedExecution);
         return initialData.filter(item => {
             // Numeric normalization
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
@@ -70,11 +79,19 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             // Strict ID check
             const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
             const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+
+            // Etapa Filter (Dropdown)
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
-            return matchYear && matchLinea && matchEje && matchEtapa;
+            // Execution Filter
+            const eid = Number(item.etapaId || item.etapa_id || 0);
+            let matchExec = true;
+            if (selectedExecution === 'process') matchExec = eid !== 6;
+            if (selectedExecution === 'executed') matchExec = eid === 6;
+
+            return matchYear && matchLinea && matchEje && matchEtapa && matchExec;
         });
-    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa]);
+    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution]);
 
     // Debug logging requested by user
     console.log('Datos filtrados:', filteredData.length);
@@ -174,6 +191,17 @@ export default function DashboardView({ initialData, years = [], stages = [], li
 
                     {/* 2. Contenedor de Filtros (Pegado al logo) */}
                     <div className="flex flex-row items-center gap-4">
+                        {/* EXECUTION FILTER */}
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-32 font-medium text-blue-900 bg-blue-50"
+                            value={selectedExecution}
+                            onChange={(e) => setSelectedExecution(e.target.value)}
+                        >
+                            <option value="all">Todas</option>
+                            <option value="process">En proceso</option>
+                            <option value="executed">Ejecutados</option>
+                        </select>
+
                         <select
                             className="input py-1 text-sm border-gray-300 w-32"
                             value={selectedYear}

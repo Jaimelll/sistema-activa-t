@@ -28,12 +28,21 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
 
     // Filter Logic for Options
     const availableFilters = useMemo(() => {
-        // 1. Filter by Year first (Master Filter)
+        // 1. Filter by Year first (Master Filter) & Execution
         const dataForOptions = initialData.filter(item => {
-            return !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+
+            // Execution Logic
+            const eid = Number(item.etapaId || item.etapa_id || 0);
+            let matchExec = true;
+            if (selectedExecution === 'process') matchExec = eid !== 6;
+            if (selectedExecution === 'executed') matchExec = eid === 6;
+
+            return matchYear && matchExec;
         });
 
         // 2. Extract uniques present in this year's data
@@ -46,19 +55,25 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, uniqueEtapas };
-    }, [initialData, selectedYear, lines]);
+    }, [initialData, selectedYear, selectedExecution, lines]);
 
     // Main Filters
     const filteredData = useMemo(() => {
-        console.log('Filtrando becas por año:', selectedYear);
+        console.log('Filtrando becas por año:', selectedYear, 'Ejecución:', selectedExecution);
         return initialData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
             const matchLinea = selectedLinea === 'all' || String(item.lineaId || item.linea_id || item.linea) === String(selectedLinea);
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
-            return matchYear && matchLinea && matchEtapa;
+            // Execution Filter
+            const eid = Number(item.etapaId || item.etapa_id || 0);
+            let matchExec = true;
+            if (selectedExecution === 'process') matchExec = eid !== 6;
+            if (selectedExecution === 'executed') matchExec = eid === 6;
+
+            return matchYear && matchLinea && matchEtapa && matchExec;
         });
-    }, [initialData, selectedYear, selectedLinea, selectedEtapa]);
+    }, [initialData, selectedYear, selectedLinea, selectedEtapa, selectedExecution]);
 
     console.log('Becas filtradas:', filteredData.length);
 
@@ -155,6 +170,17 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
 
                     {/* 2. Contenedor de Filtros (Pegado al logo) */}
                     <div className="flex flex-row items-center gap-4">
+                        {/* EXECUTION FILTER */}
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-32 font-medium text-blue-900 bg-blue-50"
+                            value={selectedExecution}
+                            onChange={(e) => setSelectedExecution(e.target.value)}
+                        >
+                            <option value="all">Todas</option>
+                            <option value="process">En proceso</option>
+                            <option value="executed">Ejecutados</option>
+                        </select>
+
                         <select
                             className="input py-1 text-sm border-gray-300 w-32"
                             value={selectedYear}
