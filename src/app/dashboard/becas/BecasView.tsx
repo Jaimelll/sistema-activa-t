@@ -29,12 +29,31 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
 
-    // Filter Logic
+    // Filter Logic for Options
+    const availableFilters = useMemo(() => {
+        // 1. Filter by Year first (Master Filter)
+        const dataForOptions = initialData.filter(item => {
+            return !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+        });
+
+        // 2. Extract uniques present in this year's data
+        const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId || d.linea_id || d.linea))));
+        const uniqueEtapas = Array.from(new Set(dataForOptions.map(d => d.etapa))).sort();
+
+        // 3. Map back to full objects with labels using original props
+        const dynamicLineas = lines
+            .filter((l: any) => uniqueLineas.includes(String(l.value)))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+
+        return { dynamicLineas, uniqueEtapas };
+    }, [initialData, selectedYear, lines]);
+
+    // Main Filters
     const filteredData = useMemo(() => {
         console.log('Filtrando becas por año:', selectedYear);
         return initialData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId || item.linea_id || item.linea) === String(selectedLinea);
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
             return matchYear && matchLinea && matchEtapa;
@@ -139,7 +158,11 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                         <select
                             className="input py-1 text-sm border-gray-300 w-32"
                             value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedYear(e.target.value);
+                                setSelectedLinea('all');
+                                setSelectedEtapa('all');
+                            }}
                         >
                             {years.map((y: any) => {
                                 const val = y.value ?? y;
@@ -154,7 +177,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                             onChange={(e) => setSelectedLinea(e.target.value)}
                         >
                             <option value="all">Todas las Líneas</option>
-                            {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                            {availableFilters.dynamicLineas.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
 
 
@@ -165,7 +188,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                             onChange={(e) => setSelectedEtapa(e.target.value)}
                         >
                             <option value="all">Todas las Etapas</option>
-                            {stages.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                            {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                         </select>
 
                         {/* Reset Filter Button */}
