@@ -36,17 +36,40 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     // const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]); // DEPRECATED: Using props
     // stages passed from props now
 
-    // Filter Logic
+    // Filter Logic for Options (Dynamic Lists)
+    const availableFilters = useMemo(() => {
+        // 1. Filter by Year first (Master Filter)
+        const dataForOptions = initialData.filter(item => {
+            return !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+        });
+
+        // 2. Extract uniques present in this year's data
+        const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
+        const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje)))); // Handle variations
+        const uniqueEtapas = Array.from(new Set(dataForOptions.map(d => d.etapa))).sort();
+
+        // 3. Map back to full objects with labels using original props
+        const dynamicLineas = lines
+            .filter((l: any) => uniqueLineas.includes(String(l.value)))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+
+        const dynamicEjes = ejesList
+            .filter((e: any) => uniqueEjes.includes(String(e.value)))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+
+        return { dynamicLineas, dynamicEjes, uniqueEtapas };
+    }, [initialData, selectedYear, lines, ejesList]);
+
+    // Main Filter Logic (Applied to Data)
     const filteredData = useMemo(() => {
         console.log('Filtrando por año:', selectedYear);
         return initialData.filter(item => {
             // Numeric normalization
-            // User requested: (!selectedYear || String(item.año) === String(selectedYear))
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
 
-            // Strict ID check (both are UUID strings now)
+            // Strict ID check
             const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEje = selectedEje === 'all' || String(item.ejeId) === String(selectedEje);
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
 
             return matchYear && matchLinea && matchEje && matchEtapa;
@@ -154,7 +177,13 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                         <select
                             className="input py-1 text-sm border-gray-300 w-32"
                             value={selectedYear}
-                            onChange={(e) => setSelectedYear(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedYear(e.target.value);
+                                // Reset other filters on year change to avoid dead ends
+                                setSelectedLinea('all');
+                                setSelectedEje('all');
+                                setSelectedEtapa('all');
+                            }}
                         >
                             {years.map((y: any) => {
                                 const val = y.value ?? y;
@@ -169,7 +198,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                             onChange={(e) => setSelectedLinea(e.target.value)}
                         >
                             <option value="all">Todas las Líneas</option>
-                            {lines.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                            {availableFilters.dynamicLineas.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
 
                         <select
@@ -178,7 +207,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                             onChange={(e) => setSelectedEje(e.target.value)}
                         >
                             <option value="all">Todos los Ejes</option>
-                            {ejesList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                            {availableFilters.dynamicEjes.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
                         </select>
 
                         <select
@@ -187,7 +216,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                             onChange={(e) => setSelectedEtapa(e.target.value)}
                         >
                             <option value="all">Todas las Etapas</option>
-                            {stages.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                            {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                         </select>
 
                         {/* Reset Filter Button (Optional but good UX, keeping consistent with clear filters icon if present) */}
