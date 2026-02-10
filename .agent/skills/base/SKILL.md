@@ -30,6 +30,10 @@ Al importar datos desde Excel (`Base5.xlsx` u otros), se deben seguir estas regl
   - Convertir cadenas vacías o inválidas a `0`.
   - Verificar: `monto > 0` si el proyecto está activo.
 
+### D. Fuentes de Datos para Dashboards
+- **Dashboard Proyectos**: Utiliza la tabla `proyectos-servicios` como matriz principal.
+- **Dashboard Becas**: Utiliza la tabla `becas` como matriz principal.
+
 ---
 
 ## 2. Esquema de Base de Datos (PostgreSQL/Supabase)
@@ -37,7 +41,8 @@ Al importar datos desde Excel (`Base5.xlsx` u otros), se deben seguir estas regl
 ### A. Identificadores (IDs)
 - **Tablas Maestras** (`regiones`, `etapas`, `modalidades`, `lineas`, `ejes`):
   - Usar **INTEGER** como Primary Key (`id`).
-  - **EVITAR** columnas redundantes como `numero` si el `id` ya cumple esa función.
+  - **OBLIGATORIO**: Incluir y poblar las columnas `numero`, `descripcion` y `fase` exactamente como aparecen en el Excel de origen.
+  - **NO** eliminar columnas auxiliares que vengan del Excel; la integridad de los datos de origen es prioritaria sobre la normalización estricta en este caso.
 - **Relaciones**: Las Foreign Keys deben ser del mismo tipo (`integer`).
 
 ### B. Consultas (SQL)
