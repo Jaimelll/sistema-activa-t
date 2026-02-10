@@ -81,6 +81,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       eje: p.ejes?.descripcion || 'Sin Eje',
       ejeId: p.eje_id, // Correct column: eje_id
       etapa: p.estado || 'Sin Etapa', // Map 'estado' (DB) to 'etapa' (Frontend)
+      etapaId: p.etapa_id, // Added: Mapped for execution filter
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       estado: p.estado || 'Activo',
       year: year,
@@ -240,6 +241,7 @@ export async function getBecasData(filters?: { periodo?: string; eje?: string; l
     eje: p.ejes?.descripcion || 'Sin Eje',
     ejeId: p.eje_id,
     etapa: p.estado || 'Sin Etapa',
+    etapaId: p.etapa_id, // Added: Mapped for execution filter
     institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
     estado: p.estado || 'Activo',
     year: p.año ? String(p.año) : 'Unknown',
