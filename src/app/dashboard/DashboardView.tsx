@@ -46,8 +46,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             // Execution Logic for Options
             const eid = Number(item.etapaId || item.etapa_id || 0);
             let matchExec = true;
-            if (selectedExecution === 'process') matchExec = eid !== 6;
-            if (selectedExecution === 'executed') matchExec = eid === 6;
+            if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
+            if (selectedExecution === 'executed') matchExec = eid === 6 || eid === 7;
 
             return matchYear && matchExec;
         });
@@ -86,8 +86,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             // Execution Filter
             const eid = Number(item.etapaId || item.etapa_id || 0);
             let matchExec = true;
-            if (selectedExecution === 'process') matchExec = eid !== 6;
-            if (selectedExecution === 'executed') matchExec = eid === 6;
+            // UPDATE: Executed now includes 6 (Ejecutado) and 7 (Resuelto)
+            if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
+            if (selectedExecution === 'executed') matchExec = eid === 6 || eid === 7;
 
             return matchYear && matchLinea && matchEje && matchEtapa && matchExec;
         });
