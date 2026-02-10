@@ -58,7 +58,10 @@ Al importar datos desde Excel (`Base5.xlsx` u otros), se deben seguir estas regl
 - **Problema**: Conflictos entre filtros de servidor (URL) y estado local causan dashboards vacíos.
 - **Solución**:
   1. **Cargar TODO**: El componente `page.tsx` debe recuperar el dataset completo inicial (sin filtros de servidor restrictivos).
-  2. **Filtrar en Cliente**: Dejar que React (`useMemo`) maneje el filtrado dinámico en el navegador. Esto garantiza que los selectores de "Eje" y "Linea" siempre tengan datos sobre los cuales trabajar.
+  2. **Filtrar en Cliente**: Dejar que React (`useMemo`) maneje el filtrado dinámico en el navegador.
+  3. **Filtros Robustos**: Al filtrar por estado o etapa, **SIEMPRE verificar tanto el ID como el Texto**.
+     - Ejemplo: `const isExecuted = id === 6 || status.toLowerCase() === 'ejecutado';`
+     - Esto previene errores si el mapeo de IDs falla silenciosamente.
 
 ### B. Dropdowns y Opciones
 - **Validación de Tipos**: Asegurar que los valores de los `option` (usualmente `number` por los ID enteros) coincidan estrictamente con los tipos de datos en el estado de React.
@@ -66,14 +69,17 @@ Al importar datos desde Excel (`Base5.xlsx` u otros), se deben seguir estas regl
 
 ---
 
-## 4. Estándares Visuales (UI/UX)
+## 4. Estándares Visuales y KPIs (UI/UX)
 
 - **Logo**: Altura fija de **85px**, filtros `contrast(1.1) saturate(1.2)`. Fondo blanco.
 - **Gráficos**:
   - Eje X rotado (-45°) para etiquetas largas.
   - Formato de moneda en Millones (ej. "S/ 1.5M").
   - Leyendas siempre visibles (`height: auto`).
-- **KPIs**: El indicador de dinero gastado debe llamarse **"Ejecutado"**.
+- **KPIs Definición**:
+  - **"Ejecutado"**: Antes de implementar, **CONFIRMAR con el usuario** la fórmula exacta.
+    - Contexto Activa-T: Usualmente refiere SOLO al `monto_contrapartida` (sin Fondoempleo) para proyectos activos.
+  - **Verificación Cruzada**: El valor en el Dashboard DEBE coincidir con un `SELECT SUM(...)` en Supabase. No confiar solo en la lógica del frontend.
 
 ---
 

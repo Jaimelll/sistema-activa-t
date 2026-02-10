@@ -22,6 +22,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
+    console.log('Verificación de Despliegue - Timestamp:', new Date().toISOString());
 
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
@@ -85,10 +86,12 @@ export default function DashboardView({ initialData, years = [], stages = [], li
 
             // Execution Filter
             const eid = Number(item.etapaId || item.etapa_id || 0);
+            const status = (item.estado || '').toLowerCase().trim();
+            const isExecuted = eid === 6 || eid === 7 || status === 'ejecutado' || status === 'resuelto';
+
             let matchExec = true;
-            // UPDATE: Executed now includes 6 (Ejecutado) and 7 (Resuelto)
-            if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
-            if (selectedExecution === 'executed') matchExec = eid === 6 || eid === 7;
+            if (selectedExecution === 'process') matchExec = !isExecuted;
+            if (selectedExecution === 'executed') matchExec = isExecuted;
 
             return matchYear && matchLinea && matchEje && matchEtapa && matchExec;
         });
@@ -279,8 +282,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                 // Users IS imported from lucide-react above.
                 />
                 <KPICard
-                    title="Ejecutado"
-                    value={`S/ ${(metrics.totalFondo + metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
+                    title="Ejecutado (Total)"
+                    value={`S/ ${(metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
                     icon={TrendingUp} // Or BarChart3
                 />
             </div>

@@ -67,10 +67,12 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
 
             // Execution Filter
             const eid = Number(item.etapaId || item.etapa_id || 0);
+            const status = (item.estado || '').toLowerCase().trim();
+            const isExecuted = eid === 6 || eid === 7 || status === 'ejecutado' || status === 'resuelto';
+
             let matchExec = true;
-            // UPDATE: Executed now includes 6 (Ejecutado) and 7 (Resuelto)
-            if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
-            if (selectedExecution === 'executed') matchExec = eid === 6 || eid === 7;
+            if (selectedExecution === 'process') matchExec = !isExecuted;
+            if (selectedExecution === 'executed') matchExec = isExecuted;
 
             return matchYear && matchLinea && matchEtapa && matchExec;
         });
@@ -247,7 +249,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                     icon={Users}
                 />
                 <KPICard
-                    title="Ejecutado"
+                    title="Ejecutado (Total)"
                     value={`S/ ${metrics.totalContra.toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
                     icon={TrendingUp}
                 />
