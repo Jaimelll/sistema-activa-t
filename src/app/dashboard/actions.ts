@@ -21,7 +21,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       lineas (descripcion),
       ejes (descripcion),
       regiones (descripcion),
-      instituciones_ejecutoras (nombre)
+      instituciones_ejecutoras (nombre),
+      modalidades (descripcion)
     `);
 
   // --- 1. Filter by Year (Periodo) ---
@@ -83,6 +84,9 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       etapa: p.estado || 'Sin Etapa', // Map 'estado' (DB) to 'etapa' (Frontend)
       etapaId: p.etapa_id, // Added: Mapped for execution filter
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
+      gestora: p.gestora || '', // Added: New field
+      modalidad: p.modalidades?.descripcion || 'Desconocido', // Added: Modality description
+      modalidadId: p.modalidad_id, // Added: Modality ID for filtering
       estado: p.estado || 'Activo',
       year: year,
       año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
