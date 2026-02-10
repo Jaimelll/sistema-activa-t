@@ -191,6 +191,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                                 setSelectedYear(e.target.value);
                                 setSelectedLinea('all');
                                 setSelectedEtapa('all');
+                                setSelectedExecution('all'); // Reset execution to show all statuses by default
                             }}
                         >
                             {years.map((y: any) => {

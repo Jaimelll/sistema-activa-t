@@ -215,6 +215,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                                 setSelectedLinea('all');
                                 setSelectedEje('all');
                                 setSelectedEtapa('all');
+                                setSelectedExecution('all'); // Reset execution to show all statuses by default
                             }}
                         >
                             {years.map((y: any) => {
