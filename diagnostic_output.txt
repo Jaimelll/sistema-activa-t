@@ -1,0 +1,77 @@
+Sheets: [
+  'proyecto_servicio',
+  'beca',
+  'institución ejecutora',
+  'avance',
+  'etapa',
+  'eje',
+  'linea',
+  'modalidad',
+  'beneficiarios',
+  'modalidad de ejecución',
+  'región'
+]
+Sheet "proyecto_servicio": 497 rows
+Headers "proyecto_servicio": [
+  'numero',
+  'periodo',
+  'eje',
+  'línea',
+  'nombre proyecto o servicio',
+  'institución ejecutora',
+  'gestora',
+  'código del proyecto',
+  'modalidad de ejecución',
+  'región',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'contrapartida ',
+  'etapa',
+  'avance'
+]
+Row 1 sample: {"numero":1,"periodo":2012,"eje":1,"línea":4,"nombre proyecto o servicio":"INCREMENTO DEL INGRESO Y EL EMPLEO MEDIANTE EL CULTIVO DE LA TARA EN LA MICROCUENCA DE YANAMAYO","institución ejecutora":"CARITAS HUARI","gestora":"CARITAS HUARI","código del proyecto":"C-11-01","modalidad de ejecución":"directa","región":"Áncash","cantidad de beneficiarios":600,"fondoempleo ":1673656.23,"contrapartida ":1559929.3,"etapa":"ejecutado","avance":1673656.23}
+Sheet "beca": 811 rows
+Headers "beca": [
+  'numero',
+  'periodo',
+  'eje',
+  'línea',
+  'nombre proyecto o servicio',
+  'institución ejecutora',
+  'código del proyecto',
+  'modalidad de ejecución',
+  'región',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'contrapartida ',
+  'etapa',
+  'avance'
+]
+Row 1 sample: {"numero":1,"periodo":2025,"eje":5,"línea":8,"nombre proyecto o servicio":"AGUILAR MACEDO INES","institución ejecutora":"Sin código","código del proyecto":60114600,"modalidad de ejecución":"directa","región":"Loreto","cantidad de beneficiarios":1,"fondoempleo ":66838,"contrapartida ":11871.200000000012,"etapa":"En ejecución","avance":0}
+Sheet "institución ejecutora": 4 rows
+Headers "institución ejecutora": [ 'CAMPOS DE INSTITUCION EJECUTORA' ]
+Row 1 sample: {"CAMPOS DE INSTITUCION EJECUTORA":"nombre"}
+Sheet "avance": 3 rows
+Headers "avance": [ 'CAMPOS DE INSTITUCION EJECUTORA' ]
+Row 1 sample: {"CAMPOS DE INSTITUCION EJECUTORA":"fecha"}
+Sheet "etapa": 7 rows
+Headers "etapa": [ 'Numero', 'descripcion', 'fase' ]
+Row 1 sample: {"Numero":1,"descripcion":"Por definir","fase":"concurso"}
+Sheet "eje": 6 rows
+Headers "eje": [ 'Numero', 'descripcion', 'fase' ]
+Row 1 sample: {"Numero":1,"descripcion":"Concursal Activate","fase":"Proyectos"}
+Sheet "linea": 10 rows
+Headers "linea": [ 'Numero', 'descripcion', 'fase' ]
+Row 1 sample: {"Numero":1,"descripcion":"Capacitación para Inserción Laboral","fase":"Proyectos"}
+Sheet "modalidad": 2 rows
+Headers "modalidad": [ 'Numero', 'descripcion' ]
+Row 1 sample: {"Numero":1,"descripcion":"Concurso"}
+Sheet "beneficiarios": 3 rows
+Headers "beneficiarios": [ 'Numero', 'descripcion' ]
+Row 1 sample: {"Numero":1,"descripcion":"Mayores de 18 años con énfasis en la población de grupos vulnerables"}
+Sheet "modalidad de ejecución": 2 rows
+Headers "modalidad de ejecución": [ 'Numero', 'descripcion' ]
+Row 1 sample: {"Numero":1,"descripcion":"directa"}
+Sheet "región": 522 rows
+Headers "región": [ 'Numero', 'descripcion' ]
+Row 1 sample: {"Numero":1,"descripcion":"Amazonas"}
