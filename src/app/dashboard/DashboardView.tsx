@@ -98,9 +98,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         });
     }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution]);
 
-    // Debug logging requested by user
-    console.log('Datos filtrados:', filteredData.length);
-    console.log('Sample filtered item:', filteredData[0]);
+    // Debug logging requested by user - REMOVED
+
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
@@ -183,7 +182,7 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             d.gestora.trim() !== '' &&
             Number(d.modalidadId) === 2
         );
-        console.log('Gestora Calculation - Indirect Data Length:', indirectData.length);
+
 
         indirectData.forEach(d => {
             const name = d.gestora;

@@ -241,12 +241,19 @@ async function importData() {
 
                 const { error } = await supabase.from(dbTable).upsert(payload, { onConflict: 'id' }); // Conflict on ID
                 if (error) {
-                    console.error(`Error row ID ${numeroID} in ${dbTable}:`, error.message);
+                    console.error(`Error row ID ${numeroID} in ${dbTable}:`);
+                    console.error(`  Error Message: ${error.message}`);
+                    console.error(`  Payload Payload:`, JSON.stringify(payload));
+                    // Check specifically for the UUID error
+                    if (error.message.includes('uuid')) {
+                        console.error('  POTENTIAL CAUSE: ID mismatch or FK mismatch.');
+                    }
                 } else {
                     count++;
+                    if (count % 50 === 0) console.log(`  Imported ${count} rows...`);
                 }
             }
-            console.log(`Imported ${count} records into ${dbTable}`);
+            console.log(`Imported ${count} records into ${dbTable} (Total Rows in Sheet: ${rows.length})`);
         };
 
         await processSheet('proyecto_servicio', 'proyectos_servicios', 'codigo_proyecto', 'nombre proyecto o servicio');
