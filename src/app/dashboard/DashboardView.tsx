@@ -157,6 +157,31 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
 
+    const projectsByLinea = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const lid = d.lineaId || d.linea_id || d.linea;
+            if (!map.has(lid)) map.set(lid, 0);
+            map.set(lid, map.get(lid) + 1);
+        });
+
+        return Array.from(map.entries()).map(([id, value]) => {
+            const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
+            const name = lineaObj ? lineaObj.label : `Línea ${id}`;
+            return { name, value };
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [filteredData, lines]);
+
+    const inversionByEstado = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const s = d.estado;
+            if (!map.has(s)) map.set(s, 0);
+            map.set(s, map.get(s) + (Number(d.monto_fondoempleo) || 0));
+        });
+        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    }, [filteredData]);
+
     const inversionByEje = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
@@ -173,6 +198,21 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             return { name, value };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
+
+    const inversionByLinea = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const lid = d.lineaId || d.linea_id || d.linea;
+            if (!map.has(lid)) map.set(lid, 0);
+            map.set(lid, map.get(lid) + (Number(d.monto_fondoempleo) || 0));
+        });
+
+        return Array.from(map.entries()).map(([id, value]) => {
+            const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
+            const name = lineaObj ? lineaObj.label : `Línea ${id}`;
+            return { name, value };
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [filteredData, lines]);
 
     const gestoraData = useMemo(() => {
         const map = new Map();
@@ -318,18 +358,61 @@ export default function DashboardView({ initialData, years = [], stages = [], li
             </div>
 
             {/* Charts Section */}
-            {/* Top Row: Donut Charts (50% each) */}
+
+            {/* Row 1: Quantities (3 Donuts) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* 1. Proyectos por Estado */}
                 <div>
-                    <StatusChart data={projectsByStatus} title="Proyectos por Estado" />
+                    <StatusChart
+                        data={projectsByStatus}
+                        title="Proyectos por Estado"
+                        legendStyle={{ fontSize: '10px' }}
+                    />
                 </div>
+                {/* 2. Proyectos por Eje */}
                 <div>
-                    <EjeChart data={projectsByEje} title="Proyectos por Eje" />
+                    <EjeChart
+                        data={projectsByEje}
+                        title="Proyectos por Eje"
+                        legendStyle={{ fontSize: '10px' }}
+                    />
                 </div>
+                {/* 3. Proyectos por Línea */}
+                <div>
+                    <EjeChart
+                        data={projectsByLinea}
+                        title="Proyectos por Línea"
+                        legendStyle={{ fontSize: '10px' }}
+                    />
+                </div>
+            </div>
+
+            {/* Row 2: Investments (3 Donuts) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* 4. Inversión por Estado */}
+                <div>
+                    <StatusChart
+                        data={inversionByEstado}
+                        title="Inversión por Estado"
+                        legendStyle={{ fontSize: '10px' }}
+                        tooltipFormat="currency"
+                    />
+                </div>
+                {/* 5. Inversión por Eje */}
                 <div>
                     <EjeChart
                         data={inversionByEje}
                         title="Inversión por Eje"
+                        legendStyle={{ fontSize: '10px' }}
+                        tooltipFormat="currency"
+                    />
+                </div>
+                {/* 6. Inversión por Línea */}
+                <div>
+                    <EjeChart
+                        data={inversionByLinea}
+                        title="Inversión por Línea"
+                        legendStyle={{ fontSize: '10px' }}
                         tooltipFormat="currency"
                     />
                 </div>
