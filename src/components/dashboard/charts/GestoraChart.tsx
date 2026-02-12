@@ -25,7 +25,7 @@ export function GestoraChart({ data }: GestoraChartProps) {
 
     return (
         <div className="card h-[600px] w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Instituciones Gestoras (Actualizado)</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Instituciones Gestoras</h3>
             <div className="h-[90%] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -33,8 +33,8 @@ export function GestoraChart({ data }: GestoraChartProps) {
                         layout="vertical"
                         margin={{
                             top: 5,
-                            right: 50,
-                            left: isMobile ? 120 : 10,
+                            right: 30, // Reduced right margin to give more space
+                            left: 10,
                             bottom: 5,
                         }}
                     >
@@ -51,13 +51,13 @@ export function GestoraChart({ data }: GestoraChartProps) {
                             dataKey="name"
                             type="category"
                             stroke="#6b7280"
-                            fontSize={9}
+                            fontSize={isMobile ? 9 : 11}
                             tickLine={false}
                             axisLine={false}
-                            width={280} // Increased width for long names
+                            width={isMobile ? 120 : 280} // Responsive width for labels
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', zIndex: 1000, maxWidth: '200px', whiteSpace: 'normal' }}
                             formatter={(value: number) => [`S/ ${value.toLocaleString()}`, 'Montos de proyectos']}
                         />
                         <Legend wrapperStyle={{ paddingTop: '10px' }} />
