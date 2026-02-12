@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState, useEffect } from 'react';
 
 interface GestoraChartProps {
     data: {
@@ -11,6 +12,17 @@ interface GestoraChartProps {
 }
 
 export function GestoraChart({ data }: GestoraChartProps) {
+
+    // Basic responsiveness check
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     return (
         <div className="card h-[600px] w-full">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Instituciones Gestoras (Actualizado)</h3>
@@ -22,7 +34,7 @@ export function GestoraChart({ data }: GestoraChartProps) {
                         margin={{
                             top: 5,
                             right: 50,
-                            left: 10,
+                            left: isMobile ? 120 : 10,
                             bottom: 5,
                         }}
                     >
@@ -39,7 +51,7 @@ export function GestoraChart({ data }: GestoraChartProps) {
                             dataKey="name"
                             type="category"
                             stroke="#6b7280"
-                            fontSize={11}
+                            fontSize={9}
                             tickLine={false}
                             axisLine={false}
                             width={280} // Increased width for long names

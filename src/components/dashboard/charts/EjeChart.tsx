@@ -30,7 +30,7 @@ export function EjeChart({ data, title = "Proyectos por Eje", legendStyle = {}, 
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', zIndex: 1000 }}
                             formatter={(value: number) =>
                                 tooltipFormat === 'currency'
                                     ? `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`

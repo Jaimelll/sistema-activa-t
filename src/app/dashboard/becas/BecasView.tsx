@@ -11,6 +11,8 @@ import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lu
 import Image from 'next/image';
 import { clsx } from 'clsx';
 
+import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
+
 interface BecasViewProps {
     initialData: any[];
     years?: any[];
@@ -109,12 +111,32 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         return Array.from(map.values());
     }, [filteredData]);
 
+    const becasByRegionCount = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const r = d.region;
+            if (!map.has(r)) map.set(r, 0);
+            map.set(r, map.get(r) + 1);
+        });
+        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    }, [filteredData]);
+
     const becasByStatus = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const s = d.estado;
             if (!map.has(s)) map.set(s, 0);
             map.set(s, map.get(s) + 1);
+        });
+        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    }, [filteredData]);
+
+    const inversionByEstado = useMemo(() => {
+        const map = new Map();
+        filteredData.forEach(d => {
+            const s = d.estado;
+            if (!map.has(s)) map.set(s, 0);
+            map.set(s, map.get(s) + (Number(d.monto_fondoempleo) || 0));
         });
         return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
     }, [filteredData]);
@@ -257,19 +279,61 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
             </div>
 
             {/* Charts Section */}
-            {/* Top Row: Donut Charts (50% each) */}
+
+            {/* Row 1: Quantities (3 Donuts) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* 1. Becas por Estado */}
                 <div>
-                    <StatusChart data={becasByStatus} title="Becas por Estado" />
+                    <StatusChart
+                        data={becasByStatus}
+                        title="Becas por Estado"
+                        legendStyle={{ fontSize: '10px' }}
+                    />
                 </div>
+                {/* 2. Becas por Línea (Using EjeChart generic) */}
                 <div>
-                    <EjeChart data={becasByLinea} title="Becas por Línea" legendStyle={{ height: 'auto' }} />
+                    <EjeChart
+                        data={becasByLinea}
+                        title="Becas por Línea"
+                        legendStyle={{ fontSize: '10px', height: 'auto' }}
+                    />
                 </div>
+                {/* 3. Becas por Región */}
+                <div>
+                    <EjeChart
+                        data={becasByRegionCount}
+                        title="Becas por Región"
+                        legendStyle={{ fontSize: '10px' }}
+                    />
+                </div>
+            </div>
+
+            {/* Row 2: Investments (3 Donuts) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* 4. Inversión por Estado */}
+                <div>
+                    <StatusChart
+                        data={inversionByEstado}
+                        title="Inversión por Estado"
+                        legendStyle={{ fontSize: '10px' }}
+                        tooltipFormat="currency"
+                    />
+                </div>
+                {/* 5. Inversión por Línea */}
                 <div>
                     <EjeChart
                         data={inversionByLinea}
                         title="Inversión por Línea"
-                        legendStyle={{ height: 'auto' }}
+                        legendStyle={{ fontSize: '10px', height: 'auto' }}
+                        tooltipFormat="currency"
+                    />
+                </div>
+                {/* 6. Inversión por Región */}
+                <div>
+                    <EjeChart
+                        data={fundingByRegion.map((r: any) => ({ name: r.name, value: r.fondoempleo }))}
+                        title="Inversión por Región (FE)"
+                        legendStyle={{ fontSize: '10px' }}
                         tooltipFormat="currency"
                     />
                 </div>
