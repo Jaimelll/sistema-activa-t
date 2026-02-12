@@ -29,7 +29,9 @@ export function StatusChart({ data, title = "Proyectos por Estado", legendStyle 
                             ))}
                         </Pie>
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', zIndex: 1000 }}
+                            allowEscapeViewBox={{ x: true, y: true }}
+                            wrapperStyle={{ zIndex: 1000 }}
+                            contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', maxWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}
                             formatter={(value: number) =>
                                 tooltipFormat === 'currency'
                                     ? `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
