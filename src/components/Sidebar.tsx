@@ -16,8 +16,8 @@ export function Sidebar() {
     const supabase = createClient();
 
     const menuItems = [
-        { name: 'Dashboard Proyectos', icon: LayoutDashboard, href: '/dashboard' },
-        { name: 'Dashboard Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
+        { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },

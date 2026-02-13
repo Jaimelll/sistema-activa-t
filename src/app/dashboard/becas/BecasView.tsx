@@ -103,10 +103,11 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         const map = new Map();
         filteredData.forEach(d => {
             const r = d.region;
-            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0 });
+            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, count: 0, tooltipName: `Región ${r}` });
             const entry = map.get(r);
             entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
             entry.contrapartida += (Number(d.monto_contrapartida) || 0);
+            entry.count += 1;
         });
         return Array.from(map.values());
     }, [filteredData]);
@@ -115,44 +116,77 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         const map = new Map();
         filteredData.forEach(d => {
             const r = d.region;
-            if (!map.has(r)) map.set(r, 0);
-            map.set(r, map.get(r) + 1);
+            if (!map.has(r)) map.set(r, { count: 0, financing: 0 });
+            const entry = map.get(r);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
         });
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+        return Array.from(map.entries()).map(([name, data]: any) => ({
+            name,
+            value: data.count,
+            financing: data.financing,
+            tooltipName: `Región ${name}`
+        }));
     }, [filteredData]);
 
     const becasByStatus = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const s = d.estado;
-            if (!map.has(s)) map.set(s, 0);
-            map.set(s, map.get(s) + 1);
+            const id = d.etapaId || d.etapa_id || 0; // Capture ID
+            if (!map.has(s)) map.set(s, { count: 0, financing: 0, id });
+            const entry = map.get(s);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
+            // Ensure ID is set if missing in first occurrence (unlikely but safe)
+            if (!entry.id && id) entry.id = id;
         });
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+        return Array.from(map.entries()).map(([name, data]: any) => ({
+            name: `${data.id} - ${name}`, // Legend: ID - Name
+            value: data.count,
+            financing: data.financing,
+            tooltipName: `Estado ${data.id}` // Tooltip: Estado ID
+        })).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
 
     const inversionByEstado = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const s = d.estado;
-            if (!map.has(s)) map.set(s, 0);
-            map.set(s, map.get(s) + (Number(d.monto_fondoempleo) || 0));
+            const id = d.etapaId || d.etapa_id || 0;
+            if (!map.has(s)) map.set(s, { value: 0, id, count: 0 });
+            const entry = map.get(s);
+            entry.value += (Number(d.monto_fondoempleo) || 0);
+            entry.count += 1;
+            if (!entry.id && id) entry.id = id;
         });
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+        return Array.from(map.entries()).map(([name, data]: any) => ({
+            name: `${data.id} - ${name}`,
+            value: data.value,
+            count: data.count,
+            tooltipName: `Estado ${data.id}`
+        })).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
 
     const becasByLinea = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const lid = d.lineaId || d.linea_id || d.linea;
-            if (!map.has(lid)) map.set(lid, 0);
-            map.set(lid, map.get(lid) + 1);
+            if (!map.has(lid)) map.set(lid, { count: 0, financing: 0 });
+            const entry = map.get(lid);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
         });
 
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
             const name = lineaObj ? lineaObj.label : `Línea ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.count,
+                financing: data.financing,
+                tooltipName: `Línea ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, lines]);
 
@@ -160,16 +194,22 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
         const map = new Map();
         filteredData.forEach(d => {
             const lid = d.lineaId || d.linea_id || d.linea;
-            if (!map.has(lid)) map.set(lid, 0);
+            if (!map.has(lid)) map.set(lid, { value: 0, count: 0 });
             const current = map.get(lid);
             // Sumar montos
-            map.set(lid, current + (Number(d.monto_fondoempleo) || 0));
+            current.value += (Number(d.monto_fondoempleo) || 0);
+            current.count += 1;
         });
 
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
             const name = lineaObj ? lineaObj.label : `Línea ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.value,
+                count: data.count,
+                tooltipName: `Línea ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, lines]);
 
@@ -287,7 +327,8 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                     <StatusChart
                         data={becasByStatus}
                         title="Becas por Estado"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
+                        unitLabel="becas"
                     />
                 </div>
                 {/* 2. Becas por Línea (Using EjeChart generic) */}
@@ -296,6 +337,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                         data={becasByLinea}
                         title="Becas por Línea"
                         legendStyle={{ fontSize: '10px', height: 'auto' }}
+                        unitLabel="becas"
                     />
                 </div>
                 {/* 3. Becas por Región */}
@@ -303,7 +345,8 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                     <EjeChart
                         data={becasByRegionCount}
                         title="Becas por Región"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
+                        unitLabel="becas"
                     />
                 </div>
             </div>
@@ -315,8 +358,9 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                     <StatusChart
                         data={inversionByEstado}
                         title="Inversión por Estado"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
                         tooltipFormat="currency"
+                        unitLabel="becas"
                     />
                 </div>
                 {/* 5. Inversión por Línea */}
@@ -324,17 +368,19 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                     <EjeChart
                         data={inversionByLinea}
                         title="Inversión por Línea"
-                        legendStyle={{ fontSize: '10px', height: 'auto' }}
+                        legendStyle={{ fontSize: '14px', height: 'auto' }}
                         tooltipFormat="currency"
+                        unitLabel="becas"
                     />
                 </div>
                 {/* 6. Inversión por Región */}
                 <div>
                     <EjeChart
-                        data={fundingByRegion.map((r: any) => ({ name: r.name, value: r.fondoempleo }))}
+                        data={fundingByRegion.map((r: any) => ({ name: r.name, value: r.fondoempleo, count: r.count, tooltipName: r.tooltipName }))}
                         title="Inversión por Región (FE)"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
                         tooltipFormat="currency"
+                        unitLabel="becas"
                     />
                 </div>
             </div>
