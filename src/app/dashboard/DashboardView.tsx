@@ -135,25 +135,41 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         const map = new Map();
         filteredData.forEach(d => {
             const s = d.estado;
-            if (!map.has(s)) map.set(s, 0);
-            map.set(s, map.get(s) + 1);
+            const id = d.etapaId || d.etapa_id || 0;
+            if (!map.has(s)) map.set(s, { count: 0, financing: 0, id });
+            const entry = map.get(s);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
+            if (!entry.id && id) entry.id = id;
         });
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+        return Array.from(map.entries()).map(([name, data]: any) => ({
+            name: `${data.id} - ${name}`,
+            value: data.count,
+            financing: data.financing,
+            tooltipName: `Estado ${data.id}`
+        })).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
 
     const projectsByEje = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const eid = d.ejeId || d.eje_id || d.eje;
-            if (!map.has(eid)) map.set(eid, 0);
-            map.set(eid, map.get(eid) + 1);
+            if (!map.has(eid)) map.set(eid, { count: 0, financing: 0 });
+            const entry = map.get(eid);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
         });
 
         // Map ID to Label from ejesList
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
             const name = ejeObj ? ejeObj.label : `Eje ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.count,
+                financing: data.financing,
+                tooltipName: `Eje ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
 
@@ -161,14 +177,21 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         const map = new Map();
         filteredData.forEach(d => {
             const lid = d.lineaId || d.linea_id || d.linea;
-            if (!map.has(lid)) map.set(lid, 0);
-            map.set(lid, map.get(lid) + 1);
+            if (!map.has(lid)) map.set(lid, { count: 0, financing: 0 });
+            const entry = map.get(lid);
+            entry.count += 1;
+            entry.financing += (Number(d.monto_fondoempleo) || 0);
         });
 
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
             const name = lineaObj ? lineaObj.label : `Línea ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.count,
+                financing: data.financing,
+                tooltipName: `Línea ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, lines]);
 
@@ -176,26 +199,42 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         const map = new Map();
         filteredData.forEach(d => {
             const s = d.estado;
-            if (!map.has(s)) map.set(s, 0);
-            map.set(s, map.get(s) + (Number(d.monto_fondoempleo) || 0));
+            const id = d.etapaId || d.etapa_id || 0;
+            if (!map.has(s)) map.set(s, { value: 0, id, count: 0 });
+            const entry = map.get(s);
+            entry.value += (Number(d.monto_fondoempleo) || 0);
+            entry.count += 1;
+            if (!entry.id && id) entry.id = id;
         });
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+        return Array.from(map.entries()).map(([name, data]: any) => ({
+            name: `${data.id} - ${name}`,
+            value: data.value,
+            count: data.count,
+            tooltipName: `Estado ${data.id}`
+        })).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
 
     const inversionByEje = useMemo(() => {
         const map = new Map();
         filteredData.forEach(d => {
             const eid = d.ejeId || d.eje_id || d.eje;
-            if (!map.has(eid)) map.set(eid, 0);
+            if (!map.has(eid)) map.set(eid, { value: 0, count: 0 });
             // Sumar montos
-            map.set(eid, map.get(eid) + (Number(d.monto_fondoempleo) || 0));
+            const current = map.get(eid);
+            current.value += (Number(d.monto_fondoempleo) || 0);
+            current.count += 1;
         });
 
         // Map ID to Label from ejesList
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
             const name = ejeObj ? ejeObj.label : `Eje ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.value,
+                count: data.count,
+                tooltipName: `Eje ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, ejesList]);
 
@@ -203,14 +242,21 @@ export default function DashboardView({ initialData, years = [], stages = [], li
         const map = new Map();
         filteredData.forEach(d => {
             const lid = d.lineaId || d.linea_id || d.linea;
-            if (!map.has(lid)) map.set(lid, 0);
-            map.set(lid, map.get(lid) + (Number(d.monto_fondoempleo) || 0));
+            if (!map.has(lid)) map.set(lid, { value: 0, count: 0 });
+            const current = map.get(lid);
+            current.value += (Number(d.monto_fondoempleo) || 0);
+            current.count += 1;
         });
 
-        return Array.from(map.entries()).map(([id, value]) => {
+        return Array.from(map.entries()).map(([id, data]: any) => {
             const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
             const name = lineaObj ? lineaObj.label : `Línea ${id}`;
-            return { name, value };
+            return {
+                name,
+                value: data.value,
+                count: data.count,
+                tooltipName: `Línea ${id}`
+            };
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, lines]);
 
@@ -366,7 +412,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <StatusChart
                         data={projectsByStatus}
                         title="Proyectos por Estado"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
+                        unitLabel="proyectos"
                     />
                 </div>
                 {/* 2. Proyectos por Eje */}
@@ -374,7 +421,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <EjeChart
                         data={projectsByEje}
                         title="Proyectos por Eje"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
+                        unitLabel="proyectos"
                     />
                 </div>
                 {/* 3. Proyectos por Línea */}
@@ -382,7 +430,8 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <EjeChart
                         data={projectsByLinea}
                         title="Proyectos por Línea"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
+                        unitLabel="proyectos"
                     />
                 </div>
             </div>
@@ -394,8 +443,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <StatusChart
                         data={inversionByEstado}
                         title="Inversión por Estado"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
                         tooltipFormat="currency"
+                        unitLabel="proyectos"
                     />
                 </div>
                 {/* 5. Inversión por Eje */}
@@ -403,8 +453,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <EjeChart
                         data={inversionByEje}
                         title="Inversión por Eje"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
                         tooltipFormat="currency"
+                        unitLabel="proyectos"
                     />
                 </div>
                 {/* 6. Inversión por Línea */}
@@ -412,8 +463,9 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                     <EjeChart
                         data={inversionByLinea}
                         title="Inversión por Línea"
-                        legendStyle={{ fontSize: '10px' }}
+                        legendStyle={{ fontSize: '14px' }}
                         tooltipFormat="currency"
+                        unitLabel="proyectos"
                     />
                 </div>
             </div>
