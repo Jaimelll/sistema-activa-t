@@ -10,6 +10,7 @@ import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lu
 import Image from 'next/image';
 import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
+import { TimelineChart } from '@/components/dashboard/charts/TimelineChart';
 
 interface DashboardViewProps {
     initialData: any[];
@@ -17,9 +18,10 @@ interface DashboardViewProps {
     stages?: string[];
     lines?: any[];
     ejesList?: any[];
+    timelineData?: any[];
 }
 
-export default function DashboardView({ initialData, years = [], stages = [], lines = [], ejesList = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [] }: DashboardViewProps) {
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
@@ -468,6 +470,11 @@ export default function DashboardView({ initialData, years = [], stages = [], li
                         unitLabel="proyectos"
                     />
                 </div>
+            </div>
+
+            {/* Timeline Chart */}
+            <div className="w-full">
+                <TimelineChart data={timelineData} />
             </div>
 
             {/* Bottom Row: Bar Chart (100% width) */}
