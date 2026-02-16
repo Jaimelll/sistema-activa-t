@@ -1,0 +1,8 @@
+[dotenv@17.2.4] injecting env (4) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+--- Importing Avance Proyecto from Base7.xlsx ---
+Total raw rows in Excel: 500
+Found header 'Aprobación de bases' at row index 0.
+
+Import completed.
+Inserted: 96
+Errors: 0
