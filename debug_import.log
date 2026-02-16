@@ -1,0 +1,71 @@
+[dotenv@17.2.4] injecting env (5) from .env -- tip: ­ƒöæ add access controls to secrets: https://dotenvx.com/ops
+--- Iniciando Importaci├│n de Avance Proyecto (6 Etapas) ---
+Truncando tabla avance_proyecto...
+RPC truncate failed, trying delete all... Could not find the function public.truncate_avance_proyecto without parameters in the schema cache
+Tabla truncada/limpiada.
+Leyendo archivo: C:\trabajo\fondo\Base7.xlsx
+Total filas en Excel: 497
+Proyectos mapeados: 497
+Sample DB Map Keys: [ 'C-12-29', 'C-12-32', 'C-12-33', 'C-12-36', 'C-12-37' ]
+First Row Keys: [
+  'numero',
+  'periodo',
+  'eje',
+  'l├¡nea',
+  'nombre proyecto o servicio',
+  'instituci├│n ejecutora',
+  'gestora',
+  'c├│digo del proyecto',
+  'modalidad de ejecuci├│n',
+  'regi├│n',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'contrapartida ',
+  'etapa',
+  'avance'
+]
+First Row Values: {
+  numero: 1,
+  periodo: 2012,
+  eje: 1,
+  'l├¡nea': 4,
+  'nombre proyecto o servicio': 'INCREMENTO DEL INGRESO Y EL EMPLEO MEDIANTE EL CULTIVO DE LA TARA EN LA MICROCUENCA DE YANAMAYO',
+  'instituci├│n ejecutora': 'CARITAS HUARI',
+  gestora: 'CARITAS HUARI',
+  'c├│digo del proyecto': 'C-11-01',
+  'modalidad de ejecuci├│n': 'directa',
+  'regi├│n': '├üncash',
+  'cantidad de beneficiarios': 600,
+  'fondoempleo ': 1673656.23,
+  'contrapartida ': 1559929.3,
+  etapa: 'ejecutado',
+  avance: 1673656.23
+}
+Registros listos para insertar: 338
+Proyectos omitidos (sin match): 33
+Error insertando lote 0: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'comentario' column of 'avance_proyecto' in the schema cache"
+}
+Error insertando lote 100: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'comentario' column of 'avance_proyecto' in the schema cache"
+}
+Error insertando lote 200: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'comentario' column of 'avance_proyecto' in the schema cache"
+}
+Error insertando lote 300: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'comentario' column of 'avance_proyecto' in the schema cache"
+}
+
+Importaci├│n completada.
