@@ -1,0 +1,8 @@
+[dotenv@17.2.4] injecting env (4) from .env.local -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+--- Importing Avance Proyecto from Base7.xlsx ---
+Total raw rows in Excel: 500
+Found header 'Aprobación de bases' at row index 0.
+
+Import completed.
+Inserted: 0
+Errors: 96

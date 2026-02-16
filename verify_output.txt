@@ -1,0 +1,14 @@
+[dotenv@17.2.4] injecting env (4) from .env.local -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+--- Verifying ID Mapping ---
+DB Record Count: 497
+Min ID: 1
+Max ID: 497
+First 5 IDs: 1, 2, 3, 4, 5
+Excel Row Count: 497
+--- Sample Comparison ---
+Excel Row 0 -> Numero: 1, Codigo: N/A
+   DB match for ID 1: Codigo=C-11-01 Match=false
+Excel Row 1 -> Numero: 2, Codigo: N/A
+   DB match for ID 2: Codigo=C-11-02 Match=false
+Excel Row 2 -> Numero: 3, Codigo: N/A
+   DB match for ID 3: Codigo=C-11-03 Match=false

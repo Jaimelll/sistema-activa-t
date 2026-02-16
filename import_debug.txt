@@ -1,0 +1,42 @@
+[dotenv@17.2.4] injecting env (4) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+--- Importing Avance Proyecto from Base7.xlsx ---
+Total rows in Excel: 497
+Loaded 497 valid project IDs from projects_servicios.
+DEBUG: First Row Keys: [
+  'numero',
+  'periodo',
+  'eje',
+  'línea',
+  'nombre proyecto o servicio',
+  'institución ejecutora',
+  'gestora',
+  'código del proyecto',
+  'modalidad de ejecución',
+  'región',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'contrapartida ',
+  'etapa',
+  'avance'
+]
+DEBUG: First Row Data: {
+  "numero": 1,
+  "periodo": 2012,
+  "eje": 1,
+  "línea": 4,
+  "nombre proyecto o servicio": "INCREMENTO DEL INGRESO Y EL EMPLEO MEDIANTE EL CULTIVO DE LA TARA EN LA MICROCUENCA DE YANAMAYO",
+  "institución ejecutora": "CARITAS HUARI",
+  "gestora": "CARITAS HUARI",
+  "código del proyecto": "C-11-01",
+  "modalidad de ejecución": "directa",
+  "región": "Áncash",
+  "cantidad de beneficiarios": 600,
+  "fondoempleo ": 1673656.23,
+  "contrapartida ": 1559929.3,
+  "etapa": "ejecutado",
+  "avance": 1673656.23
+}
+
+Import completed.
+Inserted: 0
+Errors: 0
