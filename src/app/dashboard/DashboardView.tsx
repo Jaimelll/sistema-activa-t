@@ -289,6 +289,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a, b) => b.value - a.value);
     }, [filteredData]);
 
+    // Linkage Fix: Filter timelineData based on filteredData IDs
+    const filteredTimelineData = useMemo(() => {
+        const activeIds = new Set(filteredData.map(d => d.id));
+        return timelineData.filter(t => activeIds.has(t.id));
+    }, [filteredData, timelineData]);
+
     return (
         <div className="space-y-6">
             {/* Header & Filters */}
@@ -474,7 +480,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
             {/* Timeline Chart */}
             <div className="w-full">
-                <TimelineChart data={timelineData} />
+                <TimelineChart data={filteredTimelineData} />
             </div>
 
             {/* Bottom Row: Bar Chart (100% width) */}
