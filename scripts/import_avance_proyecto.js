@@ -18,12 +18,13 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function importAvance() {
     console.log('--- Importing Avance Proyecto from Base7.xlsx ---');
 
-    if (!fs.existsSync('Base7.xlsx')) {
-        console.error('Error: Base7.xlsx not found!');
+    const filePath = 'c:/trabajo/fondo/Base7.xlsx';
+    if (!fs.existsSync(filePath)) {
+        console.error(`Error: ${filePath} not found!`);
         return;
     }
 
-    const workbook = xlsx.readFile('Base7.xlsx');
+    const workbook = xlsx.readFile(filePath);
     const sheetName = 'proyecto_servicio';
     if (!workbook.Sheets[sheetName]) {
         console.error(`Error: Sheet '${sheetName}' not found!`);

@@ -289,3 +289,47 @@ export async function getEtapasBecas() {
 
   return Array.from(new Set(data.map((d: any) => d.estado))).filter(Boolean).sort();
 }
+
+export async function getTimelineData() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('proyectos_servicios')
+    .select(`
+      id,
+      nombre,
+      estado,
+      etapa_id,
+      eje_id,
+      linea_id,
+      ejes (descripcion),
+      lineas (descripcion),
+      avance_proyecto (
+        fecha,
+        etapa_id
+      )
+    `)
+    .not('estado', 'ilike', 'no habilitada');
+
+  if (error) {
+    console.error("Error fetching timeline data:", error);
+    return [];
+  }
+
+  // Flatten and Format Data
+  return data.map((p: any) => ({
+    id: p.id,
+    nombre: p.nombre,
+    estado: p.estado,
+    eje_id: p.eje_id, // Added ID
+    linea_id: p.linea_id, // Added ID
+    eje: p.ejes?.descripcion || `Eje ${p.eje_id}`,
+    linea: p.lineas?.descripcion || `Línea ${p.linea_id}`,
+    avances: p.avance_proyecto.map((a: any) => ({
+      fecha: a.fecha,
+      etapa_id: a.etapa_id
+    }))
+  }));
+}
