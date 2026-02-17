@@ -306,25 +306,26 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* Header & Filters */}
             <div className="flex flex-col space-y-4 mb-6">
 
-                {/* Fila Superior: Logo + Filtros (ALINEADOS A LA IZQUIERDA) */}
-                <div className="flex flex-row items-center justify-start gap-6">
+                {/* Fila Superior: Logo + Filtros (Responsive) */}
+                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
 
                     {/* 1. Logo */}
                     <img
                         src="/fondoempleo.jpg"
                         alt="Fondoempleo"
-                        className="h-[85px] object-contain"
+                        className="h-[85px] object-contain flex-shrink-0"
                         style={{
                             filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
                             imageRendering: 'crisp-edges'
                         }}
                     />
 
-                    {/* 2. Contenedor de Filtros (Pegado al logo) */}
-                    <div className="flex flex-row items-center gap-4">
-                        {/* EXECUTION FILTER */}
+                    {/* 2. Contenedor de Filtros (Grid Responsive) */}
+                    <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                        {/* 1. Estado (Execution) */}
                         <select
-                            className="input py-1 text-sm border-gray-300 w-32 font-medium text-blue-900 bg-blue-50"
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full font-medium text-blue-900 bg-blue-50 rounded shadow-sm"
                             value={selectedExecution}
                             onChange={(e) => setSelectedExecution(e.target.value)}
                         >
@@ -333,47 +334,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             <option value="executed">Ejecutados</option>
                         </select>
 
+                        {/* 2. Etapa */}
                         <select
-                            className="input py-1 text-sm border-gray-300 w-32"
-                            value={selectedYear}
-                            onChange={(e) => {
-                                setSelectedYear(e.target.value);
-                                // Reset other filters on year change to avoid dead ends
-                                setSelectedLinea('all');
-                                setSelectedEje('all');
-                                setSelectedEtapa('all');
-                                setSelectedEtapa('all');
-                                setSelectedExecution('all'); // Reset execution to show all statuses by default
-                                setSelectedModalidad('all');
-                            }}
-                        >
-                            {years.map((y: any) => {
-                                const val = y.value ?? y;
-                                const lab = y.label ?? y;
-                                return <option key={val} value={val}>{lab}</option>
-                            })}
-                        </select>
-
-                        <select
-                            className="input py-1 text-sm border-gray-300 w-48"
-                            value={selectedLinea}
-                            onChange={(e) => setSelectedLinea(e.target.value)}
-                        >
-                            <option value="all">Todas las Líneas</option>
-                            {availableFilters.dynamicLineas.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
-                        </select>
-
-                        <select
-                            className="input py-1 text-sm border-gray-300 w-48"
-                            value={selectedEje}
-                            onChange={(e) => setSelectedEje(e.target.value)}
-                        >
-                            <option value="all">Todos los Ejes</option>
-                            {availableFilters.dynamicEjes.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
-                        </select>
-
-                        <select
-                            className="input py-1 text-sm border-gray-300 w-48"
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm"
                             value={selectedEtapa}
                             onChange={(e) => setSelectedEtapa(e.target.value)}
                         >
@@ -381,21 +344,63 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                         </select>
 
+                        {/* 3. Año */}
                         <select
-                            className="input py-1 text-sm border-gray-300 w-48"
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            value={selectedYear}
+                            onChange={(e) => {
+                                setSelectedYear(e.target.value);
+                                // Reset other filters on year change
+                                setSelectedLinea('all');
+                                setSelectedEje('all');
+                                setSelectedEtapa('all');
+                                setSelectedExecution('all');
+                                setSelectedModalidad('all');
+                            }}
+                        >
+                            <option value="" disabled>Seleccionar Año</option>
+                            {years.map((y: any) => {
+                                const val = y.value ?? y;
+                                const lab = y.label ?? y;
+                                return <option key={val} value={val}>{lab}</option>
+                            })}
+                        </select>
+
+                        {/* 4. Eje */}
+                        <select
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm"
+                            value={selectedEje}
+                            onChange={(e) => setSelectedEje(e.target.value)}
+                        >
+                            <option value="all">Todos los Ejes</option>
+                            {availableFilters.dynamicEjes.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
+                        </select>
+
+                        {/* 5. Línea */}
+                        <select
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm"
+                            value={selectedLinea}
+                            onChange={(e) => setSelectedLinea(e.target.value)}
+                        >
+                            <option value="all">Todas las Líneas</option>
+                            {availableFilters.dynamicLineas.map((l: any) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                        </select>
+
+                        {/* 6. Modalidad */}
+                        <select
+                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm"
                             value={selectedModalidad}
                             onChange={(e) => setSelectedModalidad(e.target.value)}
                         >
                             <option value="all">Todas las Modalidades</option>
                             {modalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
-
-                        {/* Reset Filter Button (Optional but good UX, keeping consistent with clear filters icon if present) */}
-                        <div className="flex items-center px-2 text-gray-400">
-                            <Filter className="w-5 h-5" />
-                        </div>
                     </div>
 
+                    {/* Reset Button - Hidden but kept structure if needed later, or integrated into logic */}
+                    {/* <div className="hidden lg:flex items-center px-2 text-gray-400">
+                        <Filter className="w-5 h-5" />
+                    </div> */}
                 </div>
             </div>
 
