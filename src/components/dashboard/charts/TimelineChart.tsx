@@ -215,7 +215,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         {d.d2_safe > ONE_DAY && (
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                                <span>Actos Previos: {formatDate(d.date2)} - {d.date3 ? formatDate(d.date3) : 'Hoy'}</span>
+                                <span>Lanzamiento: {formatDate(d.date2)} - {d.date3 ? formatDate(d.date3) : 'Hoy'}</span>
                             </div>
                         )}
                         {d.d3_safe > ONE_DAY && (
@@ -311,7 +311,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         </Bar>
 
                         {/* 2. Actos (Emerald) */}
-                        <Bar dataKey="d2_safe" stackId="a" name="Actos Previos" fill={COLORS.actos} minPointSize={0}>
+                        <Bar dataKey="d2_safe" stackId="a" name="Lanzamiento" fill={COLORS.actos} minPointSize={0}>
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d2-${index}`} fill={d.d2_safe > 0 ? COLORS.actos : 'transparent'} stroke="none" />
                             ))}
