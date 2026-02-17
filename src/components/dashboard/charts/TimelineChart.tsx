@@ -47,8 +47,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const ejeName = project.eje || `Eje ${ejeId}`;
             // Use literal "Línea" + ID as requested, separate from description
 
-            // New Key Format: [Número Eje].- [Nombre Eje] - Línea [Número Línea]
-            const key = `${ejeId}.- ${ejeName} - Línea ${lineaId}`;
+            // New Key Format: [Date] | [Número Eje].- [Nombre Eje] - Línea [Número Línea]
+            const key = `${dateStr} | ${ejeId}.- ${ejeName} - Línea ${lineaId}`;
 
             if (!groups.has(key)) {
                 groups.set(key, {
@@ -192,7 +192,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
     // Helper to clean Y Axis Label
     const formatYAxis = (key: string) => {
-        return key; // Return raw key as it is now formatted correctly
+        return key.split(' | ')[1] || key;
     };
 
     const ONE_DAY = 86400000;
@@ -270,7 +270,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
     return (
         <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo.</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo</h3>
             </div>
 
             <div className="w-full" style={{ height: Math.max(500, processedData.length * 70) + 'px' }}>
