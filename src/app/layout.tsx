@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Sistema ACTIVA-T',
+  title: 'Sistema FONDOEMPLEO',
   description: 'Gestión de proyectos Fondoempleo',
 }
 
