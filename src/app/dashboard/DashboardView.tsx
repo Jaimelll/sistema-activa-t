@@ -202,70 +202,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         }).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData, lines]);
 
-    const inversionByEstado = useMemo(() => {
-        const map = new Map();
-        filteredData.forEach(d => {
-            const s = d.estado;
-            const id = d.etapaId || d.etapa_id || 0;
-            if (!map.has(s)) map.set(s, { value: 0, id, count: 0 });
-            const entry = map.get(s);
-            entry.value += (Number(d.monto_fondoempleo) || 0);
-            entry.count += 1;
-            if (!entry.id && id) entry.id = id;
-        });
-        return Array.from(map.entries()).map(([name, data]: any) => ({
-            name: `${data.id} - ${name}`,
-            value: data.value,
-            count: data.count,
-            tooltipName: `Estado ${data.id}`
-        })).sort((a, b) => a.name.localeCompare(b.name));
-    }, [filteredData]);
 
-    const inversionByEje = useMemo(() => {
-        const map = new Map();
-        filteredData.forEach(d => {
-            const eid = d.ejeId || d.eje_id || d.eje;
-            if (!map.has(eid)) map.set(eid, { value: 0, count: 0 });
-            // Sumar montos
-            const current = map.get(eid);
-            current.value += (Number(d.monto_fondoempleo) || 0);
-            current.count += 1;
-        });
-
-        // Map ID to Label from ejesList
-        return Array.from(map.entries()).map(([id, data]: any) => {
-            const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
-            const name = ejeObj ? ejeObj.label : `Eje ${id}`;
-            return {
-                name,
-                value: data.value,
-                count: data.count,
-                tooltipName: `Eje ${id}`
-            };
-        }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [filteredData, ejesList]);
-
-    const inversionByLinea = useMemo(() => {
-        const map = new Map();
-        filteredData.forEach(d => {
-            const lid = d.lineaId || d.linea_id || d.linea;
-            if (!map.has(lid)) map.set(lid, { value: 0, count: 0 });
-            const current = map.get(lid);
-            current.value += (Number(d.monto_fondoempleo) || 0);
-            current.count += 1;
-        });
-
-        return Array.from(map.entries()).map(([id, data]: any) => {
-            const lineaObj = lines.find((l: any) => l.value === id || l.id === id);
-            const name = lineaObj ? lineaObj.label : `Línea ${id}`;
-            return {
-                name,
-                value: data.value,
-                count: data.count,
-                tooltipName: `Línea ${id}`
-            };
-        }).sort((a, b) => a.name.localeCompare(b.name));
-    }, [filteredData, lines]);
 
     const gestoraData = useMemo(() => {
         const map = new Map();
@@ -465,39 +402,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 </div>
             </div>
 
-            {/* Row 2: Investments (3 Donuts) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {/* 4. Inversión por Estado */}
-                <div>
-                    <StatusChart
-                        data={inversionByEstado}
-                        title="Inversión por Estado"
-                        legendStyle={{ fontSize: '14px' }}
-                        tooltipFormat="currency"
-                        unitLabel="proyectos"
-                    />
-                </div>
-                {/* 5. Inversión por Eje */}
-                <div>
-                    <EjeChart
-                        data={inversionByEje}
-                        title="Inversión por Eje"
-                        legendStyle={{ fontSize: '14px' }}
-                        tooltipFormat="currency"
-                        unitLabel="proyectos"
-                    />
-                </div>
-                {/* 6. Inversión por Línea */}
-                <div>
-                    <EjeChart
-                        data={inversionByLinea}
-                        title="Inversión por Línea"
-                        legendStyle={{ fontSize: '14px' }}
-                        tooltipFormat="currency"
-                        unitLabel="proyectos"
-                    />
-                </div>
-            </div>
+
 
             {/* Timeline Chart */}
             <div className="w-full">

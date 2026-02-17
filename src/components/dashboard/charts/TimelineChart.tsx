@@ -270,7 +270,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
     return (
         <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo.</h3>
             </div>
 
             <div className="w-full" style={{ height: Math.max(500, processedData.length * 70) + 'px' }}>
