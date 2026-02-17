@@ -24,7 +24,15 @@ Al procesar la hoja `proyecto_servicio`:
     -   **Buscar**: Obtener el nombre desde el Excel (ej. "Cusco").
     -   **Normalizar**: Aplicar `trim().toLowerCase()` para buscar en la tabla maestra ya cargada.
     -   **Obtener ID**: Recuperar el `id` numérico de la maestra.
+    -   **Etapa 4 (Convenio)**: Columna 'Firma convenio' o 'Convenio'.
+    -   **Etapa 5 (Ejecución)**: Columna 'En ejecución' o 'Inicio obra'.
+    -   **Etapa 6 (Ejecutado)**: Columna 'Ejecutado'.
+    -   *Protocolo*: Insertar registro en `avance_proyecto` solo si la fecha es válida.
     -   **Guardar**: Insertar ese ID en la tabla `proyectos_servicios`.
+    -   **Mapeo de Campos Críticos**:
+        -   `nombre` (DB) <== `nombre proyecto o servicio` (Excel).
+        -   `beneficiarios` (DB) <== `cantidad de beneficiarios` (Excel).
+        -   `estado` (DB) <== `etapa` (Excel). *Nota: Si es FK, buscar ID por nombre*.
 2.  **Identidad del Proyecto (Regla de Oro)**:
     -   El registro del proyecto se guarda usando la columna `numero` del Excel como su `id` (Primary Key) en la BD.
 
