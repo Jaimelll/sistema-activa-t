@@ -19,9 +19,10 @@ interface DashboardViewProps {
     lines?: any[];
     ejesList?: any[];
     timelineData?: any[];
+    modalidades?: any[];
 }
 
-export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [] }: DashboardViewProps) {
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
@@ -32,6 +33,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
 
     // Use passed years directly - NO LOGIC HERE
@@ -71,7 +73,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas };
-    }, [initialData, selectedYear, selectedExecution, lines, ejesList]);
+    }, [initialData, selectedYear, selectedExecution, lines, ejesList, selectedModalidad]); // Added selectedModalidad dependency if it affects others, mostly no but strict dep.
 
     // Main Filter Logic (Applied to Data)
     const filteredData = useMemo(() => {
@@ -96,9 +98,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             if (selectedExecution === 'process') matchExec = !isExecuted;
             if (selectedExecution === 'executed') matchExec = isExecuted;
 
-            return matchYear && matchLinea && matchEje && matchEtapa && matchExec;
+            // Modalidad Filter
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+
+            return matchYear && matchLinea && matchEje && matchEtapa && matchExec && matchModalidad;
         });
-    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution]);
+    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution, selectedModalidad]);
 
     // Debug logging requested by user - REMOVED
 
@@ -337,7 +342,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                 setSelectedLinea('all');
                                 setSelectedEje('all');
                                 setSelectedEtapa('all');
+                                setSelectedEtapa('all');
                                 setSelectedExecution('all'); // Reset execution to show all statuses by default
+                                setSelectedModalidad('all');
                             }}
                         >
                             {years.map((y: any) => {
@@ -372,6 +379,15 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                         >
                             <option value="all">Todas las Etapas</option>
                             {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                        </select>
+
+                        <select
+                            className="input py-1 text-sm border-gray-300 w-48"
+                            value={selectedModalidad}
+                            onChange={(e) => setSelectedModalidad(e.target.value)}
+                        >
+                            <option value="all">Todas las Modalidades</option>
+                            {modalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
 
                         {/* Reset Filter Button (Optional but good UX, keeping consistent with clear filters icon if present) */}

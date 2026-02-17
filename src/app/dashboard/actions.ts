@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string }) {
+export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -43,7 +43,9 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   };
 
   applyFilter('eje_id', filters?.eje); // Correct column name from schema check: eje_id
+  applyFilter('eje_id', filters?.eje); // Correct column name from schema check: eje_id
   applyFilter('linea_id', filters?.linea); // Correct column name from schema check: linea_id
+  applyFilter('modalidad_id', filters?.modalidad);
 
   // Note: 'etapa' maps to 'estado'
   if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
@@ -140,6 +142,27 @@ export async function getEjes() {
   return data.map((item: any) => ({
     value: item.id,
     label: `${item.id} - ${item.descripcion}` // Use ID as number
+  }));
+}
+
+export async function getModalidades() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('modalidades')
+    .select('id, descripcion')
+    .order('id', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching modalidades:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: `${item.id} - ${item.descripcion}`
   }));
 }
 

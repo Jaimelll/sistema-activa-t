@@ -43,8 +43,12 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
             const ejeId = project.eje_id || '?';
             const lineaId = project.linea_id || '?';
-            // New Key: Date | Eje - Linea
-            const key = `${dateStr} | Eje ${ejeId} - Línea ${lineaId}`;
+            // Use names from data if available, else fallbacks
+            const ejeName = project.eje || `Eje ${ejeId}`;
+            // Use literal "Línea" + ID as requested, separate from description
+
+            // New Key Format: [Número Eje].- [Nombre Eje] - Línea [Número Línea]
+            const key = `${ejeId}.- ${ejeName} - Línea ${lineaId}`;
 
             if (!groups.has(key)) {
                 groups.set(key, {
@@ -56,7 +60,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     stage5Dates: [],
                     stage6Dates: [],
                     endDates: [],
-                    projectCount: 0
+                    projectCount: 0,
+                    start: null // We will calculate min start later or average
                 });
             }
 
@@ -66,7 +71,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             // Collect dates for all stages
             project.avances.forEach((a: any) => {
                 const ts = new Date(a.fecha).getTime();
-                if (!isNaN(ts)) { // Removed > 2024 strict filter to allow older projects if user wants, or keep strict if preferred. Sticking to valid dates.
+                if (!isNaN(ts)) {
                     if (a.etapa_id === 1) group.stage1Dates.push(ts);
                     if (a.etapa_id === 2) group.stage2Dates.push(ts);
                     if (a.etapa_id === 3) group.stage3Dates.push(ts);
@@ -90,7 +95,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const avg6 = getAvg(g.stage6Dates);
             const avgEnd = getAvg(g.endDates); // Max observed date average
 
-            // Mandatory Start (should exist because we grouped by it, but safe check)
+            // Mandatory Start
             if (!avg1) return null;
 
             let t1 = avg1;
@@ -159,7 +164,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             }
 
             return {
-                name: g.name, // Key: "DD/MM/YY | Eje X - Línea Y"
+                name: g.name, // Key: "[ID].- [Eje] - [Linea]"
                 count: g.projectCount,
                 start: t1,
                 d1, d2, d3, d4, d5, d6,
@@ -185,16 +190,9 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
     const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit' }) : '-';
 
-    // Helper to clean Y Axis Label: "[15/01/24] Eje 1 - Línea 2"
-    // The key is already format "DD/MM/YY | Eje X - Línea Y"
-    // We just want to replace " | " with " " or keep it as is but maybe brackets for date?
-    // User asked: "[15/01/24] Eje 1 - Línea 2"
+    // Helper to clean Y Axis Label
     const formatYAxis = (key: string) => {
-        const parts = key.split('|');
-        if (parts.length === 2) {
-            return `[${parts[0].trim()}] ${parts[1].trim()}`;
-        }
-        return key;
+        return key; // Return raw key as it is now formatted correctly
     };
 
     const ONE_DAY = 86400000;
