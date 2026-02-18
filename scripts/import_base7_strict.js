@@ -16,7 +16,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
     auth: { persistSession: false }
 });
 
-const FILE_PATH = 'c:/trabajo/fondo/Base7.xlsx';
+const FILE_PATH = path.resolve(__dirname, '../Base7.xlsx');
 
 // --- Helpers ---
 const normNum = (val) => {
