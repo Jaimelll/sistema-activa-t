@@ -47,12 +47,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const ejeName = project.eje || `Eje ${ejeId}`;
             // Use literal "Línea" + ID as requested, separate from description
 
-            // New Key Format: [Date] | [Número Eje].- [Nombre Eje] - Línea [Número Línea]
-            const key = `${dateStr} | ${ejeId}.- ${ejeName} - Línea ${lineaId}`;
+            // New Key Format: [Date] | Eje [Número Eje] - Línea [Número Línea]
+            const key = `${dateStr} | Eje ${ejeId} - Línea ${lineaId}`;
 
             if (!groups.has(key)) {
                 groups.set(key, {
                     name: key,
+                    ejeId: Number(ejeId) || 999,
+                    lineaId: Number(lineaId) || 999,
                     stage1Dates: [],
                     stage2Dates: [],
                     stage3Dates: [],
@@ -61,7 +63,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     stage6Dates: [],
                     endDates: [],
                     projectCount: 0,
-                    start: null // We will calculate min start later or average
+                    start: null
                 });
             }
 
@@ -93,17 +95,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const avg4 = getAvg(g.stage4Dates);
             const avg5 = getAvg(g.stage5Dates);
             const avg6 = getAvg(g.stage6Dates);
-            const avgEnd = getAvg(g.endDates); // Max observed date average
+            const avgEnd = getAvg(g.endDates);
 
             // Mandatory Start
             if (!avg1) return null;
 
             let t1 = avg1;
-            // Define End: Use avg6 if exists, else avgEnd, else Today
             let tEndProject = avg6 || avgEnd || TODAY;
-            // Logic: If Stage 6 exists, that's the end. If not, maybe Stage 5 is active. 
-            // To ensure bars draw to "Today" for active projects (missing stage 6), we usually max with TODAY if not finished.
-            // But strict logic: if avg6 exists, project is done. If not, it's ongoing -> Today.
+            // Strict logic: if avg6 exists, project is done. If not, it's ongoing -> Today.
             if (!avg6) tEndProject = Math.max(tEndProject, TODAY);
 
             let d1 = 0, d2 = 0, d3 = 0, d4 = 0, d5 = 0, d6 = 0;
@@ -151,11 +150,6 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                 const t6 = Math.max(avg6, t5);
                                 d5 = t6 - t5;
                                 date6 = t6;
-                                // 6. Stage 6 (Finished) -> End (usually 0 if finished at t6, but maybe duration of execution?)
-                                // Actually "Ejecutado" is a point in time usually. 
-                                // User wants "Ejecutado" bar. Let's say d6 is keeping it visible or if it's a phase.
-                                // If "Ejecutado" is a state, maybe it has duration? 
-                                // Let's assume d6 is just a small marker or duration if tEndProject > t6.
                                 d6 = tEndProject - t6;
                             }
                         }
@@ -164,7 +158,9 @@ export function TimelineChart({ data }: TimelineChartProps) {
             }
 
             return {
-                name: g.name, // Key: "[ID].- [Eje] - [Linea]"
+                name: g.name,
+                ejeId: g.ejeId,
+                lineaId: g.lineaId,
                 count: g.projectCount,
                 start: t1,
                 d1, d2, d3, d4, d5, d6,
@@ -178,7 +174,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
             };
         })
             .filter(Boolean)
-            .sort((a: any, b: any) => a.start - b.start); // Sort by Start Date ascending
+            .sort((a: any, b: any) => {
+                // Priority 1: Eje ID (Asc)
+                if (a.ejeId !== b.ejeId) return a.ejeId - b.ejeId;
+                // Priority 2: Linea ID (Asc)
+                if (a.lineaId !== b.lineaId) return a.lineaId - b.lineaId;
+                // Priority 3: Start Date (Oldest to Newest)
+                return a.start - b.start;
+            });
 
         return chartData;
 
@@ -203,7 +206,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
             return (
                 <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100 text-xs z-50">
-                    <p className="font-bold text-gray-800 mb-2">{d.name}</p>
+                    <p className="font-bold text-gray-800 mb-2">{formatYAxis(d.name)}</p>
                     <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.count}</span></p>
                     <div className="space-y-1">
                         {d.d1_safe > ONE_DAY && (
@@ -298,7 +301,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                             tickFormatter={formatYAxis}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-                        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                        <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
 
                         {/* Invisible Start */}
                         <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" />

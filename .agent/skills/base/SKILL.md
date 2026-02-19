@@ -29,10 +29,12 @@ Al procesar la hoja `proyecto_servicio`:
     -   **Etapa 6 (Ejecutado)**: Columna 'Ejecutado'.
     -   *Protocolo*: Insertar registro en `avance_proyecto` solo si la fecha es válida.
     -   **Guardar**: Insertar ese ID en la tabla `proyectos_servicios`.
-    -   **Mapeo de Campos Críticos**:
+    -   **Mapeo de Campos Críticos (Actualizado)**:
         -   `nombre` (DB) <== `nombre proyecto o servicio` (Excel).
         -   `beneficiarios` (DB) <== `cantidad de beneficiarios` (Excel).
         -   `estado` (DB) <== `etapa` (Excel). *Nota: Si es FK, buscar ID por nombre*.
+        -   **Línea (Estricto)**: `linea_id` <== Buscar valor de columna 'Línea' en tabla maestra `lineas` (usar `trim().toLowerCase()`).
+        -   **Modalidad (Estricto)**: `modalidad_id` <== Buscar valor de columna 'Modalidad de ejecución' en tabla maestra `modalidades` (usar `trim().toLowerCase()`).
 2.  **Identidad del Proyecto (Regla de Oro)**:
     -   El registro del proyecto se guarda usando la columna `numero` del Excel como su `id` (Primary Key) en la BD.
 
@@ -59,10 +61,12 @@ Al procesar la hoja `proyecto_servicio`:
 
 ### B. Estándares de Interfaz
 1.  **Sincronización Total**: El filtro de Modalidad afecta a Donas, Timeline y Programas.
-2.  **Etiquetas de Gráficos (Ejes)**:
-    -   **Regla de Nombre**: El formateador debe usar SIEMPRE el nombre proveniente de la **Tabla Maestra (DB)**, ignorando el texto del Excel si difiere.
-    -   **Ejemplo Crítico**: Para el ID 2, el gráfico DEBE mostrar "**Lanzamiento**", independientemente de si el Excel dice "Actos Previos" u otro.
-    -   **Formato**: `{eje_id}.- {eje_nombre_db} - Línea {linea_id}`.
+    -   **Regla de Nombre (Eje Y)**: El formateador debe seguir ESTRICTAMENTE el patrón: `Eje {eje_id} - Línea {linea_id}`.
+    -   **Leyenda**: Debe ubicarse en la parte **Superior Derecha** (`verticalAlign="top"`, `align="right"`).
+    -   **Ordenamiento Jerárquico**:
+        1.  **Eje**: `eje_id` (Menor a Mayor).
+        2.  **Línea**: `linea_id` (Menor a Mayor).
+        3.  **Fecha Inicio**: `fecha_inicio` (Más antigua a más reciente).
 
 ---
 
