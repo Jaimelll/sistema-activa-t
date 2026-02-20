@@ -327,8 +327,12 @@ export async function getTimelineData() {
       etapa_id,
       eje_id,
       linea_id,
+      codigo_proyecto,
+      gestora,
+      monto_fondoempleo,
       ejes (descripcion),
       lineas (descripcion),
+      instituciones_ejecutoras (nombre),
       avance_proyecto (
         fecha,
         etapa_id
@@ -346,10 +350,14 @@ export async function getTimelineData() {
     id: p.id,
     nombre: p.nombre,
     estado: p.estado,
-    eje_id: p.eje_id, // Added ID
-    linea_id: p.linea_id, // Added ID
+    eje_id: p.eje_id,
+    linea_id: p.linea_id,
     eje: p.ejes?.descripcion || `Eje ${p.eje_id}`,
     linea: p.lineas?.descripcion || `Línea ${p.linea_id}`,
+    codigo: p.codigo_proyecto || '-',
+    gestora: p.gestora || '-',
+    monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
+    institucion: p.instituciones_ejecutoras?.nombre || '-',
     avances: p.avance_proyecto.map((a: any) => ({
       fecha: a.fecha,
       etapa_id: a.etapa_id

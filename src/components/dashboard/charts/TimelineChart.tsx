@@ -63,12 +63,19 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     stage6Dates: [],
                     endDates: [],
                     projectCount: 0,
-                    start: null
+                    start: null,
+                    projects: []
                 });
             }
 
             const group = groups.get(key);
             group.projectCount++;
+            group.projects.push({
+                codigo: project.codigo || '-',
+                institucion: project.institucion || '-',
+                gestora: project.gestora || '-',
+                monto: project.monto_fondoempleo || 0
+            });
 
             // Collect dates for all stages
             project.avances.forEach((a: any) => {
@@ -162,6 +169,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 ejeId: g.ejeId,
                 lineaId: g.lineaId,
                 count: g.projectCount,
+                projects: g.projects,
                 start: t1,
                 d1, d2, d3, d4, d5, d6,
                 date1, date2, date3, date4, date5, date6, dateEnd: tEndProject,
@@ -203,49 +211,39 @@ export function TimelineChart({ data }: TimelineChartProps) {
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
+            const MAX_VISIBLE = 5;
+            const visibleProjects = d.projects ? d.projects.slice(0, MAX_VISIBLE) : [];
+            const hasMore = d.projects && d.projects.length > MAX_VISIBLE;
 
             return (
-                <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100 text-xs z-50">
-                    <p className="font-bold text-gray-800 mb-2">{formatYAxis(d.name)}</p>
+                <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs z-50" style={{ maxWidth: '420px' }}>
+                    <p className="font-bold text-gray-800 mb-1">{formatYAxis(d.name)}</p>
                     <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.count}</span></p>
-                    <div className="space-y-1">
-                        {d.d1_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                                <span>Aprob. Bases: {formatDate(d.date1)} - {d.date2 ? formatDate(d.date2) : 'Hoy'}</span>
-                            </div>
-                        )}
-                        {d.d2_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                                <span>Lanzamiento: {formatDate(d.date2)} - {d.date3 ? formatDate(d.date3) : 'Hoy'}</span>
-                            </div>
-                        )}
-                        {d.d3_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-                                <span>Aprob. Consejo: {formatDate(d.date3)} - {d.date4 ? formatDate(d.date4) : 'Hoy'}</span>
-                            </div>
-                        )}
-                        {d.d4_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-violet-400"></div>
-                                <span>Firma Convenio: {formatDate(d.date4)} - {d.date5 ? formatDate(d.date5) : 'Hoy'}</span>
-                            </div>
-                        )}
-                        {d.d5_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                                <span>En Ejecución: {formatDate(d.date5)} - {d.date6 ? formatDate(d.date6) : 'Hoy'}</span>
-                            </div>
-                        )}
-                        {d.d6_safe > ONE_DAY && (
-                            <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                                <span>Ejecutado: {formatDate(d.date6)} - {formatDate(d.dateEnd)}</span>
-                            </div>
-                        )}
+                    <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-200">
+                                    <th className="text-left py-1 px-1 font-bold text-gray-700">Código</th>
+                                    <th className="text-left py-1 px-1 font-bold text-gray-700">Ejecutora</th>
+                                    <th className="text-left py-1 px-1 font-bold text-gray-700">Gestora</th>
+                                    <th className="text-right py-1 px-1 font-bold text-gray-700">Monto Fondo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {visibleProjects.map((p: any, i: number) => (
+                                    <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                                        <td className="py-1 px-1 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                        <td className="py-1 px-1 text-gray-600" style={{ maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.institucion}</td>
+                                        <td className="py-1 px-1 text-gray-600" style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.gestora}</td>
+                                        <td className="py-1 px-1 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
+                    {hasMore && (
+                        <p className="text-gray-400 text-center mt-1 italic">+{d.projects.length - MAX_VISIBLE} más...</p>
+                    )}
                 </div>
             );
         }

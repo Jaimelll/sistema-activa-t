@@ -58,6 +58,7 @@ Al procesar la hoja `proyecto_servicio`:
 ### A. Timeline Chart (Lógica de Cascada)
 -   **Salida Temprana**: Si no hay fecha siguiente, extender actual a "Hoy" y anular posteriores.
 -   **Altura Dinámica**: `height = data.length * 40px`.
+-   **Tooltip Administrativo**: El Tooltip debe priorizar datos administrativos (`codigo_proyecto`, `institucion_ejecutora`, `gestora`, `monto_fondoempleo`) sobre los datos cronológicos de etapas. Se muestra como mini-tabla con máximo 5 filas visibles y scroll si hay más.
 
 ### B. Estándares de Interfaz
 1.  **Sincronización Total**: El filtro de Modalidad afecta a Donas, Timeline y Programas.
