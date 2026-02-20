@@ -286,7 +286,18 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                         <XAxis
+                            xAxisId="bottom"
                             type="number"
+                            orientation="bottom"
+                            domain={[minDate, END_2026]}
+                            tickFormatter={formatXAxis}
+                            tick={{ fontSize: 12, fill: '#6b7280' }}
+                            allowDataOverflow={true}
+                        />
+                        <XAxis
+                            xAxisId="top"
+                            type="number"
+                            orientation="top"
                             domain={[minDate, END_2026]}
                             tickFormatter={formatXAxis}
                             tick={{ fontSize: 12, fill: '#6b7280' }}
@@ -304,45 +315,45 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
 
                         {/* Invisible Start */}
-                        <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" />
+                        <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" xAxisId="bottom" />
 
                         {/* 1. Bases (Blue) */}
-                        <Bar dataKey="d1_safe" stackId="a" name="Aprobación de bases" fill={COLORS.bases} minPointSize={0}>
+                        <Bar dataKey="d1_safe" stackId="a" name="Aprobación de bases" fill={COLORS.bases} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d1-${index}`} fill={d.d1_safe > 0 ? COLORS.bases : 'transparent'} stroke="none" radius={[4, 0, 0, 4]} />
                             ))}
                         </Bar>
 
                         {/* 2. Actos (Emerald) */}
-                        <Bar dataKey="d2_safe" stackId="a" name="Lanzamiento" fill={COLORS.actos} minPointSize={0}>
+                        <Bar dataKey="d2_safe" stackId="a" name="Lanzamiento" fill={COLORS.actos} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d2-${index}`} fill={d.d2_safe > 0 ? COLORS.actos : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 3. Consejo (Amber) */}
-                        <Bar dataKey="d3_safe" stackId="a" name="Aprobación de consejo" fill={COLORS.consejo} minPointSize={0}>
+                        <Bar dataKey="d3_safe" stackId="a" name="Aprobación de consejo" fill={COLORS.consejo} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d3-${index}`} fill={d.d3_safe > 0 ? COLORS.consejo : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 4. Firma (Violet) */}
-                        <Bar dataKey="d4_safe" stackId="a" name="Firma convenio" fill={COLORS.firma} minPointSize={0}>
+                        <Bar dataKey="d4_safe" stackId="a" name="Firma convenio" fill={COLORS.firma} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d4-${index}`} fill={d.d4_safe > 0 ? COLORS.firma : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 5. En Ejecución (Indigo) */}
-                        <Bar dataKey="d5_safe" stackId="a" name="En Ejecución" fill={COLORS.ejecucion} minPointSize={0}>
+                        <Bar dataKey="d5_safe" stackId="a" name="En Ejecución" fill={COLORS.ejecucion} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d5-${index}`} fill={d.d5_safe > 0 ? COLORS.ejecucion : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 6. Ejecutado (Rose) */}
-                        <Bar dataKey="d6_safe" stackId="a" name="Ejecutado" fill={COLORS.ejecutado} minPointSize={0}>
+                        <Bar dataKey="d6_safe" stackId="a" name="Ejecutado" fill={COLORS.ejecutado} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d6-${index}`} fill={d.d6_safe > 0 ? COLORS.ejecutado : 'transparent'} stroke="none" radius={[0, 4, 4, 0]} />
                             ))}
@@ -350,6 +361,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
                         {/* Reference Line for Today */}
                         <ReferenceLine
+                            xAxisId="bottom"
                             x={new Date().getTime()}
                             stroke="#ef4444"
                             strokeDasharray="3 3"
