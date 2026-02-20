@@ -9,6 +9,7 @@ interface TimelineChartProps {
 
 export function TimelineChart({ data }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
+    const [hoveredGroup, setHoveredGroup] = useState<any>(null);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -208,39 +209,30 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
     const ONE_DAY = 86400000;
 
-    const CustomTooltip = ({ active, payload }: any) => {
+    const SimpleTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
-            const allProjects = d.projects || [];
-
             return (
-                <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs z-50" style={{ maxWidth: '520px', pointerEvents: 'auto' }}>
-                    <p className="font-bold text-gray-800 mb-1">{formatYAxis(d.name)}</p>
-                    <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.count}</span></p>
-                    <div className="pr-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-1 px-1 font-bold text-gray-700">Código</th>
-                                    <th className="text-left py-1 px-1 font-bold text-gray-700">Institución Ejecutora</th>
-                                    <th className="text-right py-1 px-1 font-bold text-gray-700">Monto Fondo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {allProjects.map((p: any, i: number) => (
-                                    <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                                        <td className="py-1 px-1 text-gray-800 whitespace-nowrap">{p.codigo}</td>
-                                        <td className="py-1 px-1 text-gray-600" style={{ minWidth: '180px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                        <td className="py-1 px-1 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-xs">
+                    <p className="font-bold text-gray-800">{formatYAxis(d.name)}</p>
+                    <p className="text-gray-500">Proyectos: <span className="font-semibold">{d.count}</span></p>
                 </div>
             );
         }
         return null;
+    };
+
+    const handleChartMouseMove = (state: any) => {
+        if (state && state.activePayload && state.activePayload.length) {
+            const d = state.activePayload[0].payload;
+            if (!hoveredGroup || hoveredGroup.name !== d.name) {
+                setHoveredGroup(d);
+            }
+        }
+    };
+
+    const handleChartMouseLeave = () => {
+        setHoveredGroup(null);
     };
 
     const JAN_2024 = new Date('2024-01-01').getTime();
@@ -267,6 +259,38 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo</h3>
             </div>
 
+            {/* Detail Panel - Fixed position */}
+            {hoveredGroup && hoveredGroup.projects && hoveredGroup.projects.length > 0 && (
+                <div className="mb-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs"
+                    style={{ scrollbarGutter: 'stable' }}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-gray-800">{formatYAxis(hoveredGroup.name)}</p>
+                        <p className="text-gray-500">Proyectos: <span className="font-semibold">{hoveredGroup.count}</span></p>
+                    </div>
+                    <div className="pr-1" style={{ maxHeight: '300px', overflowY: 'auto', scrollbarGutter: 'stable' }}>
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-300">
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Monto Fondo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {hoveredGroup.projects.map((p: any, i: number) => (
+                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                        <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                        <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
+                                        <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             <div className="w-full" style={{ height: Math.max(500, processedData.length * 70) + 'px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -274,6 +298,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         data={processedData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
                         barSize={20}
+                        onMouseMove={handleChartMouseMove}
+                        onMouseLeave={handleChartMouseLeave}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                         <XAxis
@@ -302,7 +328,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                             interval={0}
                             tickFormatter={formatYAxis}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} wrapperStyle={{ pointerEvents: 'auto', zIndex: 100 }} allowEscapeViewBox={{ x: false, y: true }} />
+                        <Tooltip content={<SimpleTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
                         <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
 
                         {/* Invisible Start */}
