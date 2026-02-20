@@ -33,6 +33,7 @@ Al procesar la hoja `proyecto_servicio`:
         -   `nombre` (DB) <== `nombre proyecto o servicio` (Excel).
         -   `beneficiarios` (DB) <== `cantidad de beneficiarios` (Excel).
         -   `estado` (DB) <== `etapa` (Excel). *Nota: Si es FK, buscar ID por nombre*.
+        -   `codigo_proyecto` (DB) <== `código del proyecto` (Excel). **PROHIBIDO auto-generar códigos combinando años o IDs. Si el Excel no tiene valor, usar 'Sin código'.**
         -   **Línea (Estricto)**: `linea_id` <== Buscar valor de columna 'Línea' en tabla maestra `lineas` (usar `trim().toLowerCase()`).
         -   **Modalidad (Estricto)**: `modalidad_id` <== Buscar valor de columna 'Modalidad de ejecución' en tabla maestra `modalidades` (usar `trim().toLowerCase()`).
 2.  **Identidad del Proyecto (Regla de Oro)**:
