@@ -63,10 +63,20 @@ Al procesar la hoja `proyecto_servicio`:
 1.  **Sincronización Total**: El filtro de Modalidad afecta a Donas, Timeline y Programas.
     -   **Regla de Nombre (Eje Y)**: El formateador debe seguir ESTRICTAMENTE el patrón: `Eje {eje_id} - Línea {linea_id}`.
     -   **Leyenda**: Debe ubicarse en la parte **Superior Derecha** (`verticalAlign="top"`, `align="right"`).
+    -   **Nombrado de Ejes en Leyendas de Donas**: Prefijo obligatorio `E{id}`. Ejemplo: `E1 - Concursal Activate`, `E2 - ...`.
     -   **Ordenamiento Jerárquico**:
         1.  **Eje**: `eje_id` (Menor a Mayor).
         2.  **Línea**: `linea_id` (Menor a Mayor).
         3.  **Fecha Inicio**: `fecha_inicio` (Más antigua a más reciente).
+
+### C. Orden del Layout (Dashboard de Proyectos)
+El orden **OBLIGATORIO** de componentes es:
+1.  Filtros (Logo + Selectores)
+2.  KPI Cards
+3.  **Línea de Tiempo** (Timeline Chart) — elemento principal
+4.  Gráficos de Dona (Estado, Eje, Línea)
+5.  Funding Chart (Barras por Región)
+6.  Gestora Chart (si aplica)
 
 ---
 

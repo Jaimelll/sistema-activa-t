@@ -170,7 +170,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         // Map ID to Label from ejesList
         return Array.from(map.entries()).map(([id, data]: any) => {
             const ejeObj = ejesList.find((e: any) => e.value === id || e.id === id);
-            const name = ejeObj ? ejeObj.label : `Eje ${id}`;
+            const name = ejeObj ? `E${ejeObj.label}` : `E${id}`;
             return {
                 name,
                 value: data.count,
@@ -371,7 +371,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
             {/* Charts Section */}
 
-            {/* Row 1: Quantities (3 Donuts) */}
+            {/* Timeline Chart (Principal) */}
+            <div className="w-full">
+                <TimelineChart data={filteredTimelineData} />
+            </div>
+
+            {/* Donut Charts Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* 1. Proyectos por Estado */}
                 <div>
@@ -400,13 +405,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                         unitLabel="proyectos"
                     />
                 </div>
-            </div>
-
-
-
-            {/* Timeline Chart */}
-            <div className="w-full">
-                <TimelineChart data={filteredTimelineData} />
             </div>
 
             {/* Bottom Row: Bar Chart (100% width) */}
