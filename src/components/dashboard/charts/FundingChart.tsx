@@ -1,11 +1,25 @@
 "use client";
-// Force Update: 2026-02-05 07:15 - Visual Refresh
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Label } from 'recharts';
 
 interface FundingChartProps {
     data: any[];
 }
+
+const CustomFundingTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const d = payload[0].payload;
+        return (
+            <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs">
+                <p className="font-bold text-gray-800 mb-1">{d.name}</p>
+                <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.proyectos}</span></p>
+                <p className="text-blue-700 font-semibold">S/ {Number(d.fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-gray-500">Ejecutado: S/ {Number(d.contrapartida).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+        );
+    }
+    return null;
+};
 
 export function FundingChart({ data, rotateX = -45, formatY = 'millions' }: FundingChartProps & { rotateX?: number, formatY?: 'millions' | 'currency' }) {
     return (
@@ -18,7 +32,7 @@ export function FundingChart({ data, rotateX = -45, formatY = 'millions' }: Fund
                         top: 20,
                         right: 30,
                         left: 20,
-                        bottom: 100, // Increased bottom margin for rotated labels
+                        bottom: 100,
                     }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -32,15 +46,12 @@ export function FundingChart({ data, rotateX = -45, formatY = 'millions' }: Fund
                         textAnchor="end"
                         interval={0}
                         height={80}
-                        dy={5} // Push labels down slightly
+                        dy={5}
                     >
                         <Label value="Región" offset={-10} position="insideBottom" />
                     </XAxis>
                     <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatY === 'millions' ? `${(value / 1000000).toFixed(1)} mill` : `S/ ${value.toLocaleString()}`} />
-                    <Tooltip
-                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number, name: string) => [`S/ ${value.toLocaleString()}`, name === 'contrapartida' ? 'Ejecutado' : name]}
-                    />
+                    <Tooltip content={<CustomFundingTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
                     <Bar dataKey="fondoempleo" name="Fondoempleo" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={20} />
                     <Bar dataKey="contrapartida" name="Ejecutado" fill="#94a3b8" radius={[4, 4, 0, 0]} barSize={20} />

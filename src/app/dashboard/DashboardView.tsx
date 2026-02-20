@@ -130,12 +130,13 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         const map = new Map();
         filteredData.forEach(d => {
             const r = d.region;
-            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0 });
+            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, proyectos: 0 });
             const entry = map.get(r);
             entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
             entry.contrapartida += (Number(d.monto_contrapartida) || 0);
+            entry.proyectos += 1;
         });
-        return Array.from(map.values());
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
 
     const projectsByStatus = useMemo(() => {

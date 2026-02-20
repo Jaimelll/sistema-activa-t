@@ -69,6 +69,7 @@ Al procesar la hoja `proyecto_servicio`:
         1.  **Eje**: `eje_id` (Menor a Mayor).
         2.  **Línea**: `linea_id` (Menor a Mayor).
         3.  **Fecha Inicio**: `fecha_inicio` (Más antigua a más reciente).
+    -   **Gráficos de Barras Regionales**: Orden alfabético (A-Z) en el eje X. El Tooltip debe incluir siempre: Región (título), `Proyectos: X` (conteo), y luego los valores monetarios (Fondoempleo, Ejecutado).
 
 ### C. Orden del Layout (Dashboard de Proyectos)
 El orden **OBLIGATORIO** de componentes es:
