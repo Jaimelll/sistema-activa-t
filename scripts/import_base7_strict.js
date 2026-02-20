@@ -266,8 +266,10 @@ async function runStrictETL() {
         const montoC = parseMoney(row[idxContra]);
 
         let codigo = row[idxCod];
-        if (!codigo || codigo.toString().toLowerCase().includes('sin código')) {
-            codigo = `PRJ-${row[idxAno] || '0000'}-${id}`;
+        if (!codigo || codigo.toString().trim() === '') {
+            codigo = 'Sin código';
+        } else {
+            codigo = codigo.toString().trim();
         }
 
         // Strict: Estado debe venir de 'etapa'. 
