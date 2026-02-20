@@ -214,10 +214,10 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const allProjects = d.projects || [];
 
             return (
-                <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs z-50" style={{ maxWidth: '480px' }}>
+                <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs z-50" style={{ maxWidth: '520px', pointerEvents: 'auto' }}>
                     <p className="font-bold text-gray-800 mb-1">{formatYAxis(d.name)}</p>
                     <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.count}</span></p>
-                    <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    <div className="pr-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-gray-200">
@@ -302,7 +302,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                             interval={0}
                             tickFormatter={formatYAxis}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} wrapperStyle={{ pointerEvents: 'auto', zIndex: 100 }} allowEscapeViewBox={{ x: false, y: true }} />
                         <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
 
                         {/* Invisible Start */}
