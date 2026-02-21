@@ -74,6 +74,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             group.projects.push({
                 codigo: project.codigo || '-',
                 institucion: project.institucion || '-',
+                region: project.region || '-',
                 gestora: project.gestora || '-',
                 monto: project.monto_fondoempleo || 0
             });
@@ -259,45 +260,13 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo</h3>
             </div>
 
-            {/* Detail Panel - Fixed position */}
-            {hoveredGroup && hoveredGroup.projects && hoveredGroup.projects.length > 0 && (
-                <div className="mb-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs"
-                    style={{ scrollbarGutter: 'stable' }}
-                >
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="font-bold text-gray-800">{formatYAxis(hoveredGroup.name)}</p>
-                        <p className="text-gray-500">Proyectos: <span className="font-semibold">{hoveredGroup.count}</span></p>
-                    </div>
-                    <div className="pr-1" style={{ maxHeight: '300px', overflowY: 'auto', scrollbarGutter: 'stable' }}>
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="border-b border-gray-300">
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Monto Fondo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {hoveredGroup.projects.map((p: any, i: number) => (
-                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                        <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
-                                        <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                        <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            <div className="w-full" style={{ height: Math.max(500, processedData.length * 70) + 'px' }}>
+            <div className="w-full" style={{ height: Math.max(400, processedData.length * 40) + 'px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         layout="vertical"
                         data={processedData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-                        barSize={20}
+                        barSize={18}
                         onMouseMove={handleChartMouseMove}
                         onMouseLeave={handleChartMouseLeave}
                     >
@@ -388,6 +357,40 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     </BarChart>
                 </ResponsiveContainer>
             </div>
+
+            {/* Detail Panel - Rendered BELOW chart */}
+            {hoveredGroup && hoveredGroup.projects && hoveredGroup.projects.length > 0 && (
+                <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs"
+                    style={{ scrollbarGutter: 'stable' }}
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="font-bold text-gray-800">{formatYAxis(hoveredGroup.name)}</p>
+                        <p className="text-gray-500">Proyectos: <span className="font-semibold">{hoveredGroup.count}</span></p>
+                    </div>
+                    <div className="pr-1" style={{ maxHeight: '300px', overflowY: 'auto', scrollbarGutter: 'stable' }}>
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-300">
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Región</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Monto Fondo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {hoveredGroup.projects.map((p: any, i: number) => (
+                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                        <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                        <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
+                                        <td className="py-1 px-2 text-gray-600 whitespace-nowrap">{p.region}</td>
+                                        <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
