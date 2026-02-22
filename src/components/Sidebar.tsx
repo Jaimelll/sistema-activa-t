@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, FolderOpen, Users, Settings, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Users, Settings, LogOut, Menu, ClipboardCheck } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,6 +20,7 @@ export function Sidebar() {
         { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
+        { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];
 
