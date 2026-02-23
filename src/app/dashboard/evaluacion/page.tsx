@@ -321,13 +321,10 @@ export default function EvaluacionPage() {
                         <table className="w-full text-sm table-fixed">
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
-                                    <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs w-[80px]">Código</th>
                                     <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs">Proyecto</th>
                                     <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs w-[100px]">Institución</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[75px]">Etapa</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[65px]">Línea</th>
                                     <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[65px]">Archivo</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[120px]">Vincular Eval.</th>
+                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[60px]">Vincular Eval.</th>
                                     <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[85px]">Estado</th>
                                     <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[50px]">Pts.</th>
                                     <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[120px]">Acciones</th>
@@ -336,15 +333,8 @@ export default function EvaluacionPage() {
                             <tbody>
                                 {proyectos.map((p, i) => (
                                     <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}>
-                                        <td className="py-2 px-2 font-mono text-xs text-gray-700 truncate">{p.codigo}</td>
                                         <td className="py-2 px-2 text-gray-800 text-xs truncate" title={p.nombre}>{p.nombre}</td>
                                         <td className="py-2 px-2 text-gray-600 text-xs truncate" title={p.institucion}>{p.institucion}</td>
-                                        <td className="py-2 px-2 text-center">
-                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getEtapaBadge(p.etapa)}`}>
-                                                {p.etapa}
-                                            </span>
-                                        </td>
-                                        <td className="py-2 px-2 text-center text-[10px] text-gray-600 truncate">{p.linea}</td>
                                         <td className="py-2 px-2 text-center">
                                             {uploadingId === p.id ? (
                                                 <span className="inline-flex items-center text-xs text-indigo-600">
@@ -384,7 +374,7 @@ export default function EvaluacionPage() {
                                                     <Loader2 className="absolute -left-5 w-3.5 h-3.5 animate-spin text-indigo-500" />
                                                 )}
                                                 <select
-                                                    className="px-2 py-1 border border-gray-200 rounded text-xs bg-white focus:ring-1 focus:ring-accent min-w-[120px] disabled:opacity-50"
+                                                    className="px-1 py-1 border border-gray-200 rounded text-xs bg-white focus:ring-1 focus:ring-accent min-w-[60px] disabled:opacity-50"
                                                     value={p.evaluacion_config_id || ''}
                                                     onChange={e => handleLink(p.id, e.target.value)}
                                                     disabled={linkingId === p.id}
@@ -450,7 +440,7 @@ export default function EvaluacionPage() {
                                 ))}
                                 {proyectos.length === 0 && (
                                     <tr>
-                                        <td colSpan={10} className="py-12 text-center text-gray-400">
+                                        <td colSpan={7} className="py-12 text-center text-gray-400">
                                             No se encontraron proyectos con los filtros seleccionados.
                                         </td>
                                     </tr>

@@ -213,10 +213,12 @@ export function TimelineChart({ data }: TimelineChartProps) {
     const SimpleTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
+            const totalMonto = d.projects ? d.projects.reduce((sum: number, p: any) => sum + (Number(p.monto) || 0), 0) : 0;
             return (
                 <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-xs">
                     <p className="font-bold text-gray-800">{formatYAxis(d.name)}</p>
                     <p className="text-gray-500">Proyectos: <span className="font-semibold">{d.count}</span></p>
+                    <p className="text-blue-700 font-semibold">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
             );
         }
