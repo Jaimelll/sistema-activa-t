@@ -322,11 +322,11 @@ export default function EvaluacionPage() {
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
                                     <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs">Proyecto</th>
-                                    <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs w-[100px]">Institución</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[65px]">Archivo</th>
-                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[40px]">Config</th>
+                                    <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs w-[140px]">Institución</th>
+                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[60px]">Archivo</th>
+                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[120px]">Vincular Eval.</th>
                                     <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[85px]">Estado</th>
-                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[50px]">Pts.</th>
+                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[45px]">Pts.</th>
                                     <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[120px]">Acciones</th>
                                 </tr>
                             </thead>
@@ -374,7 +374,7 @@ export default function EvaluacionPage() {
                                                     <Loader2 className="absolute -left-5 w-3.5 h-3.5 animate-spin text-indigo-500" />
                                                 )}
                                                 <select
-                                                    className="px-1 py-1 border border-gray-200 rounded text-[10px] bg-white focus:ring-1 focus:ring-accent w-[40px] disabled:opacity-50"
+                                                    className="px-1 py-1 border border-gray-200 rounded text-xs bg-white focus:ring-1 focus:ring-accent w-full disabled:opacity-50"
                                                     value={p.evaluacion_config_id || ''}
                                                     onChange={e => handleLink(p.id, e.target.value)}
                                                     disabled={linkingId === p.id}
