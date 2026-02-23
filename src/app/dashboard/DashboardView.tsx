@@ -377,7 +377,21 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 <TimelineChart data={filteredTimelineData} />
             </div>
 
-            {/* Donut Charts Row */}
+            {/* Bottom Row: Bar Chart (100% width) */}
+            <div className="w-full">
+                <div className="w-full">
+                    <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
+                </div>
+            </div>
+
+            {/* Gestora Chart */}
+            {gestoraData.length > 0 && (
+                <div className="w-full">
+                    <GestoraChart data={gestoraData} />
+                </div>
+            )}
+
+            {/* Donut Charts Row (Final) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* 1. Proyectos por Estado */}
                 <div>
@@ -407,20 +421,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     />
                 </div>
             </div>
-
-            {/* Bottom Row: Bar Chart (100% width) */}
-            <div className="w-full">
-                <div className="w-full">
-                    <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
-                </div>
-            </div>
-
-            {/* Gestora Chart */}
-            {gestoraData.length > 0 && (
-                <div className="w-full">
-                    <GestoraChart data={gestoraData} />
-                </div>
-            )}
         </div>
     );
 }

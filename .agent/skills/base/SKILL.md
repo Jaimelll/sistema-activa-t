@@ -78,9 +78,9 @@ El orden **OBLIGATORIO** de componentes es:
 1.  Filtros (Logo + Selectores)
 2.  KPI Cards
 3.  **Línea de Tiempo** (Timeline Chart) — elemento principal
-4.  Gráficos de Dona (Estado, Eje, Línea)
-5.  Funding Chart (Barras por Región)
-6.  Gestora Chart (si aplica)
+4.  Funding Chart (Barras por Región)
+5.  Gestora Chart (si aplica)
+6.  Gráficos de Dona (Estado, Eje, Línea) — al final
 
 ---
 
