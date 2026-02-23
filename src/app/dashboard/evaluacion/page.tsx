@@ -318,24 +318,24 @@ export default function EvaluacionPage() {
                             <Loader2 className="w-8 h-8 animate-spin text-accent" />
                         </div>
                     ) : (
-                        <table className="w-full text-sm">
+                        <table className="w-full text-xs table-fixed">
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
-                                    <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs">Proyecto</th>
-                                    <th className="text-left py-3 px-2 font-semibold text-gray-600 text-xs w-[140px]">Institución</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[60px]">Archivo</th>
-                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[120px]">Vincular Eval.</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[85px]">Estado</th>
-                                    <th className="text-center py-3 px-1 font-semibold text-gray-600 text-xs w-[45px]">Pts.</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-gray-600 text-xs w-[120px]">Acciones</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '30%' }}>Proyecto</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '18%' }}>Institución</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '7%' }}>Archivo</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '15%' }}>Vincular Eval.</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '10%' }}>Estado</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '5%' }}>Pts.</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '15%' }}>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {proyectos.map((p, i) => (
-                                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}>
-                                        <td className="py-2 px-2 text-gray-800 text-xs truncate" title={p.nombre}>{p.nombre}</td>
-                                        <td className="py-2 px-2 text-gray-600 text-xs truncate" title={p.institucion}>{p.institucion}</td>
-                                        <td className="py-2 px-2 text-center">
+                                    <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]'}`}>
+                                        <td className="py-1 px-2 text-gray-800 truncate overflow-hidden" title={p.nombre}>{p.nombre}</td>
+                                        <td className="py-1 px-2 text-gray-600 truncate overflow-hidden" title={p.institucion}>{p.institucion}</td>
+                                        <td className="py-1 px-1 text-center">
                                             {uploadingId === p.id ? (
                                                 <span className="inline-flex items-center text-xs text-indigo-600">
                                                     <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Subiendo...
@@ -368,7 +368,7 @@ export default function EvaluacionPage() {
                                                 </label>
                                             )}
                                         </td>
-                                        <td className="py-2 px-2 text-center">
+                                        <td className="py-1 px-1 text-center">
                                             <div className="relative inline-flex items-center">
                                                 {linkingId === p.id && (
                                                     <Loader2 className="absolute -left-5 w-3.5 h-3.5 animate-spin text-indigo-500" />
@@ -386,11 +386,11 @@ export default function EvaluacionPage() {
                                                 </select>
                                             </div>
                                         </td>
-                                        <td className="py-2 px-2 text-center">{getEvalBadge(p.eval_estado)}</td>
-                                        <td className="py-2 px-1 text-center font-semibold text-gray-800 text-xs">
+                                        <td className="py-1 px-1 text-center">{getEvalBadge(p.eval_estado)}</td>
+                                        <td className="py-1 px-1 text-center font-semibold text-gray-800">
                                             {p.eval_puntaje != null ? p.eval_puntaje : '-'}
                                         </td>
-                                        <td className="py-2 px-2 text-center">
+                                        <td className="py-1 px-1 text-center">
                                             <div className="flex items-center justify-center space-x-1.5">
                                                 {(!p.eval_estado || p.eval_estado === 'Pendiente') && (
                                                     <button
