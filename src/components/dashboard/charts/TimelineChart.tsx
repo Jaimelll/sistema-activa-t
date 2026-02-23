@@ -369,7 +369,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         <p className="font-bold text-gray-800">{formatYAxis(hoveredGroup.name)}</p>
                         <p className="text-gray-500">Proyectos: <span className="font-semibold">{hoveredGroup.count}</span></p>
                     </div>
-                    <div className="pr-1" style={{ maxHeight: '300px', overflowY: 'auto', scrollbarGutter: 'stable' }}>
+                    <div className="pr-1">
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-gray-300">
