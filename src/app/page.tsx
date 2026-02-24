@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { DemoLoginButton } from "@/components/DemoLoginButton";
 
 export default async function Home({
   searchParams,
@@ -51,8 +50,6 @@ export default async function Home({
             Iniciar Sesión
           </button>
         </form>
-
-        <DemoLoginButton />
       </div>
     </div>
   );

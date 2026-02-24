@@ -11,8 +11,9 @@ export function createClient() {
             cookieOptions: {
                 name: 'sb-auth-token',
                 maxAge: 60 * 60 * 24 * 7,
+                domain: '',
                 path: '/',
-                sameSite: 'lax' as const,
+                sameSite: 'lax',
                 secure: false,
             }
         }
