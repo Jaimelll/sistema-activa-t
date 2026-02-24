@@ -21,19 +21,28 @@ const CustomFundingTooltip = ({ active, payload }: any) => {
     return null;
 };
 
-export function FundingChart({ data, rotateX = -45, formatY = 'millions' }: FundingChartProps & { rotateX?: number, formatY?: 'millions' | 'currency' }) {
+export function FundingChart({ data, rotateX = -45, formatY = 'millions', onBarClick }: FundingChartProps & { rotateX?: number, formatY?: 'millions' | 'currency', onBarClick?: (region: string) => void }) {
     return (
         <div className="card h-[400px] w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Financiamiento por Región</h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Financiamiento por Región</h3>
+                <span className="text-[10px] text-gray-400 font-normal italic">Haz clic en una barra para ver detalles</span>
+            </div>
             <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                     data={data}
+                    onClick={(state) => {
+                        if (state && state.activeLabel) {
+                            onBarClick?.(state.activeLabel);
+                        }
+                    }}
                     margin={{
                         top: 20,
                         right: 30,
                         left: 20,
                         bottom: 100,
                     }}
+                    style={{ cursor: 'pointer' }}
                 >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                     <XAxis
