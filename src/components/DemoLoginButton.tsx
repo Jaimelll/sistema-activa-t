@@ -7,21 +7,23 @@ import { Loader2 } from 'lucide-react';
 export function DemoLoginButton() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showFallback, setShowFallback] = useState(false);
 
     const handleDemoLogin = async () => {
-        console.log('[DemoLogin] Botón presionado, iniciando login...');
+        console.log('[DemoLogin] Botón presionado');
         setLoading(true);
         setError(null);
+        setShowFallback(false);
 
         const supabase = createClient();
 
         try {
-            // 1. Cerrar sesión previa para evitar conflictos
-            console.log('[DemoLogin] Cerrando sesión previa...');
+            // 1. Cerrar sesión previa
+            console.log('[DemoLogin] signOut...');
             await supabase.auth.signOut();
 
             // 2. Login con credenciales demo
-            console.log('[DemoLogin] Intentando signInWithPassword...');
+            console.log('[DemoLogin] signInWithPassword...');
 
             const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
                 setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 5000)
@@ -39,17 +41,28 @@ export function DemoLoginButton() {
                 if (result.error.message === 'timeout') {
                     setError('La conexión tardó demasiado. Intente nuevamente.');
                 } else {
-                    setError('Error en el acceso demo, contacte al administrador: ' + result.error.message);
+                    setError('Error en el acceso demo: ' + result.error.message);
                 }
                 setLoading(false);
                 return;
             }
 
-            console.log('[DemoLogin] Login exitoso, session:', result.data);
-            console.log('[DemoLogin] Redirigiendo a /dashboard...');
+            console.log('[DemoLogin] Login exitoso');
 
-            // 3. Redirección forzada con replace (limpia historial)
-            window.location.replace('/dashboard');
+            // 3. Forzar refresco de sesión para que las cookies se escriban
+            console.log('[DemoLogin] Refrescando sesión (getSession)...');
+            await supabase.auth.getSession();
+
+            // 4. Pequeña espera para asegurar que las cookies se persistan
+            await new Promise((r) => setTimeout(r, 300));
+
+            console.log('[DemoLogin] Redirigiendo...');
+
+            // 5. Mostrar fallback por si la redirección no funciona
+            setShowFallback(true);
+
+            // 6. Redirección forzada con cache-bust
+            window.location.replace('/dashboard?t=' + Date.now());
 
         } catch (e: any) {
             console.error('[DemoLogin] Excepción:', e);
@@ -80,6 +93,14 @@ export function DemoLoginButton() {
                     'Entrar como Demo (Solo Presentación)'
                 )}
             </button>
+            {showFallback && (
+                <p className="mt-2 text-center text-xs text-gray-600">
+                    Sesión iniciada. Si no redirige,{' '}
+                    <a href="/dashboard" className="text-blue-600 underline font-semibold">
+                        haga clic aquí
+                    </a>
+                </p>
+            )}
         </div>
     );
 }
