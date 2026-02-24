@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { DemoLoginButton } from "@/components/DemoLoginButton";
 
 export default async function Home({
   searchParams,
@@ -51,19 +52,7 @@ export default async function Home({
           </button>
         </form>
 
-        {/* Demo access */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <form action="/auth/login" method="post">
-            <input type="hidden" name="email" value="demo@demo.com" />
-            <input type="hidden" name="password" value="demo123" />
-            <button
-              type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded transition-colors text-sm"
-            >
-              Entrar como Demo (Solo Presentación)
-            </button>
-          </form>
-        </div>
+        <DemoLoginButton />
       </div>
     </div>
   );
