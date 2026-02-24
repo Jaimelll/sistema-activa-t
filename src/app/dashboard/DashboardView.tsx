@@ -35,6 +35,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
     const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
+    const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+
+    const handleFundingBarClick = (region: string) => {
+        setSelectedRegion(region === selectedRegion ? null : region);
+    };
 
     // Use passed years directly - NO LOGIC HERE
     // years prop comes from server as sorted number array or objects
@@ -380,8 +385,88 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* Bottom Row: Bar Chart (100% width) */}
             <div className="w-full">
                 <div className="w-full">
-                    <FundingChart data={fundingByRegion} rotateX={-45} formatY="millions" />
+                    <FundingChart
+                        data={fundingByRegion}
+                        rotateX={-45}
+                        formatY="millions"
+                        onBarClick={handleFundingBarClick}
+                    />
                 </div>
+
+                {/* Tabla de Detalle por Región */}
+                {selectedRegion && (
+                    <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-50">
+                            <h4 className="text-sm font-bold text-gray-800 uppercase tracking-tight">
+                                {selectedRegion}
+                            </h4>
+                            <div className="flex items-center gap-4">
+                                <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 italic">
+                                    Proyectos: {filteredData.filter(d => d.region === selectedRegion).length}
+                                </span>
+                                <button
+                                    onClick={() => setSelectedRegion(null)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    title="Cerrar detalle"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-50 border-y border-gray-100">
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px]">Código</th>
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Eje</th>
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Lín.</th>
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[140px] text-right">Monto Fondo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredData
+                                        .filter(d => d.region === selectedRegion)
+                                        .sort((a, b) => {
+                                            const ejeA = String(a.ejeId || a.eje_id || '');
+                                            const ejeB = String(b.ejeId || b.eje_id || '');
+                                            if (ejeA !== ejeB) return ejeA.localeCompare(ejeB);
+                                            const linA = String(a.lineaId || a.linea_id || '');
+                                            const linB = String(b.lineaId || b.linea_id || '');
+                                            return linA.localeCompare(linB);
+                                        })
+                                        .map((proj, idx) => (
+                                            <tr key={proj.id} className={clsx(
+                                                "border-b border-gray-50 text-[11px] hover:bg-blue-50/30 transition-colors",
+                                                idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                                            )}>
+                                                <td className="py-2 px-3 font-medium text-gray-700">
+                                                    {proj.codigo || 'Sin código'}
+                                                </td>
+                                                <td className="py-2 px-3 text-center text-gray-600">
+                                                    {proj.ejeId || proj.eje_id || '-'}
+                                                </td>
+                                                <td className="py-2 px-3 text-center text-gray-600">
+                                                    {proj.lineaId || proj.linea_id || '-'}
+                                                </td>
+                                                <td className="py-2 px-3">
+                                                    <div className="truncate max-w-[300px] text-gray-800" title={proj.institucion}>
+                                                        {proj.institucion}
+                                                    </div>
+                                                </td>
+                                                <td className="py-2 px-3 text-right font-bold text-blue-600">
+                                                    S/ {Number(proj.monto_fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Gestora Chart */}
