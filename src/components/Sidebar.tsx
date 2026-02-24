@@ -18,9 +18,9 @@ export function Sidebar() {
     const menuItems = [
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
+        { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
-        { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];
 
