@@ -34,16 +34,16 @@ export function DemoLoginButton() {
 
             console.log('[DemoLogin] signIn OK');
             await supabase.auth.getSession();
-            console.log('[DemoLogin] getSession OK');
+            console.log('[DemoLogin] getSession OK — redirigiendo en 800ms...');
 
-            // Mostrar estado de éxito con enlace manual
-            setSuccess(true);
+            // Liberar el componente del estado loading
             setLoading(false);
+            setSuccess(true);
 
-            // Redirigir con 800ms de retraso usando URL absoluta
+            // Redirección agresiva con 800ms de espera para cookies
             setTimeout(() => {
-                console.log('[DemoLogin] Redirigiendo con location.href...');
-                document.location.href = window.location.origin + '/dashboard';
+                console.log('[DemoLogin] Ejecutando location.replace...');
+                window.location.replace('http://localhost:8081/dashboard');
             }, 800);
 
         } catch (e: any) {
@@ -59,7 +59,8 @@ export function DemoLoginButton() {
                 <p className="text-sm text-green-700 font-semibold mb-2">✅ Sesión iniciada correctamente</p>
                 <p className="text-xs text-gray-500 mb-3">Redirigiendo automáticamente...</p>
                 <a
-                    href="/dashboard"
+                    href="http://localhost:8081/dashboard"
+                    rel="noopener noreferrer"
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition-colors text-sm no-underline"
                 >
                     Si no redirige, haga clic aquí →
