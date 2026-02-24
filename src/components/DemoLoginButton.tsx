@@ -7,40 +7,53 @@ import { Loader2 } from 'lucide-react';
 export function DemoLoginButton() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const supabase = createClient();
 
     const handleDemoLogin = async () => {
+        console.log('[DemoLogin] Botón presionado, iniciando login...');
         setLoading(true);
         setError(null);
 
-        // Timeout de 5 segundos
-        const timeout = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 5000)
-        );
+        const supabase = createClient();
 
         try {
-            const result = await Promise.race([
-                supabase.auth.signInWithPassword({
-                    email: 'demo@demo.com',
-                    password: 'demo123',
-                }),
-                timeout,
-            ]);
+            // 1. Cerrar sesión previa para evitar conflictos
+            console.log('[DemoLogin] Cerrando sesión previa...');
+            await supabase.auth.signOut();
+
+            // 2. Login con credenciales demo
+            console.log('[DemoLogin] Intentando signInWithPassword...');
+
+            const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+                setTimeout(() => resolve({ data: null, error: new Error('timeout') }), 5000)
+            );
+
+            const loginPromise = supabase.auth.signInWithPassword({
+                email: 'demo@demo.com',
+                password: 'demo123',
+            });
+
+            const result = await Promise.race([loginPromise, timeoutPromise]);
 
             if (result.error) {
-                setError('Error en el acceso demo, contacte al administrador');
+                console.error('[DemoLogin] Error:', result.error.message);
+                if (result.error.message === 'timeout') {
+                    setError('La conexión tardó demasiado. Intente nuevamente.');
+                } else {
+                    setError('Error en el acceso demo, contacte al administrador: ' + result.error.message);
+                }
                 setLoading(false);
                 return;
             }
 
-            // Redirección forzada (hard reload para que middleware vea la sesión)
-            window.location.href = '/dashboard';
+            console.log('[DemoLogin] Login exitoso, session:', result.data);
+            console.log('[DemoLogin] Redirigiendo a /dashboard...');
+
+            // 3. Redirección forzada con replace (limpia historial)
+            window.location.replace('/dashboard');
+
         } catch (e: any) {
-            if (e?.message === 'timeout') {
-                setError('La conexión tardó demasiado. Intente nuevamente.');
-            } else {
-                setError('Error en el acceso demo, contacte al administrador');
-            }
+            console.error('[DemoLogin] Excepción:', e);
+            setError('Error inesperado: ' + (e?.message || 'desconocido'));
             setLoading(false);
         }
     };
