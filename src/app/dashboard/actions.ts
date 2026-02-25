@@ -350,7 +350,7 @@ export async function getTimelineData() {
   }
 
   // Flatten and Format Data
-  return data.map((p: any) => ({
+  const mappedData = data.map((p: any) => ({
     id: p.id,
     nombre: p.nombre,
     estado: p.estado,
@@ -365,9 +365,12 @@ export async function getTimelineData() {
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
     etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa',
+    fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
     avances: p.avance_proyecto.map((a: any) => ({
       fecha: a.fecha,
       etapa_id: a.etapa_id
     }))
   }));
+
+  return mappedData;
 }
