@@ -427,12 +427,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-y border-gray-100">
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px]">Código</th>
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Eje</th>
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Lín.</th>
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px] text-center">Estado/Etapa</th>
-                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[140px] text-right">Monto Fondo</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px]">Código</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Eje</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Lín.</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px] text-center">Estado/Etapa</th>
+                                        <th className="py-1 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[140px] text-right">Monto Fondo</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -451,26 +451,26 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                 "border-b border-gray-50 text-[11px] hover:bg-blue-50/30 transition-colors",
                                                 idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                                             )}>
-                                                <td className="py-2 px-3 font-medium text-gray-700">
+                                                <td className="py-1 px-3 font-medium text-gray-700">
                                                     {proj.codigo || 'Sin código'}
                                                 </td>
-                                                <td className="py-2 px-3 text-center text-gray-600">
+                                                <td className="py-1 px-3 text-center text-gray-600">
                                                     {proj.ejeId || proj.eje_id || '-'}
                                                 </td>
-                                                <td className="py-2 px-3 text-center text-gray-600">
+                                                <td className="py-1 px-3 text-center text-gray-600">
                                                     {proj.lineaId || proj.linea_id || '-'}
                                                 </td>
-                                                <td className="py-2 px-3">
+                                                <td className="py-1 px-3">
                                                     <div className="truncate max-w-[300px] text-gray-800" title={proj.institucion}>
                                                         {proj.institucion}
                                                     </div>
                                                 </td>
-                                                <td className="py-2 px-3 text-center">
-                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[9px] font-semibold border border-gray-200">
+                                                <td className="py-1 px-3 text-center text-[10px]">
+                                                    <span className="px-1.5 py-0 bg-gray-100 text-gray-600 rounded-full text-[8px] font-semibold border border-gray-200">
                                                         {proj.etapa || proj.estado || '-'}
                                                     </span>
                                                 </td>
-                                                <td className="py-2 px-3 text-right font-bold text-blue-600">
+                                                <td className="py-1 px-3 text-right font-bold text-blue-600">
                                                     S/ {Number(proj.monto_fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                 </td>
                                             </tr>
