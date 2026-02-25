@@ -219,10 +219,10 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
             {/* Header & Filters */}
             <div className="flex flex-col space-y-4 mb-6">
 
-                {/* Fila Superior: Logo + Filtros (ALINEADOS A LA IZQUIERDA) */}
+                {/* Fila Superior: Branding + Filtros (ALINEADOS A LA IZQUIERDA) */}
                 <div className="flex flex-row items-center justify-start gap-6">
 
-                    {/* 1. Logo */}
+                    {/* 1. Imagen */}
                     <img
                         src="/fondoempleo.jpg"
                         alt="Fondoempleo"
@@ -233,7 +233,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
                         }}
                     />
 
-                    {/* 2. Contenedor de Filtros (Pegado al logo) */}
+                    {/* 2. Filtros (Pegado al branding) */}
                     <div className="flex flex-row items-center gap-4">
                         {/* EXECUTION FILTER */}
                         <select
