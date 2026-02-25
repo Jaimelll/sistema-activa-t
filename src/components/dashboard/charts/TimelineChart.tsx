@@ -78,6 +78,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 region: project.region || '-',
                 gestora: project.gestora || '-',
                 monto: project.monto_fondoempleo || 0,
+                avance: project.monto_contrapartida || 0,
                 etapa: project.etapa || project.estado || '-'
             });
 
@@ -315,7 +316,15 @@ export function TimelineChart({ data }: TimelineChartProps) {
                             tickFormatter={formatYAxis}
                         />
                         <Tooltip content={<SimpleTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
-                        <Legend verticalAlign="top" align="right" wrapperStyle={{ fontSize: '12px', paddingBottom: '20px' }} />
+                        <Legend
+                            verticalAlign="top"
+                            align="left"
+                            wrapperStyle={{
+                                fontSize: '12px',
+                                paddingBottom: '20px',
+                                paddingLeft: isMobile ? '135px' : '195px'
+                            }}
+                        />
 
                         {/* Invisible Start */}
                         <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" xAxisId="bottom" />
@@ -391,18 +400,28 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Región</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Monto Fondo</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Avance</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Presupuestado</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">%</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {hoveredGroup.projects.map((p: any, i: number) => (
-                                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                        <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
-                                        <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                        <td className="py-1 px-2 text-gray-600 whitespace-nowrap">{p.region}</td>
-                                        <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {Number(p.monto).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                    </tr>
-                                ))}
+                                {hoveredGroup.projects.map((p: any, i: number) => {
+                                    const presupuestado = Number(p.monto) || 0;
+                                    const avance = Number(p.avance) || 0;
+                                    const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
+
+                                    return (
+                                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                            <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                            <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
+                                            <td className="py-1 px-2 text-gray-600 whitespace-nowrap">{p.region}</td>
+                                            <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                            <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                            <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
