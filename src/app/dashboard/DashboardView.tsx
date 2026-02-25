@@ -251,7 +251,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* Header & Filters */}
             <div className="flex flex-col space-y-4 mb-6">
 
-                {/* Fila Superior: Logo + Filtros (Responsive) */}
+                {/* Fila Superior: Branding + Filtros (Responsive) */}
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
 
                     <div className="flex items-center gap-4 flex-shrink-0">
@@ -264,10 +264,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                 imageRendering: 'crisp-edges'
                             }}
                         />
-                        <div className="hidden lg:block h-12 w-px bg-gray-200 mx-2"></div>
-                        <h1 className="text-2xl font-bold text-gray-800 tracking-tight hidden lg:block">
-                            Sistema FONDOEMPLEO
-                        </h1>
                     </div>
 
                     {/* 2. Contenedor de Filtros (Grid Responsive) */}

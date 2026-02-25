@@ -7,14 +7,8 @@ export function createClient() {
         {
             auth: {
                 persistSession: true,
-            },
-            cookieOptions: {
-                name: 'sb-auth-token',
-                maxAge: 60 * 60 * 24 * 7,
-                domain: '',
-                path: '/',
-                sameSite: 'lax',
-                secure: false,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
             }
         }
     )

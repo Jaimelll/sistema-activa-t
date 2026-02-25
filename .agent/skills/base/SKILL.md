@@ -70,6 +70,7 @@ Al procesar la hoja `proyecto_servicio`:
 - **Línea de Tiempo Tooltip**: > [!IMPORTANT]
 > **REGLA INAMOVIBLE**: El encabezado DEBE seguir el formato `Eje {id} - Línea {id} | Etapa: {descripcion}`. La descripción debe provenir del JOIN con la tabla `etapas`.
 - **Gráficos Eliminados**: Por requerimiento de usuario, se han eliminado los gráficos de tipo Dona (Estado, Eje, Línea) del dashboard principal para priorizar la Línea de Tiempo y el Financiamiento por Región.
+- **Interfaz Logo-only**: El sistema utiliza un diseño centrado en el logo. Se ha eliminado el título textual "Sistema FONDOEMPLEO" de la cabecera y el Sidebar para enfatizar la identidad visual de la marca a través de su logo.
 
 ### C. Orden del Layout (Dashboard de Proyectos)
 El orden **OBLIGATORIO** de componentes es:

@@ -19,7 +19,7 @@ export function Navbar() {
                     <Link href="/dashboard" className="flex items-center mr-6">
                         <Image
                             src="/logo fondoempleo.jpg"
-                            alt="Fondoempleo Logo"
+                            alt="Fondoempleo"
                             width={300} // Aspect ratio placeholder
                             height={85}
                             className="h-[85px] w-auto object-contain"
