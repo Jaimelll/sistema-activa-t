@@ -66,12 +66,10 @@ Al procesar la hoja `proyecto_servicio`:
 1.  **Sincronización Total**: El filtro de Modalidad afecta a Donas, Timeline y Programas.
     -   **Regla de Nombre (Eje Y)**: El formateador debe seguir ESTRICTAMENTE el patrón: `Eje {eje_id} - Línea {linea_id}`.
     -   **Leyenda**: Debe ubicarse en la parte **Superior Derecha** (`verticalAlign="top"`, `align="right"`).
-    -   **Nombrado de Ejes en Leyendas de Donas**: Prefijo obligatorio `E{id}`. Ejemplo: `E1 - Concursal Activate`, `E2 - ...`.
-    -   **Ordenamiento Jerárquico**:
-        1.  **Eje**: `eje_id` (Menor a Mayor).
-        2.  **Línea**: `linea_id` (Menor a Mayor).
-        3.  **Fecha Inicio**: `fecha_inicio` (Más antigua a más reciente).
-    -   **Gráficos de Barras Regionales**: Orden alfabético (A-Z) en el eje X. El Tooltip debe incluir siempre: Región (título), `Proyectos: X` (conteo), y luego los valores monetarios (Fondoempleo, Ejecutado).
+    -   **Gráficos de Barras Regionales**: Orden alfabético (A-Z) en el eje X. El Tooltip debe incluir siempre: Región (título), `Proyectos: X` (conteo), **Etapa** y los valores monetarios (Fondoempleo, Ejecutado).
+- **Línea de Tiempo Tooltip**: > [!IMPORTANT]
+> **REGLA INAMOVIBLE**: El encabezado DEBE seguir el formato `Eje {id} - Línea {id} | Etapa: {descripcion}`. La descripción debe provenir del JOIN con la tabla `etapas`.
+- **Gráficos Eliminados**: Por requerimiento de usuario, se han eliminado los gráficos de tipo Dona (Estado, Eje, Línea) del dashboard principal para priorizar la Línea de Tiempo y el Financiamiento por Región.
 
 ### C. Orden del Layout (Dashboard de Proyectos)
 El orden **OBLIGATORIO** de componentes es:
@@ -80,7 +78,7 @@ El orden **OBLIGATORIO** de componentes es:
 3.  **Línea de Tiempo** (Timeline Chart) — elemento principal
 4.  Funding Chart (Barras por Región)
 5.  Gestora Chart (si aplica)
-6.  Gráficos de Dona (Estado, Eje, Línea) — al final
+6.  ~~Gráficos de Dona (Estado, Eje, Línea)~~ — ELIMINADOS
 
 ---
 

@@ -335,6 +335,7 @@ export async function getTimelineData() {
       lineas (descripcion),
       instituciones_ejecutoras (nombre),
       regiones (descripcion),
+      etapas (descripcion),
       avance_proyecto (
         fecha,
         etapa_id
@@ -361,6 +362,7 @@ export async function getTimelineData() {
     monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
+    etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa',
     avances: p.avance_proyecto.map((a: any) => ({
       fecha: a.fecha,
       etapa_id: a.etapa_id

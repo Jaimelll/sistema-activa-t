@@ -135,11 +135,13 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         const map = new Map();
         filteredData.forEach(d => {
             const r = d.region;
-            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, proyectos: 0 });
+            if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, proyectos: 0, etapa: d.etapa });
             const entry = map.get(r);
             entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
             entry.contrapartida += (Number(d.monto_contrapartida) || 0);
             entry.proyectos += 1;
+            // Si hay múltiples proyectos en la región, la etapa se muestra del último o se simplifica.
+            // Para regiones, suele haber una etapa predominante o se muestra la del registro actual.
         });
         return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
     }, [filteredData]);
@@ -252,16 +254,21 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 {/* Fila Superior: Logo + Filtros (Responsive) */}
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
 
-                    {/* 1. Logo */}
-                    <img
-                        src="/fondoempleo.jpg"
-                        alt="Fondoempleo"
-                        className="h-[85px] object-contain flex-shrink-0"
-                        style={{
-                            filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
-                            imageRendering: 'crisp-edges'
-                        }}
-                    />
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                        <img
+                            src="/fondoempleo.jpg"
+                            alt="Fondoempleo"
+                            className="h-[85px] object-contain"
+                            style={{
+                                filter: 'contrast(1.1) saturate(1.2) drop-shadow(0 0 0px transparent)',
+                                imageRendering: 'crisp-edges'
+                            }}
+                        />
+                        <div className="hidden lg:block h-12 w-px bg-gray-200 mx-2"></div>
+                        <h1 className="text-2xl font-bold text-gray-800 tracking-tight hidden lg:block">
+                            Sistema FONDOEMPLEO
+                        </h1>
+                    </div>
 
                     {/* 2. Contenedor de Filtros (Grid Responsive) */}
                     <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -424,6 +431,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                         <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Eje</th>
                                         <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[50px] text-center">Lín.</th>
                                         <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
+                                        <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[120px] text-center">Estado/Etapa</th>
                                         <th className="py-2 px-3 text-[10px] uppercase tracking-wider font-bold text-gray-500 w-[140px] text-right">Monto Fondo</th>
                                     </tr>
                                 </thead>
@@ -457,6 +465,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                         {proj.institucion}
                                                     </div>
                                                 </td>
+                                                <td className="py-2 px-3 text-center">
+                                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-[9px] font-semibold border border-gray-200">
+                                                        {proj.etapa || proj.estado || '-'}
+                                                    </span>
+                                                </td>
                                                 <td className="py-2 px-3 text-right font-bold text-blue-600">
                                                     S/ {Number(proj.monto_fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                 </td>
@@ -476,36 +489,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 </div>
             )}
 
-            {/* Donut Charts Row (Final) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                {/* 1. Proyectos por Estado */}
-                <div>
-                    <StatusChart
-                        data={projectsByStatus}
-                        title="Proyectos por Estado"
-                        legendStyle={{ fontSize: '14px' }}
-                        unitLabel="proyectos"
-                    />
-                </div>
-                {/* 2. Proyectos por Eje */}
-                <div>
-                    <EjeChart
-                        data={projectsByEje}
-                        title="Proyectos por Eje"
-                        legendStyle={{ fontSize: '14px' }}
-                        unitLabel="proyectos"
-                    />
-                </div>
-                {/* 3. Proyectos por Línea */}
-                <div>
-                    <EjeChart
-                        data={projectsByLinea}
-                        title="Proyectos por Línea"
-                        legendStyle={{ fontSize: '14px' }}
-                        unitLabel="proyectos"
-                    />
-                </div>
-            </div>
         </div>
     );
 }
