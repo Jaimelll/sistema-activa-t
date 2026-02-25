@@ -12,9 +12,10 @@ const CustomFundingTooltip = ({ active, payload }: any) => {
         return (
             <div className="bg-white p-3 rounded-xl shadow-xl border border-gray-200 text-xs">
                 <p className="font-bold text-gray-800 mb-1">{d.name}</p>
-                <p className="text-gray-500 mb-2">Proyectos: <span className="font-semibold">{d.proyectos}</span></p>
-                <p className="text-blue-700 font-semibold">S/ {Number(d.fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                <p className="text-gray-500">Ejecutado: S/ {Number(d.contrapartida).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p className="text-gray-500 mb-1">Proyectos: <span className="font-semibold">{d.proyectos}</span></p>
+                {/* Etapa removed here as it is now individual per project in the detail table */}
+                <p className="text-blue-700 font-semibold text-sm">S/ {Number(d.fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                <p className="text-gray-500 mt-1">Ejecutado: S/ {Number(d.contrapartida).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
             </div>
         );
     }

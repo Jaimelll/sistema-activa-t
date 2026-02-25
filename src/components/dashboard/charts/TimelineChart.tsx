@@ -65,7 +65,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     endDates: [],
                     projectCount: 0,
                     start: null,
-                    projects: []
+                    projects: [],
+                    etapa: project.etapa || project.estado || 'Sin Etapa'
                 });
             }
 
@@ -76,7 +77,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 institucion: project.institucion || '-',
                 region: project.region || '-',
                 gestora: project.gestora || '-',
-                monto: project.monto_fondoempleo || 0
+                monto: project.monto_fondoempleo || 0,
+                etapa: project.etapa || project.estado || '-'
             });
 
             // Collect dates for all stages
@@ -171,7 +173,11 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 ejeId: g.ejeId,
                 lineaId: g.lineaId,
                 count: g.projectCount,
+                totalFondo: g.totalFondo,
                 projects: g.projects,
+                etapa: g.projects.every((p: any) => p.etapa === g.projects[0].etapa)
+                    ? (g.projects[0].etapa || 'No definida')
+                    : 'Múltiples etapas',
                 start: t1,
                 d1, d2, d3, d4, d5, d6,
                 date1, date2, date3, date4, date5, date6, dateEnd: tEndProject,
@@ -215,10 +221,17 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const d = payload[0].payload;
             const totalMonto = d.projects ? d.projects.reduce((sum: number, p: any) => sum + (Number(p.monto) || 0), 0) : 0;
             return (
-                <div className="bg-white px-3 py-2 rounded-lg shadow-lg border border-gray-200 text-xs">
-                    <p className="font-bold text-gray-800">{formatYAxis(d.name)}</p>
-                    <p className="text-gray-500">Proyectos: <span className="font-semibold">{d.count}</span></p>
-                    <p className="text-blue-700 font-semibold">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                <div className="bg-white p-3 rounded-lg shadow-xl border border-gray-200 text-xs shadow-blue-900/10">
+                    <div className="mb-2 pb-2 border-b border-gray-100">
+                        <p className="font-bold text-gray-800">
+                            {formatYAxis(d.name)} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
+                        </p>
+                    </div>
+
+                    <div className="space-y-1">
+                        <p className="text-gray-600">Proyectos: <span className="font-bold text-gray-800">{d.count}</span></p>
+                        <p className="text-gray-600">Monto Total: <span className="font-bold text-blue-700">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></p>
+                    </div>
                 </div>
             );
         }
@@ -258,8 +271,10 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
     return (
         <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Línea de Tiempo</h3>
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Linea de Tiempo</h3>
+                <div className="flex items-center gap-4">
+                </div>
             </div>
 
             <div className="w-full" style={{ height: Math.max(400, processedData.length * 40) + 'px' }}>
