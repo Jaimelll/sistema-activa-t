@@ -353,11 +353,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KPICard
-                    title="Monto Fondoempleo"
+                    title="Presupuestado"
                     value={`S/ ${metrics.totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                     icon={DollarSign}
-                    trend="+12% vs año anterior"
-                    trendUp={true}
                 />
                 <KPICard
                     title="Proyectos Activos"
@@ -367,14 +365,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 <KPICard
                     title="Beneficiarios"
                     value={metrics.totalBeneficiaries.toLocaleString('es-PE')}
-                    icon={Users} // Using generic users icon, locally defined in KPICard import but we passed the component
-                // We need to fix the icon import if Users is not imported in this file. 
-                // Users IS imported from lucide-react above.
+                    icon={Users}
                 />
                 <KPICard
-                    title="Ejecutado (Total)"
+                    title="Avance"
                     value={`S/ ${(metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
-                    icon={TrendingUp} // Or BarChart3
+                    icon={TrendingUp}
                 />
             </div>
 
@@ -428,7 +424,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-center">Lín.</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 min-w-[200px]">Institución Ejecutora</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[170px] text-center">Estado/Etapa</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[140px] text-right">Monto Fondo</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Avance</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Presupuestado</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-right">%</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -442,35 +440,47 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                             const linB = String(b.lineaId || b.linea_id || '');
                                             return linA.localeCompare(linB);
                                         })
-                                        .map((proj, idx) => (
-                                            <tr key={proj.id} className={clsx(
-                                                "border-b border-gray-50 text-[11px] hover:bg-blue-50/30 transition-colors",
-                                                idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                                            )}>
-                                                <td className="py-0.5 px-3 font-medium text-gray-700">
-                                                    {proj.codigo || 'Sin código'}
-                                                </td>
-                                                <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
-                                                    {proj.ejeId || proj.eje_id || '-'}
-                                                </td>
-                                                <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
-                                                    {proj.lineaId || proj.linea_id || '-'}
-                                                </td>
-                                                <td className="py-0.5 px-3">
-                                                    <div className="truncate max-w-[300px] text-gray-800" title={proj.institucion}>
-                                                        {proj.institucion}
-                                                    </div>
-                                                </td>
-                                                <td className="py-0.5 px-3 text-center">
-                                                    <span className="px-1 py-0 bg-gray-100 text-gray-600 rounded-full text-[8px] font-bold border border-gray-200 whitespace-nowrap">
-                                                        {proj.etapa || proj.estado || '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-0.5 px-3 text-right font-bold text-blue-700">
-                                                    S/ {Number(proj.monto_fondoempleo).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        .map((proj, idx) => {
+                                            const presupuestado = Number(proj.monto_fondoempleo) || 0;
+                                            const avance = Number(proj.monto_contrapartida) || 0;
+                                            const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
+
+                                            return (
+                                                <tr key={proj.id} className={clsx(
+                                                    "border-b border-gray-50 text-[11px] hover:bg-blue-50/30 transition-colors",
+                                                    idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                                                )}>
+                                                    <td className="py-0.5 px-3 font-medium text-gray-700">
+                                                        {proj.codigo || 'Sin código'}
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
+                                                        {proj.ejeId || proj.eje_id || '-'}
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
+                                                        {proj.lineaId || proj.linea_id || '-'}
+                                                    </td>
+                                                    <td className="py-0.5 px-3">
+                                                        <div className="truncate max-w-[300px] text-gray-800" title={proj.institucion}>
+                                                            {proj.institucion}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-center">
+                                                        <span className="px-1 py-0 bg-gray-100 text-gray-600 rounded-full text-[8px] font-bold border border-gray-200 whitespace-nowrap">
+                                                            {proj.etapa || proj.estado || '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-right font-bold text-emerald-700">
+                                                        S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-right font-bold text-blue-700">
+                                                        S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-right font-bold text-gray-700">
+                                                        {porcentaje.toFixed(1)}%
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                 </tbody>
                             </table>
                         </div>
