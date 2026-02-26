@@ -315,8 +315,10 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
 
 // ──────────────────────── TRIGGER EVALUACIÓN ────────────────────────
 
-export async function triggerEvaluacion(proyectoId: number) {
+export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?: string | null) {
     const supabase = getSupabase();
+
+    console.log(`[AI Evaluation] Triggering for ID: ${proyectoId}, URL: ${urlArchivoProyecto}`);
 
     // Check if project has evaluacion_config_id assigned
     const { data: proyecto } = await supabase
@@ -358,17 +360,25 @@ export async function triggerEvaluacion(proyectoId: number) {
     // Send webhook to n8n
     if (webhookUrl && !webhookUrl.includes("YOUR_N8N_INSTANCE")) {
         try {
+            console.log(`[AI Evaluation] Calling webhook: ${webhookUrl}`);
             const res = await fetch(webhookUrl, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ proyecto_id: proyectoId }),
+                headers: {
+                    "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "true"
+                },
+                body: JSON.stringify({
+                    proyecto_id: proyectoId,
+                    url_archivo_proyecto: urlArchivoProyecto || null
+                }),
             });
-            console.log("Webhook response:", res.status);
+            const resText = await res.text();
+            console.log(`[AI Evaluation] Webhook response status: ${res.status}, body: ${resText}`);
         } catch (err) {
-            console.error("Error calling n8n webhook:", err);
+            console.error("[AI Evaluation] Error calling n8n webhook:", err);
         }
     } else {
-        console.log("N8N_WEBHOOK_URL not configured, skipping webhook. proyecto_id:", proyectoId);
+        console.log("[AI Evaluation] N8N_WEBHOOK_URL not configured, skipping webhook. proyecto_id:", proyectoId);
     }
 
     return { success: true };
