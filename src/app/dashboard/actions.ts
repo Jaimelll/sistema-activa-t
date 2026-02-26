@@ -23,6 +23,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       regiones (descripcion),
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
+      etapas (descripcion),
       avance_proyecto (
         fecha,
         etapa_id
@@ -87,7 +88,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       lineaId: p.linea_id, // Correct column: linea_id
       eje: p.ejes?.descripcion || 'Sin Eje',
       ejeId: p.eje_id, // Correct column: eje_id
-      etapa: p.estado || 'Sin Etapa', // Map 'estado' (DB) to 'etapa' (Frontend)
+      etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa', // Map descriptive stage
       etapaId: p.etapa_id, // Added: Mapped for execution filter
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       gestora: p.gestora || '', // Added: New field

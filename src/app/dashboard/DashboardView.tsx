@@ -290,28 +290,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
                         </select>
 
-                        {/* 3. Año */}
-                        <select
-                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            value={selectedYear}
-                            onChange={(e) => {
-                                setSelectedYear(e.target.value);
-                                // Reset other filters on year change
-                                setSelectedLinea('all');
-                                setSelectedEje('all');
-                                setSelectedEtapa('all');
-                                setSelectedExecution('all');
-                                setSelectedModalidad('all');
-                            }}
-                        >
-                            <option value="" disabled>Seleccionar Año</option>
-                            {years.map((y: any) => {
-                                const val = y.value ?? y;
-                                const lab = y.label ?? y;
-                                return <option key={val} value={val}>{lab}</option>
-                            })}
-                        </select>
-
                         {/* 4. Eje */}
                         <select
                             className="input h-10 py-2 px-3 text-sm border-gray-300 w-full rounded shadow-sm"
@@ -421,7 +399,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                     <tr className="bg-gray-100 border-b-2 border-gray-300">
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px]">Código</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 min-w-[200px]">Institución Ejecutora</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Región</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-center">Etapa</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Presupuesto</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Avance</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-right">%</th>
@@ -458,8 +436,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                             {proj.institucion}
                                                         </div>
                                                     </td>
-                                                    <td className="py-0.5 px-3 text-center text-gray-600">
-                                                        {proj.region}
+                                                    <td className="py-0.5 px-3 text-center">
+                                                        <span className="px-1 py-0 bg-blue-50 text-blue-700 rounded-full text-[8px] font-bold border border-blue-100 whitespace-nowrap">
+                                                            {proj.etapa || proj.estado || '-'}
+                                                        </span>
                                                     </td>
                                                     <td className="py-0.5 px-3 text-right font-bold text-blue-700">
                                                         S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
