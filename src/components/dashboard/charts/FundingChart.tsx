@@ -26,7 +26,7 @@ export function FundingChart({ data, rotateX = -45, formatY = 'millions', onBarC
     return (
         <div className="card h-[400px] w-full">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Financiamiento por Región</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Avance por Región</h3>
                 <span className="text-[10px] text-gray-400 font-normal italic">Haz clic en una barra para ver detalles</span>
             </div>
             <ResponsiveContainer width="100%" height="100%">

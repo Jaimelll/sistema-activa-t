@@ -9,7 +9,7 @@ interface TimelineChartProps {
 
 export function TimelineChart({ data }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
-    const [hoveredGroup, setHoveredGroup] = useState<any>(null);
+    const [selectedGroup, setSelectedGroup] = useState<any>(null);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -48,8 +48,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const ejeName = project.eje || `Eje ${ejeId}`;
             // Use literal "Línea" + ID as requested, separate from description
 
-            // New Key Format: [Date] | Eje [Número Eje] - Línea [Número Línea]
-            const key = `${dateStr} | Eje ${ejeId} - Línea ${lineaId}`;
+            // New Key Format: [Date] | Eje [Número Eje] - [Nombre Eje] / Línea [Número Línea] - [Nombre Línea]
+            const key = `${dateStr} | Eje ${ejeId} - ${project.eje || 'Sin Eje'} / Línea ${lineaId} - ${project.linea || 'Sin Línea'}`;
 
             if (!groups.has(key)) {
                 groups.set(key, {
@@ -212,9 +212,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
     const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit' }) : '-';
 
-    // Helper to clean Y Axis Label
+    // Helper to clean Y Axis Label - Revert to short IDs as requested
     const formatYAxis = (key: string) => {
-        return key.split(' | ')[1] || key;
+        // key format: "[Date] | Eje [ID] - [Nombre] / Línea [ID] - [Nombre]"
+        // we want: "Eje [ID] - Línea [ID]"
+        const parts = key.split(' | ')[1]?.split(' / ') || [];
+        const ejeShort = parts[0]?.split(' - ')[0] || '';
+        const lineaShort = parts[1]?.split(' - ')[0] || '';
+        return `${ejeShort} - ${lineaShort}`;
     };
 
     const ONE_DAY = 86400000;
@@ -227,7 +232,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 <div className="bg-white p-3 rounded-lg shadow-xl border border-gray-200 text-xs shadow-blue-900/10">
                     <div className="mb-2 pb-2 border-b border-gray-100">
                         <p className="font-bold text-gray-800">
-                            {formatYAxis(d.name)} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
+                            {d.name.split(' | ')[1] || d.name} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
                         </p>
                     </div>
 
@@ -241,17 +246,15 @@ export function TimelineChart({ data }: TimelineChartProps) {
         return null;
     };
 
-    const handleChartMouseMove = (state: any) => {
+    const handleChartClick = (state: any) => {
         if (state && state.activePayload && state.activePayload.length) {
             const d = state.activePayload[0].payload;
-            if (!hoveredGroup || hoveredGroup.name !== d.name) {
-                setHoveredGroup(d);
-            }
+            setSelectedGroup(d);
         }
     };
 
     const handleChartMouseLeave = () => {
-        setHoveredGroup(null);
+        // Removed clearing to keep detail table visible as requested
     };
 
     const JAN_2024 = new Date('2024-01-01').getTime();
@@ -275,7 +278,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
     return (
         <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Linea de Tiempo</h3>
+                <h3 className="text-xl font-bold text-gray-800">Línea de Tiempo de Proyectos</h3>
                 <div className="flex items-center gap-4">
                 </div>
             </div>
@@ -287,7 +290,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         data={processedData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
                         barSize={18}
-                        onMouseMove={handleChartMouseMove}
+                        onMouseMove={handleChartClick}
+                        onClick={handleChartClick}
                         onMouseLeave={handleChartMouseLeave}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -334,7 +338,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         {/* 1. Bases (Blue) */}
                         <Bar dataKey="d1_safe" stackId="a" name="Aprobación de bases" fill={COLORS.bases} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d1-${index}`} fill={d.d1_safe > 0 ? COLORS.bases : 'transparent'} stroke="none" radius={[4, 0, 0, 4]} />
+                                <Cell key={`cell-d1-${index}`} fill={d.d1_safe > 0 ? COLORS.bases : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
@@ -369,7 +373,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         {/* 6. Ejecutado (Rose) */}
                         <Bar dataKey="d6_safe" stackId="a" name="Ejecutado" fill={COLORS.ejecutado} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d6-${index}`} fill={d.d6_safe > 0 ? COLORS.ejecutado : 'transparent'} stroke="none" radius={[0, 4, 4, 0]} />
+                                <Cell key={`cell-d6-${index}`} fill={d.d6_safe > 0 ? COLORS.ejecutado : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
@@ -387,13 +391,23 @@ export function TimelineChart({ data }: TimelineChartProps) {
             </div>
 
             {/* Detail Panel - Rendered BELOW chart */}
-            {hoveredGroup && hoveredGroup.projects && hoveredGroup.projects.length > 0 && (
+            {selectedGroup && selectedGroup.projects && selectedGroup.projects.length > 0 && (
                 <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs"
                     style={{ scrollbarGutter: 'stable' }}
                 >
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="font-bold text-gray-800">{formatYAxis(hoveredGroup.name)}</p>
-                        <p className="text-gray-500">Proyectos: <span className="font-semibold">{hoveredGroup.count}</span></p>
+                    <div className="mb-4 pb-2 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-2 text-gray-800">
+                        <div className="flex-1 text-left">
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Eje</span>
+                            <span className="text-sm font-bold">{(selectedGroup.name.split(' | ')[1] || '').split(' / ')[0]}</span>
+                        </div>
+                        <div className="flex-1 text-center border-l border-r border-gray-200 px-4">
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Línea</span>
+                            <span className="text-sm font-bold">{(selectedGroup.name.split(' | ')[1] || '').split(' / ')[1]}</span>
+                        </div>
+                        <div className="flex-1 text-right">
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Resumen</span>
+                            <span className="text-sm font-bold text-blue-700">{selectedGroup.count} proyectos encontrados</span>
+                        </div>
                     </div>
                     <div className="pr-1">
                         <table className="w-full border-collapse">
@@ -410,7 +424,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {hoveredGroup.projects.map((p: any, i: number) => {
+                                {selectedGroup.projects.map((p: any, i: number) => {
                                     const presupuestado = Number(p.monto) || 0;
                                     const avance = Number(p.avance) || 0;
                                     const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
@@ -421,7 +435,9 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                         <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                                             <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
                                             <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                            <td className="py-1 px-2 text-gray-600 whitespace-nowrap">{p.region}</td>
+                                            <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
+                                                {p.region || '-'}
+                                            </td>
                                             <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                                             <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                                             <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
