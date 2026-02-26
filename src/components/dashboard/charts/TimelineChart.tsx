@@ -79,6 +79,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 gestora: project.gestora || '-',
                 monto: project.monto_fondoempleo || 0,
                 avance: project.monto_contrapartida || 0,
+                fecha_inicio: project.fecha_inicio || null,
                 fecha_fin: project.fecha_fin || null,
                 etapa: project.etapa || project.estado || '-'
             });
@@ -401,10 +402,11 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Región</th>
-                                    <th className="text-center py-1 px-2 font-bold text-gray-700">Fin</th>
+                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Presupuesto</th>
                                     <th className="text-right py-1 px-2 font-bold text-gray-700">Avance</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Presupuestado</th>
                                     <th className="text-right py-1 px-2 font-bold text-gray-700">%</th>
+                                    <th className="text-center py-1 px-2 font-bold text-gray-700">Inicio</th>
+                                    <th className="text-center py-1 px-2 font-bold text-gray-700">Fin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -412,6 +414,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                     const presupuestado = Number(p.monto) || 0;
                                     const avance = Number(p.avance) || 0;
                                     const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
+                                    const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
                                     const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
 
                                     return (
@@ -419,10 +422,11 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                             <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
                                             <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
                                             <td className="py-1 px-2 text-gray-600 whitespace-nowrap">{p.region}</td>
-                                            <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
-                                            <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                                             <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                            <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                                             <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
+                                            <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaInicio}</td>
+                                            <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
                                         </tr>
                                     );
                                 })}
