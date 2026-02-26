@@ -66,6 +66,19 @@ export default function EvaluacionPage() {
         fetchData();
     }, [fetchData]);
 
+    // Polling while any project is "Procesando"
+    useEffect(() => {
+        const needsPolling = proyectos.some(p => p.eval_estado === 'Procesando');
+        if (!needsPolling) return;
+
+        console.log('[AI Evaluation] Polling active...');
+        const interval = setInterval(() => {
+            fetchData();
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [proyectos, fetchData]);
+
     const updateFilter = (key: keyof EvalFilters, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
@@ -88,19 +101,23 @@ export default function EvaluacionPage() {
         (filters.search && filters.search.trim() !== '');
 
     const handleTrigger = async (proyecto: any) => {
+        console.log(`[Frontend] Triggering evaluation for project ${proyecto.id}`, proyecto);
         setTriggeringId(proyecto.id);
         setMessage('');
         try {
-            const result = await triggerEvaluacion(proyecto.id);
+            const result = await triggerEvaluacion(proyecto.id, proyecto.url_archivo_proyecto);
             if (result.success) {
+                console.log(`[Frontend] Evaluation triggered successfully for ${proyecto.id}`);
                 setMessage('Evaluación iniciada. Estado: Procesando.');
                 setMessageType('success');
                 await fetchData();
             } else {
+                console.error(`[Frontend] Evaluation trigger failed for ${proyecto.id}:`, result.error);
                 setMessage(result.error || 'Error al iniciar evaluación.');
                 setMessageType('error');
             }
         } catch (err) {
+            console.error(`[Frontend] Exception in handleTrigger for ${proyecto.id}:`, err);
             setMessage('Error al iniciar evaluación.');
             setMessageType('error');
         }
