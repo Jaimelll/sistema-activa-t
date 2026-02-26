@@ -22,7 +22,11 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       ejes (descripcion),
       regiones (descripcion),
       instituciones_ejecutoras (nombre),
-      modalidades (descripcion)
+      modalidades (descripcion),
+      avance_proyecto (
+        fecha,
+        etapa_id
+      )
     `);
 
   // --- 1. Filter by Year (Periodo) ---
@@ -95,7 +99,9 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
       monto_contrapartida: Number(p.monto_contrapartida) || 0,
       monto_total: Number(p.monto_total) || 0,
-      beneficiarios: Number(p.beneficiarios) || 0
+      beneficiarios: Number(p.beneficiarios) || 0,
+      fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+      fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null
     };
   });
 
@@ -365,6 +371,7 @@ export async function getTimelineData() {
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
     etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa',
+    fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
     fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
     avances: p.avance_proyecto.map((a: any) => ({
       fecha: a.fecha,

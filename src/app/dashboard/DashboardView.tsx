@@ -353,7 +353,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KPICard
-                    title="Presupuestado"
+                    title="Presupuesto"
                     value={`S/ ${metrics.totalFondo.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                     icon={DollarSign}
                 />
@@ -420,13 +420,13 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                 <thead>
                                     <tr className="bg-gray-100 border-b-2 border-gray-300">
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px]">Código</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-center">Eje</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-center">Lín.</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 min-w-[200px]">Institución Ejecutora</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[170px] text-center">Estado/Etapa</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Región</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Presupuesto</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Avance</th>
-                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Presupuestado</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-right">%</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Inicio</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Fin</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -453,30 +453,28 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                     <td className="py-0.5 px-3 font-medium text-gray-700">
                                                         {proj.codigo || 'Sin código'}
                                                     </td>
-                                                    <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
-                                                        {proj.ejeId || proj.eje_id || '-'}
-                                                    </td>
-                                                    <td className="py-0.5 px-3 text-center text-gray-600 font-bold">
-                                                        {proj.lineaId || proj.linea_id || '-'}
-                                                    </td>
                                                     <td className="py-0.5 px-3">
                                                         <div className="truncate max-w-[300px] text-gray-800" title={proj.institucion}>
                                                             {proj.institucion}
                                                         </div>
                                                     </td>
-                                                    <td className="py-0.5 px-3 text-center">
-                                                        <span className="px-1 py-0 bg-gray-100 text-gray-600 rounded-full text-[8px] font-bold border border-gray-200 whitespace-nowrap">
-                                                            {proj.etapa || proj.estado || '-'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-0.5 px-3 text-right font-bold text-emerald-700">
-                                                        S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    <td className="py-0.5 px-3 text-center text-gray-600">
+                                                        {proj.region}
                                                     </td>
                                                     <td className="py-0.5 px-3 text-right font-bold text-blue-700">
                                                         S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                                     </td>
+                                                    <td className="py-0.5 px-3 text-right font-bold text-emerald-700">
+                                                        S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                                    </td>
                                                     <td className="py-0.5 px-3 text-right font-bold text-gray-700">
                                                         {porcentaje.toFixed(1)}%
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-center text-gray-600">
+                                                        {proj.fecha_inicio ? new Date(proj.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-center text-gray-600">
+                                                        {proj.fecha_fin ? new Date(proj.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
                                                     </td>
                                                 </tr>
                                             );
