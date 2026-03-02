@@ -323,9 +323,11 @@ export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?:
     // Check if project has evaluacion_config_id assigned
     const { data: proyecto } = await supabase
         .from("proyectos_servicios")
-        .select("evaluacion_config_id")
+        .select("evaluacion_config_id, evaluacion_config(id, nombre)")
         .eq("id", proyectoId)
         .single();
+
+    console.log('[AI Evaluation] Proyecto data fetched:', proyecto);
 
     if (!proyecto?.evaluacion_config_id) {
         return {
@@ -360,17 +362,28 @@ export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?:
     // Send webhook to n8n
     if (webhookUrl && !webhookUrl.includes("YOUR_N8N_INSTANCE")) {
         try {
-            console.log(`[AI Evaluation] Calling webhook: ${webhookUrl}`);
+            // Forced query as requested by user
+            const { data: check } = await supabase
+                .from('proyectos_servicios')
+                .select('evaluacion_config_id')
+                .eq('id', proyectoId)
+                .single();
+            console.log('ID RECUPERADO DE BD:', check?.evaluacion_config_id);
+
+            const payload = {
+                proyecto_id: proyectoId,
+                url_archivo_proyecto: urlArchivoProyecto || null,
+                evaluacion_config_id: check?.evaluacion_config_id
+            };
+            console.log('DATOS WEBHOOK:', payload);
+
             const res = await fetch(webhookUrl, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "ngrok-skip-browser-warning": "true"
                 },
-                body: JSON.stringify({
-                    proyecto_id: proyectoId,
-                    url_archivo_proyecto: urlArchivoProyecto || null
-                }),
+                body: JSON.stringify(payload),
             });
             const resText = await res.text();
             console.log(`[AI Evaluation] Webhook response status: ${res.status}, body: ${resText}`);
