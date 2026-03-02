@@ -424,28 +424,45 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {selectedGroup.projects.map((p: any, i: number) => {
-                                    const presupuestado = Number(p.monto) || 0;
-                                    const avance = Number(p.avance) || 0;
-                                    const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
-                                    const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
-                                    const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+                                {selectedGroup.projects
+                                    .slice()
+                                    .sort((a: any, b: any) => {
+                                        // Logging for first comparison only to avoid flood
+                                        if (!window.__debug_sort_done) {
+                                            console.log('[DEBUG SORT] Project A:', { codigo: a.codigo, fin: a.fecha_fin, type: typeof a.fecha_fin });
+                                            console.log('[DEBUG SORT] Project B:', { codigo: b.codigo, fin: b.fecha_fin, type: typeof b.fecha_fin });
+                                            const tA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
+                                            const tB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
+                                            console.log('[DEBUG SORT] Parsed Times:', { tA, tB });
+                                            window.__debug_sort_done = true;
+                                        }
+                                        const dateA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
+                                        const dateB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
+                                        if (dateA !== dateB) return dateA - dateB;
+                                        return (a.codigo || '').localeCompare(b.codigo || '');
+                                    })
+                                    .map((p: any, i: number) => {
+                                        const presupuestado = Number(p.monto) || 0;
+                                        const avance = Number(p.avance) || 0;
+                                        const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
+                                        const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+                                        const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
 
-                                    return (
-                                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                            <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
-                                            <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                            <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
-                                                {p.region || '-'}
-                                            </td>
-                                            <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                            <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                            <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
-                                            <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaInicio}</td>
-                                            <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
-                                        </tr>
-                                    );
-                                })}
+                                        return (
+                                            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                                <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                                <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
+                                                <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
+                                                    {p.region || '-'}
+                                                </td>
+                                                <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                                <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                                <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
+                                                <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaInicio}</td>
+                                                <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>
