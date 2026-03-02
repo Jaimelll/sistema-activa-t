@@ -1,5 +1,5 @@
 "use client";
-// Force Update: 2026-02-05 07:15 - Visual Refresh
+// Force Update: 2026-03-02 09:55 - Sorting Fix 
 
 import { useState, useMemo } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -411,12 +411,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                     {filteredData
                                         .filter(d => d.region === selectedRegion)
                                         .sort((a, b) => {
-                                            const ejeA = String(a.ejeId || a.eje_id || '');
-                                            const ejeB = String(b.ejeId || b.eje_id || '');
-                                            if (ejeA !== ejeB) return ejeA.localeCompare(ejeB);
-                                            const linA = String(a.lineaId || a.linea_id || '');
-                                            const linB = String(b.lineaId || b.linea_id || '');
-                                            return linA.localeCompare(linB);
+                                            const dateA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
+                                            const dateB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
+                                            if (dateA !== dateB) return dateA - dateB;
+                                            return (a.codigo || '').localeCompare(b.codigo || '');
                                         })
                                         .map((proj, idx) => {
                                             const presupuestado = Number(proj.monto_fondoempleo) || 0;
