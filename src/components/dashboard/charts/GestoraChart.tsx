@@ -1,7 +1,8 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 interface GestoraChartProps {
     data: {
@@ -12,16 +13,49 @@ interface GestoraChartProps {
 }
 
 export function GestoraChart({ data }: GestoraChartProps) {
-
-    // Basic responsiveness check
     const [isMobile, setIsMobile] = useState(false);
+    const [paymentData, setPaymentData] = useState<Record<string, { total: number; cobrado: number }>>({});
+    const supabase = useMemo(() => createClient(), []);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
+
+        // Fetch payment data from public.pagos_gestoras
+        const fetchPayments = async () => {
+            const { data: dbData, error } = await supabase
+                .from('pagos_gestoras')
+                .select('gestora, monto, mes_pago');
+
+            if (error) {
+                console.error('Error fetching pagos_gestoras:', error);
+                return;
+            }
+
+            // Aggregate by gestora
+            const aggregated: Record<string, { total: number; cobrado: number }> = {};
+            const today = new Date();
+
+            dbData?.forEach((row: any) => {
+                const name = row.gestora?.trim() || 'Unknown';
+                if (!aggregated[name]) aggregated[name] = { total: 0, cobrado: 0 };
+
+                const monto = Number(row.monto) || 0;
+                aggregated[name].total += monto;
+
+                if (row.mes_pago && new Date(row.mes_pago) <= today) {
+                    aggregated[name].cobrado += monto;
+                }
+            });
+
+            setPaymentData(aggregated);
+        };
+
+        fetchPayments();
+
         return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    }, [supabase]);
 
     return (
         <div className="card h-[600px] w-full">
@@ -33,7 +67,7 @@ export function GestoraChart({ data }: GestoraChartProps) {
                         layout="vertical"
                         margin={{
                             top: 5,
-                            right: 30, // Reduced right margin to give more space
+                            right: 30,
                             left: 10,
                             bottom: 5,
                         }}
@@ -54,33 +88,27 @@ export function GestoraChart({ data }: GestoraChartProps) {
                             fontSize={isMobile ? 9 : 11}
                             tickLine={false}
                             axisLine={false}
-                            width={isMobile ? 120 : 280} // Responsive width for labels
+                            width={isMobile ? 120 : 280}
                         />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', zIndex: 1000, maxWidth: '280px', whiteSpace: 'normal' }}
                             formatter={(value: number, name: string, props: any) => {
-                                const gestoraName = props.payload.name || '';
+                                const fullLabel = props.payload.name || '';
                                 const baseLabel = `S/ ${value.toLocaleString()}`;
 
-                                // Dynamic lookup based on Excel 'pago_gestora' sheet
-                                // Identified that all 27 payments in the sheet belong to FUNDACIÓN SAN MARCOS
-                                const gestoraPayments: Record<string, { total: number; cobrado: number }> = {
-                                    'FUNDACIÓN SAN MARCOS': { total: 1223999.91, cobrado: 317333.31 },
-                                    'FONDOEMPLEO': { total: 0, cobrado: 0 }
-                                };
-
-                                // Match by name (case insensitive/includes)
-                                const matchedKey = Object.keys(gestoraPayments).find(k =>
-                                    gestoraName.toUpperCase().includes(k.toUpperCase())
+                                // Try to match gestora name in paymentData
+                                // The label usually has "NAME (count)", so we look for keys that are part of the label
+                                const matchedKey = Object.keys(paymentData).find(k =>
+                                    fullLabel.toUpperCase().includes(k.toUpperCase())
                                 );
 
-                                if (matchedKey && gestoraPayments[matchedKey].total > 0) {
-                                    const data = gestoraPayments[matchedKey];
+                                if (matchedKey) {
+                                    const p = paymentData[matchedKey];
                                     return [
                                         <div key="details" className="flex flex-col gap-1">
                                             <div className="font-bold border-b pb-1 mb-1">{baseLabel} (Proyectos)</div>
-                                            <div className="text-xs text-blue-600">Costo Total Gestora: S/ {data.total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</div>
-                                            <div className="text-xs text-emerald-600">Cobrado Gestora: S/ {data.cobrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</div>
+                                            <div className="text-xs text-blue-600">Costo Total Gestora: S/ {p.total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</div>
+                                            <div className="text-xs text-emerald-600">Cobrado Gestora: S/ {p.cobrado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</div>
                                         </div>,
                                         ''
                                     ];
@@ -93,7 +121,7 @@ export function GestoraChart({ data }: GestoraChartProps) {
                             dataKey="value"
                             name="Montos de proyectos"
                             fill="#2563eb"
-                            radius={[0, 4, 4, 0]} // Rounded right corners
+                            radius={[0, 4, 4, 0]}
                             barSize={20}
                         />
                     </BarChart>
