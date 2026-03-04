@@ -63,8 +63,8 @@ async function deploy() {
         if (typeof serialDate === 'number') {
             const dateObj = xlsx.SSF.parse_date_code(serialDate);
             const m = String(dateObj.m).padStart(2, '0');
-            const d = String(dateObj.d).padStart(2, '0');
-            isoDate = `${dateObj.y}-${m}-${d}`;
+            // Regla del Día 07: Siempre guardar como día 7
+            isoDate = `${dateObj.y}-${m}-07`;
 
             // Derive periodo_servicio (e.g. Sep-2025)
             const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
