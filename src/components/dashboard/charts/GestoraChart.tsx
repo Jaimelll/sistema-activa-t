@@ -35,7 +35,8 @@ export function GestoraChart({ data }: GestoraChartProps) {
 
             // Aggregate by gestora
             const aggregated: Record<string, { total: number; cobrado: number }> = {};
-            const today = new Date();
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             dbData?.forEach((row: any) => {
                 const name = row.gestora?.trim() || 'Unknown';
@@ -44,7 +45,8 @@ export function GestoraChart({ data }: GestoraChartProps) {
                 const monto = Number(row.monto) || 0;
                 aggregated[name].total += monto;
 
-                if (row.mes_pago && new Date(row.mes_pago) <= today) {
+                // Regla del Día 07: Solo se considera cobrado si hoy >= mes_pago (que es el día 07)
+                if (row.mes_pago && row.mes_pago <= todayStr) {
                     aggregated[name].cobrado += monto;
                 }
             });
