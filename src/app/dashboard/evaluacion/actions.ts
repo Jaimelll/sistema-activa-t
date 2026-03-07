@@ -2,6 +2,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+import { revalidatePath } from "next/cache";
+
 function getSupabase() {
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,6 +39,9 @@ export async function createEvaluacionConfig(formData: FormData) {
     // Upload PDF Bases
     if (pdfBasesFile && pdfBasesFile.size > 0) {
         const fileName = `bases_${Date.now()}_${pdfBasesFile.name}`;
+        if (pdfBasesFile.size > 15 * 1024 * 1024) {
+            return { success: false, error: "El archivo de bases excede los 15MB" };
+        }
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from("documentos_evaluacion")
             .upload(fileName, pdfBasesFile, { contentType: "application/pdf", upsert: true });
@@ -54,6 +59,9 @@ export async function createEvaluacionConfig(formData: FormData) {
     // Upload PDF Formato
     if (pdfFormatoFile && pdfFormatoFile.size > 0) {
         const fileName = `formato_${Date.now()}_${pdfFormatoFile.name}`;
+        if (pdfFormatoFile.size > 15 * 1024 * 1024) {
+            return { success: false, error: "El archivo de formato excede los 15MB" };
+        }
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from("documentos_evaluacion")
             .upload(fileName, pdfFormatoFile, { contentType: "application/pdf", upsert: true });
@@ -79,16 +87,124 @@ export async function createEvaluacionConfig(formData: FormData) {
         return { success: false, error: "Error al crear configuración" };
     }
 
+    revalidatePath("/dashboard/evaluacion/configuracion");
+    return { success: true };
+}
+
+export async function updateEvaluacionConfig(id: string, formData: FormData) {
+    const supabase = getSupabase();
+    const nombre = formData.get("nombre") as string;
+    const pdfBasesFile = formData.get("pdf_bases") as File | null;
+    const pdfFormatoFile = formData.get("pdf_formato") as File | null;
+
+    // Get current config to check for old files
+    const { data: current, error: fetchError } = await supabase
+        .from("evaluacion_config")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+    if (fetchError || !current) {
+        return { success: false, error: "No se encontró la configuración" };
+    }
+
+    const updateData: any = { nombre };
+
+    // Update PDF Bases if new file provided
+    if (pdfBasesFile && pdfBasesFile.size > 0) {
+        // Delete old file if exists
+        if (current.url_pdf_bases) {
+            const oldPath = current.url_pdf_bases.split("/").pop();
+            if (oldPath) {
+                await supabase.storage.from("documentos_evaluacion").remove([oldPath]);
+            }
+        }
+
+        const fileName = `bases_${Date.now()}_${pdfBasesFile.name}`;
+        if (pdfBasesFile.size > 15 * 1024 * 1024) {
+            return { success: false, error: "El nuevo archivo de bases excede los 15MB" };
+        }
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("documentos_evaluacion")
+            .upload(fileName, pdfBasesFile, { contentType: "application/pdf", upsert: true });
+
+        if (uploadError) {
+            return { success: false, error: "Error al subir nuevo PDF de bases" };
+        }
+        const { data: urlData } = supabase.storage
+            .from("documentos_evaluacion")
+            .getPublicUrl(uploadData.path);
+        updateData.url_pdf_bases = urlData.publicUrl;
+    }
+
+    // Update PDF Formato if new file provided
+    if (pdfFormatoFile && pdfFormatoFile.size > 0) {
+        // Delete old file if exists
+        if (current.url_pdf_formato) {
+            const oldPath = current.url_pdf_formato.split("/").pop();
+            if (oldPath) {
+                await supabase.storage.from("documentos_evaluacion").remove([oldPath]);
+            }
+        }
+
+        const fileName = `formato_${Date.now()}_${pdfFormatoFile.name}`;
+        if (pdfFormatoFile.size > 15 * 1024 * 1024) {
+            return { success: false, error: "El nuevo archivo de formato excede los 15MB" };
+        }
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("documentos_evaluacion")
+            .upload(fileName, pdfFormatoFile, { contentType: "application/pdf", upsert: true });
+
+        if (uploadError) {
+            return { success: false, error: "Error al subir nuevo PDF de formato" };
+        }
+        const { data: urlData } = supabase.storage
+            .from("documentos_evaluacion")
+            .getPublicUrl(uploadData.path);
+        updateData.url_pdf_formato = urlData.publicUrl;
+    }
+
+    const { error } = await supabase
+        .from("evaluacion_config")
+        .update(updateData)
+        .eq("id", id);
+
+    if (error) {
+        console.error("Error updating evaluacion config:", error);
+        return { success: false, error: "Error al actualizar configuración" };
+    }
+
+    revalidatePath("/dashboard/evaluacion/configuracion");
     return { success: true };
 }
 
 export async function deleteEvaluacionConfig(id: string) {
     const supabase = getSupabase();
+
+    // Get current config to delete files from storage
+    const { data: current } = await supabase
+        .from("evaluacion_config")
+        .select("url_pdf_bases, url_pdf_formato")
+        .eq("id", id)
+        .single();
+
+    if (current) {
+        const filesToDelete = [];
+        if (current.url_pdf_bases) filesToDelete.push(current.url_pdf_bases.split("/").pop()!);
+        if (current.url_pdf_formato) filesToDelete.push(current.url_pdf_formato.split("/").pop()!);
+
+        if (filesToDelete.length > 0) {
+            await supabase.storage.from("documentos_evaluacion").remove(filesToDelete);
+        }
+    }
+
     const { error } = await supabase.from("evaluacion_config").delete().eq("id", id);
     if (error) {
         console.error("Error deleting config:", error);
         return { success: false, error: error.message };
     }
+
+    revalidatePath("/dashboard/evaluacion/configuracion");
     return { success: true };
 }
 
@@ -278,6 +394,27 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
     }
     if (file.size > 15 * 1024 * 1024) {
         return { success: false, error: "El archivo excede el límite de 15 MB." };
+    }
+
+    // STORAGE CLEANUP: Get current file to delete it silently
+    try {
+        const { data: current } = await supabase
+            .from("proyectos_servicios")
+            .select("url_archivo_proyecto")
+            .eq("id", proyectoId)
+            .single();
+
+        if (current?.url_archivo_proyecto) {
+            const oldPath = current.url_archivo_proyecto.split("/").pop();
+            if (oldPath) {
+                // Silent delete: we don't await or we catch error
+                supabase.storage.from("proyectos_postulantes").remove([oldPath]).then(({ error }) => {
+                    if (error) console.warn("Silent storage cleanup failed:", error);
+                });
+            }
+        }
+    } catch (e) {
+        console.warn("Error in silent storage cleanup:", e);
     }
 
     const fileName = `proyecto_${proyectoId}_${Date.now()}.pdf`;
