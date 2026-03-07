@@ -338,10 +338,12 @@ export default function EvaluacionPage() {
                         <table id="eval-table-v2" className="w-full text-xs" style={{ tableLayout: 'fixed' }}>
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '200px' }}>Proyecto</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '200px' }}>Institución</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '40px' }}>ID</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '80px' }}>Código</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '180px' }}>Proyecto</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '180px' }}>Institución</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '60px' }}>Archivo</th>
-                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '100px' }}>Vincular Eval.</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '120px' }}>Vincular Eval.</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600">Estado</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '40px' }}>Pts.</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600">Acciones</th>
@@ -350,24 +352,39 @@ export default function EvaluacionPage() {
                             <tbody>
                                 {proyectos.map((p, i) => (
                                     <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]'}`}>
+                                        <td className="py-1 px-2 text-gray-500 font-mono">{p.id}</td>
+                                        <td className="py-1 px-2 text-gray-800 font-semibold">{p.codigo}</td>
                                         <td className="py-1 px-2 text-gray-800 truncate overflow-hidden" title={p.nombre}>{p.nombre}</td>
                                         <td className="py-1 px-2 text-gray-600 truncate overflow-hidden" title={p.institucion}>{p.institucion}</td>
                                         <td className="py-1 px-1 text-center">
                                             {uploadingId === p.id ? (
                                                 <span className="inline-flex items-center text-xs text-indigo-600">
-                                                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Subiendo...
+                                                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> ...
                                                 </span>
                                             ) : p.url_archivo_proyecto ? (
-                                                <a
-                                                    href={p.url_archivo_proyecto}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
-                                                    title="Ver PDF del proyecto"
-                                                >
-                                                    <Paperclip className="w-3.5 h-3.5 mr-1" />
-                                                    PDF
-                                                </a>
+                                                <div className="flex flex-col items-center space-y-1">
+                                                    <a
+                                                        href={p.url_archivo_proyecto}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                                    >
+                                                        VER
+                                                    </a>
+                                                    <label className="text-[9px] text-accent hover:underline cursor-pointer">
+                                                        Cambiar
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf"
+                                                            className="hidden"
+                                                            onChange={e => {
+                                                                const f = e.target.files?.[0];
+                                                                if (f) handleUpload(p.id, f);
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                    </label>
+                                                </div>
                                             ) : (
                                                 <label className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer transition-colors">
                                                     <Upload className="w-3.5 h-3.5 mr-1" />
@@ -386,22 +403,17 @@ export default function EvaluacionPage() {
                                             )}
                                         </td>
                                         <td className="py-1 px-1 text-center">
-                                            <div className="relative inline-flex items-center">
-                                                {linkingId === p.id && (
-                                                    <Loader2 className="absolute -left-5 w-3.5 h-3.5 animate-spin text-indigo-500" />
-                                                )}
-                                                <select
-                                                    className="px-1 py-1 border border-gray-200 rounded text-xs bg-white focus:ring-1 focus:ring-accent w-full disabled:opacity-50"
-                                                    value={p.evaluacion_config_id || ''}
-                                                    onChange={e => handleLink(p.id, e.target.value)}
-                                                    disabled={linkingId === p.id}
-                                                >
-                                                    <option value="">— Sin config —</option>
-                                                    {configsOpts.map((c: any) => (
-                                                        <option key={c.id} value={c.id}>{c.nombre}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                            <select
+                                                className="px-1 py-1 border border-gray-200 rounded text-[10px] bg-white focus:ring-1 focus:ring-accent w-full disabled:opacity-50"
+                                                value={p.evaluacion_config_id || ''}
+                                                onChange={e => handleLink(p.id, e.target.value)}
+                                                disabled={linkingId === p.id}
+                                            >
+                                                <option value="">— Elegir —</option>
+                                                {configsOpts.map((c: any) => (
+                                                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                                                ))}
+                                            </select>
                                         </td>
                                         <td className="py-1 px-1 text-center">{getEvalBadge(p.eval_estado)}</td>
                                         <td className="py-1 px-1 text-center font-semibold text-gray-800">
@@ -409,23 +421,19 @@ export default function EvaluacionPage() {
                                         </td>
                                         <td className="py-1 px-1 text-center">
                                             <div className="flex items-center justify-center space-x-1.5">
-                                                {(!p.eval_estado || p.eval_estado === 'Pendiente') && (
-                                                    <button
-                                                        onClick={() => handleTrigger(p)}
-                                                        disabled={triggeringId === p.id}
-                                                        className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                                                        title={!p.evaluacion_config_id ? 'Sin configuración asignada' : 'Ejecutar evaluación'}
-                                                    >
-                                                        {triggeringId === p.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                                                        ) : !p.evaluacion_config_id ? (
-                                                            <AlertTriangle className="w-3.5 h-3.5 mr-1 text-yellow-300" />
-                                                        ) : (
-                                                            <Play className="w-3.5 h-3.5 mr-1" />
-                                                        )}
-                                                        Evaluar con IA
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => handleTrigger(p)}
+                                                    disabled={triggeringId === p.id}
+                                                    className="inline-flex items-center px-2 py-1 text-[10px] font-bold rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors uppercase tracking-tight"
+                                                    title="Ejecutar evaluación (sobrescribe resultados)"
+                                                >
+                                                    {triggeringId === p.id ? (
+                                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                    ) : (
+                                                        <Play className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    Evaluar proy.
+                                                </button>
                                                 {p.eval_estado === 'Procesando' && (
                                                     <span className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-blue-50 text-blue-700">
                                                         <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
