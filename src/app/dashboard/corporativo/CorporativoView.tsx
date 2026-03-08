@@ -38,9 +38,18 @@ const COLORS_FINANZAS = {
     'Becas': '#f59e0b',          // Amber
 };
 
-const COMPANY_COLORS = [
-    '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa',
-    '#059669', '#10b981', '#34d399', '#f59e0b', '#fbbf24'
+// Vibrant color palette for the stacked chart
+const VIBRANT_PALETTE = [
+    '#ff7f50', // Coral
+    '#ffdb58', // Mustard
+    '#8a2be2', // Violet
+    '#008080', // Teal
+    '#ff4500', // Orange Red
+    '#2f4f4f', // Dark Slate Gray
+    '#ec4899', // Pink
+    '#06b6d4', // Cyan
+    '#f59e0b', // Amber
+    '#10b981'  // Emerald
 ];
 
 export default function CorporativoView({ finanzasData, aportantesData }: CorporativoViewProps) {
@@ -67,22 +76,33 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
             .sort((a, b) => b.año - a.año);
     }, [finanzasData]);
 
-    // 3. Process Aportantes for Stacked Bar Chart (2021-2025)
+    // 3. Process Aportantes for Horizontal Stacked Bar Chart (2021-2025)
     const stackedAportantes = useMemo(() => {
         const years = [2021, 2022, 2023, 2024, 2025];
         const companies = [...new Set(aportantesData.map(d => d.empresa))];
 
-        return {
-            data: years.map(year => {
-                const yearItems = aportantesData.filter(d => d.año === year);
-                const row: any = { year };
-                yearItems.forEach(item => {
-                    row[item.empresa] = item.monto;
-                });
-                return row;
-            }),
-            companies
-        };
+        const data = years.map(year => {
+            const yearItems = aportantesData.filter(d => d.año === year);
+            const row: any = { year: year.toString() };
+            yearItems.forEach(item => {
+                row[item.empresa] = item.monto;
+            });
+            return row;
+        });
+
+        return { data, companies };
+    }, [aportantesData]);
+
+    // Calculate Principal Provider 2025
+    const principalProvider2025 = useMemo(() => {
+        const items2025 = aportantesData.filter(d => d.año === 2025);
+        if (items2025.length === 0) return "N/A";
+        const totalByEmpresa = items2025.reduce((acc: any, curr) => {
+            acc[curr.empresa] = (acc[curr.empresa] || 0) + curr.monto;
+            return acc;
+        }, {});
+        const sorted = Object.entries(totalByEmpresa).sort((a: any, b: any) => b[1] - a[1]);
+        return sorted[0][0];
     }, [aportantesData]);
 
     const formatCurrency = (value: number) => {
@@ -93,35 +113,54 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
         }).format(value);
     };
 
-    return (
-        <div className="space-y-12 animate-in fade-in duration-500 max-w-full overflow-x-hidden pb-16">
+    const formatCompactCurrency = (value: number) => {
+        return `${(value / 1000000).toFixed(0)}M`;
+    };
 
-            {/* KPI Section - Projections 2026 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-blue-700 to-blue-900 p-8 rounded-[2rem] shadow-xl flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-xs font-black uppercase tracking-[0.2em] mb-3">Aportes Proyectados 2026</span>
-                    <span className="text-4xl font-black tracking-tighter">
+    return (
+        <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-full overflow-x-hidden pb-16">
+
+            {/* Header Title */}
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard Corporativo</h1>
+            </div>
+
+            {/* KPI Section - 3 Rounded Cards with Gradients */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* KPI 1: Aportes */}
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-blue-400/20 aspect-[16/9] md:aspect-auto h-full">
+                    <span className="text-blue-100 text-[11px] font-black uppercase tracking-[0.2em] mb-3">Aportes Proyectados 2026</span>
+                    <span className="text-3xl lg:text-4xl font-black tracking-tighter">
                         {formatCurrency(100000000)}
                     </span>
                 </div>
 
-                <div className="bg-gradient-to-br from-red-600 to-red-800 p-8 rounded-[2rem] shadow-xl flex flex-col justify-center text-white border border-red-400/20">
-                    <span className="text-red-100 text-xs font-black uppercase tracking-[0.2em] mb-3">G. Operativos Proyectados 2026</span>
-                    <span className="text-4xl font-black tracking-tighter">
+                {/* KPI 2: G. Operativos */}
+                <div className="bg-gradient-to-br from-rose-500 to-rose-700 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-rose-400/20 aspect-[16/9] md:aspect-auto h-full">
+                    <span className="text-rose-100 text-[11px] font-black uppercase tracking-[0.2em] mb-3">G. Operativos Proyectados 2026</span>
+                    <span className="text-3xl lg:text-4xl font-black tracking-tighter">
                         {formatCurrency(10000000)}
+                    </span>
+                </div>
+
+                {/* KPI 3: Principal Provider 2025 */}
+                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-teal-400/20 aspect-[16/9] md:aspect-auto h-full">
+                    <span className="text-teal-500 text-[11px] font-black uppercase tracking-[0.2em] mb-3 brightness-150">Principal Proveedor 2025</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tight uppercase">
+                        {principalProvider2025}
                     </span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-16">
+            <div className="grid grid-cols-1 gap-8">
 
-                {/* 1. Grouped Bar Chart (Finance) */}
-                <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-sm border border-slate-100">
+                {/* 1. Grouped Bar Chart (Finance) - Kept Same */}
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-10 text-center md:text-left">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera (Barras Agrupadas)</h3>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera</h3>
                         <p className="text-slate-400 font-medium">Comparativa de rubros principales • 2021 - 2026</p>
                     </div>
-                    <div className="h-[500px] w-full">
+                    <div className="h-[450px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={groupedFinanzas} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -129,24 +168,24 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
                                     dataKey="year"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fill: '#64748b', fontWeight: 800, fontSize: 14 }}
+                                    tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }}
                                     dy={15}
                                 />
                                 <YAxis
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                    tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`}
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                    tickFormatter={formatCompactCurrency}
                                 />
                                 <Tooltip
                                     formatter={(value: number) => formatCurrency(value)}
-                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
                                 />
                                 <Legend
                                     verticalAlign="top"
                                     align="center"
                                     iconType="circle"
-                                    wrapperStyle={{ paddingTop: '0px', paddingBottom: '50px', fontSize: '12px', fontWeight: 700 }}
+                                    wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '11px', fontWeight: 700 }}
                                 />
                                 {activeRubros.map((rubro) => (
                                     <Bar
@@ -163,12 +202,12 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
                 </div>
 
                 {/* 2. Bank Balances Table */}
-                <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-sm border border-slate-100">
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Histórico de Saldos en Bancos</h3>
-                        <p className="text-slate-400 font-medium font-bold">Resumen de liquidez anual</p>
+                        <p className="text-slate-400 font-medium">Resumen de liquidez anual</p>
                     </div>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100">
+                    <div className="overflow-hidden rounded-2xl border border-slate-50">
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
                                 <tr>
@@ -188,28 +227,35 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
                     </div>
                 </div>
 
-                {/* 3. Stacked Contributor Chart */}
-                <div className="bg-white p-6 md:p-10 rounded-[3rem] shadow-sm border border-slate-100">
+                {/* 3. Horizontal Stacked Contributor Chart - NEW DESIGN */}
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-10 text-center md:text-left">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Composición de Aportantes</h3>
-                        <p className="text-slate-400 font-medium">Distribución por empresa y año • 2021 - 2025</p>
+                        <p className="text-slate-400 font-medium font-bold">Distribución por empresa y año • 2021 - 2025</p>
                     </div>
-                    <div className="h-[500px] w-full">
+                    <div className="h-[550px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stackedAportantes.data} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <BarChart
+                                data={stackedAportantes.data}
+                                layout="vertical"
+                                margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                 <XAxis
-                                    dataKey="year"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#64748b', fontWeight: 800 }}
-                                    dy={10}
-                                />
-                                <YAxis
+                                    type="number"
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                    tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`}
+                                    tickFormatter={formatCompactCurrency}
+                                    domain={[0, 120000000]}
+                                    ticks={[0, 30000000, 60000000, 90000000, 120000000]}
+                                />
+                                <YAxis
+                                    dataKey="year"
+                                    type="category"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontWeight: 800, fontSize: 14 }}
                                 />
                                 <Tooltip
                                     formatter={(value: number) => formatCurrency(value)}
@@ -219,14 +265,15 @@ export default function CorporativoView({ finanzasData, aportantesData }: Corpor
                                     verticalAlign="bottom"
                                     align="center"
                                     iconType="circle"
-                                    wrapperStyle={{ paddingTop: '40px', fontSize: '10px', fontWeight: 600 }}
+                                    wrapperStyle={{ paddingTop: '50px', fontSize: '10px', fontWeight: 700 }}
                                 />
                                 {stackedAportantes.companies.map((company, index) => (
                                     <Bar
                                         key={company}
                                         dataKey={company}
                                         stackId="a"
-                                        fill={COMPANY_COLORS[index % COMPANY_COLORS.length]}
+                                        fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]}
+                                        barSize={32}
                                     />
                                 ))}
                             </BarChart>
