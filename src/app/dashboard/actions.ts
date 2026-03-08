@@ -382,3 +382,42 @@ export async function getTimelineData() {
 
   return mappedData;
 }
+
+// --- CORPORATIVO ACTIONS ---
+
+export async function getFinanzasAnual() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('finanzas_anual')
+    .select('*')
+    .order('año', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching finanzas anual:", error);
+    return [];
+  }
+
+  return data;
+}
+
+export async function getAportantesAnual() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('aportantes_anual')
+    .select('*')
+    .order('año', { ascending: true })
+    .order('monto', { ascending: false });
+
+  if (error) {
+    console.error("Error fetching aportantes anual:", error);
+    return [];
+  }
+
+  return data;
+}
