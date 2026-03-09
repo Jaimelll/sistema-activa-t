@@ -32,7 +32,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
-    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedEtapa, setSelectedEtapa] = useState<string>('Lanzamiento');
     const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
