@@ -35,7 +35,7 @@ export default function EvaluacionPage() {
 
     // Active filters
     const [filters, setFilters] = useState<EvalFilters>({
-        etapa_id: 'all',
+        etapa_id: '2',
         eje_id: 'all',
         linea_id: 'all',
         eval_estado: 'all',

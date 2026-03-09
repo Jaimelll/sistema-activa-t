@@ -29,7 +29,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
     // State for filters
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
-    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedEtapa, setSelectedEtapa] = useState<string>('Lanzamiento');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
 
     // Filter Logic for Options
