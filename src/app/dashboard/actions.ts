@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
+
 
 export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -91,8 +93,11 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa', // Map descriptive stage
       etapaId: p.etapa_id, // Added: Mapped for execution filter
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
+      institucionId: p.institucion_ejecutora_id,
       gestora: p.gestora || '', // Added: New field
+      regionId: p.region_id,
       modalidad: p.modalidades?.descripcion || 'Desconocido', // Added: Modality description
+
       modalidadId: p.modalidad_id, // Added: Modality ID for filtering
       estado: p.estado || 'Activo',
       year: year,
@@ -222,6 +227,27 @@ export async function getEtapas() {
     .sort();
 
   return uniqueStages;
+}
+
+export async function getEtapasList() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('etapas')
+    .select('id, descripcion')
+    .order('id', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching etapas list:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: item.descripcion
+  }));
 }
 
 // --- BECAS ACTIONS ---
@@ -421,3 +447,106 @@ export async function getAportantesAnual() {
 
   return data;
 }
+
+// --- PROYECTOS CRUD ACTIONS ---
+
+export async function createProyecto(formData: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('proyectos_servicios')
+    .insert([formData])
+    .select();
+
+  if (error) {
+    console.error("Error creating proyecto:", error);
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/dashboard/proyectos-y-servicios');
+  return data;
+}
+
+export async function updateProyecto(id: any, formData: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('proyectos_servicios')
+    .update(formData)
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    console.error("Error updating proyecto:", error);
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/dashboard/proyectos-y-servicios');
+  return data;
+}
+
+export async function deleteProyecto(id: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { error } = await supabase
+    .from('proyectos_servicios')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error deleting proyecto:", error);
+    throw new Error(error.message);
+  }
+
+  revalidatePath('/dashboard/proyectos-y-servicios');
+  return { success: true };
+}
+
+export async function getInstituciones() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('instituciones_ejecutoras')
+    .select('id, nombre')
+    .order('nombre', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching instituciones:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: item.nombre
+  }));
+}
+
+export async function getRegiones() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('regiones')
+    .select('id, descripcion')
+    .order('descripcion', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching regiones:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: item.descripcion
+  }));
+}
+
