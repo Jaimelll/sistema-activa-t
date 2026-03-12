@@ -20,6 +20,25 @@ function getSupabase() {
 
 const BUCKET_NAME = "documentos_gerenciales";
 
+/**
+ * Sanitizes a filename for Supabase Storage:
+ * - Removes accents/tildes
+ * - Replaces 'ñ' with 'n'
+ * - Replaces spaces with '_'
+ * - Converts to lowercase
+ * - Removes any character that isn't alphanumeric, dot, or hyphen
+ */
+function sanitizeFileName(fileName: string): string {
+    return fileName
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove accents
+        .replace(/ñ/g, "n")
+        .replace(/Ñ/g, "N")
+        .replace(/\s+/g, "_")
+        .toLowerCase()
+        .replace(/[^a-z0-9._-]/g, ""); // Keep only allowed chars
+}
+
 export async function getDocumentos(search?: string) {
     try {
         const supabase = getSupabase();
@@ -63,7 +82,8 @@ export async function createDocumento(formData: FormData) {
             return { success: false, error: "El archivo excede el límite de 15 MB." };
         }
 
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const sanitizedOriginalName = sanitizeFileName(file.name);
+        const fileName = `${Date.now()}_${sanitizedOriginalName}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(fileName, file, { 
@@ -134,7 +154,8 @@ export async function updateDocumento(id: string, formData: FormData) {
                 return { success: false, error: "El nuevo archivo excede los 15 MB." };
             }
 
-            const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+            const sanitizedOriginalName = sanitizeFileName(file.name);
+            const fileName = `${Date.now()}_${sanitizedOriginalName}`;
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from(BUCKET_NAME)
                 .upload(fileName, file, { 
