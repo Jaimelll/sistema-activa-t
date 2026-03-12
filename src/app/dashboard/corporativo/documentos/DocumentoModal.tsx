@@ -23,11 +23,17 @@ export default function DocumentoModal({ isOpen, onClose, onSuccess, documento }
 
     useEffect(() => {
         if (documento) {
+            // If it comes from DB, it's already YYYY-MM-DD
             setFecha(documento.fecha_documento || "");
             setNombre(documento.nombre_archivo || "");
             setObservaciones(documento.observaciones || "");
         } else {
-            setFecha(new Date().toISOString().split("T")[0]);
+            // For new documents, use local date YYYY-MM-DD
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            setFecha(`${year}-${month}-${day}`);
             setNombre("");
             setObservaciones("");
         }

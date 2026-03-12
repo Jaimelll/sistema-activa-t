@@ -46,12 +46,11 @@ export default function DocumentosPage() {
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "-";
-        const date = new Date(dateStr);
-        return date.toLocaleDateString("es-PE", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-        });
+        // Convert YYYY-MM-DD to DD/MM/YYYY using pure string manipulation
+        const parts = dateStr.split("-");
+        if (parts.length !== 3) return dateStr;
+        const [year, month, day] = parts;
+        return `${day}/${month}/${year}`;
     };
 
     return (
