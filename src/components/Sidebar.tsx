@@ -33,6 +33,7 @@ export function Sidebar() {
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Corporativo', icon: LayoutDashboard, href: '/dashboard/corporativo' },
+        { name: 'Documentos', icon: FolderOpen, href: '/dashboard/corporativo/documentos' },
         { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
