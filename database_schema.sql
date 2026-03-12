@@ -161,3 +161,21 @@ BEGIN
     );
   END IF;
 END $$;
+
+-- 6. Documentos Gerenciales (Módulo Corporativo)
+create table if not exists public.documentos_gerenciales (
+  id uuid primary key default uuid_generate_v4(),
+  fecha_documento date not null,
+  nombre_archivo text not null,
+  url_pdf text not null,
+  observaciones text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- RLS
+alter table public.documentos_gerenciales enable row level security;
+
+-- Policies
+create policy "Enable all for authenticated" on public.documentos_gerenciales 
+for all to authenticated using (true);
