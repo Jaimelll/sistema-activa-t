@@ -95,6 +95,7 @@ export default function ProyectosServiciosTable({
       'ID': item.id,
       'Código Proyecto': item.codigo || '',
       'Nombre': item.nombre || '',
+      'Institución Ejecutora': item.institucion || '',
       'Eje': item.eje || '',
       'Línea': item.linea || '',
       'Región': item.region || '',
@@ -266,6 +267,7 @@ export default function ProyectosServiciosTable({
                 <th className="sticky left-0 bg-gray-50 px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 z-30 border-r border-gray-100 w-24">ID</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[140px]">Código</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[300px]">Nombre</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[200px]">Región</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[150px]">Etapa</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Presupuestado</th>
@@ -290,6 +292,11 @@ export default function ProyectosServiciosTable({
                     <td className="px-6 py-4">
                         <div className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
                             {row.nombre}
+                        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                        <div className="text-xs font-medium text-gray-600 line-clamp-2">
+                            {row.institucion}
                         </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-medium">{row.region}</td>

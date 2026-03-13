@@ -61,7 +61,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
 
   // --- 3. Status Exclusion (Always applied at end as requested) ---
   // "La exclusión de .not('estado', 'ilike', 'no habilitada') debe estar siempre presente al final"
-  query = query.not('estado', 'ilike', 'no habilitada');
+  query = query.not('estado', 'ilike', 'no habilitada').order('id', { ascending: true });
 
   const { data, error } = await query;
 
