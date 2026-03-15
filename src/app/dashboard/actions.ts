@@ -17,7 +17,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   console.log("Env Check: URL=", supabaseUrl ? supabaseUrl.substring(0, 15) + "..." : "MISSING");
 
   let query = supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .select(`
       *,
       lineas (descripcion),
@@ -186,7 +186,7 @@ export async function fetchDynamicYears() {
 
   // Optimize select to only fetch 'año'
   const { data, error } = await supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .select('año'); // Optimized
 
   if (error) {
@@ -350,7 +350,7 @@ export async function getTimelineData() {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .select(`
       id,
       nombre,
@@ -453,7 +453,7 @@ export async function createProyecto(formData: any) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .insert([formData])
     .select();
 
@@ -472,7 +472,7 @@ export async function updateProyecto(id: any, formData: any) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .update(formData)
     .eq('id', id)
     .select();
@@ -492,7 +492,7 @@ export async function deleteProyecto(id: any) {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { error } = await supabase
-    .from('proyectos_servicios')
+    .from('proyectos')
     .delete()
     .eq('id', id);
 

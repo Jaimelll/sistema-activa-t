@@ -211,7 +211,7 @@ export async function deleteEvaluacionConfig(id: string) {
 export async function vincularEvaluacionConfig(proyectoId: number, configId: string | null) {
     const supabase = getSupabase();
     const { error } = await supabase
-        .from("proyectos_servicios")
+        .from("proyectos")
         .update({ evaluacion_config_id: configId || null })
         .eq("id", proyectoId);
 
@@ -293,7 +293,7 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
 
     // Build query with joins
     let query = supabase
-        .from("proyectos_servicios")
+        .from("proyectos")
         .select(`
             id,
             nombre,
@@ -399,7 +399,7 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
     // STORAGE CLEANUP: Get current file to delete it silently
     try {
         const { data: current } = await supabase
-            .from("proyectos_servicios")
+            .from("proyectos")
             .select("url_archivo_proyecto")
             .eq("id", proyectoId)
             .single();
@@ -438,7 +438,7 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
 
     // Update the project row
     const { error: updateError } = await supabase
-        .from("proyectos_servicios")
+        .from("proyectos")
         .update({ url_archivo_proyecto: publicUrl })
         .eq("id", proyectoId);
 
@@ -459,7 +459,7 @@ export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?:
 
     // Check if project has evaluacion_config_id assigned
     const { data: proyecto } = await supabase
-        .from("proyectos_servicios")
+        .from("proyectos")
         .select("evaluacion_config_id, evaluacion_config(id, nombre)")
         .eq("id", proyectoId)
         .single();
@@ -501,7 +501,7 @@ export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?:
         try {
             // Forced query as requested by user
             const { data: check } = await supabase
-                .from('proyectos_servicios')
+                .from('proyectos')
                 .select('evaluacion_config_id')
                 .eq('id', proyectoId)
                 .single();

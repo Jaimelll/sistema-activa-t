@@ -5,8 +5,6 @@ import { Footer } from '@/components/Footer'
 export const dynamic = 'force-dynamic'
 
 export default async function MaestroPage() {
-    const supabase = await createClient()
-    // const { data: proyectos } = await supabase.from('proyectos').select('*, metricas(*)')
     const proyectos: any[] = []; // Placeholder to prevent build errors
 
     return (
