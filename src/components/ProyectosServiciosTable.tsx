@@ -66,7 +66,7 @@ export default function ProyectosServiciosTable({
       if (selectedExecution === 'executed') matchesExec = isExecuted;
 
       // 3. Etapa filter
-      const matchesEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
+      const matchesEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
 
       // 4. Eje filter
       const matchesEje = selectedEje === 'all' || String(item.ejeId) === String(selectedEje);
@@ -213,7 +213,7 @@ export default function ProyectosServiciosTable({
               onChange={(e) => setSelectedEtapa(e.target.value)}
             >
               <option value="all">Todas las Etapas</option>
-              {etapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+              {etapasList.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
           </div>
 

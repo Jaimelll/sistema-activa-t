@@ -32,7 +32,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
-    const [selectedEtapa, setSelectedEtapa] = useState<string>('Lanzamiento');
+    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
     const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -66,7 +66,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         // 2. Extract uniques present in this year's data
         const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
         const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje)))); // Handle variations
-        const uniqueEtapas = Array.from(new Set(dataForOptions.map(d => d.etapa))).sort();
+        const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: d.etapaId, label: d.etapa })));
+        const uniqueEtapas = Array.from(uniqueEtapasSet)
+            .map(e => JSON.parse(e))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         // 3. Map back to full objects with labels using original props
         const dynamicLineas = lines
@@ -91,8 +94,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
             const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
 
-            // Etapa Filter (Dropdown)
-            const matchEtapa = selectedEtapa === 'all' || item.etapa === selectedEtapa;
+            // Etapa Filter (Dropdown by ID)
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
 
             // Execution Filter
             const eid = Number(item.etapaId || item.etapa_id || 0);
@@ -287,7 +290,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             onChange={(e) => setSelectedEtapa(e.target.value)}
                         >
                             <option value="all">Todas las Etapas</option>
-                            {availableFilters.uniqueEtapas.map(e => <option key={String(e)} value={String(e)}>{String(e)}</option>)}
+                            {availableFilters.uniqueEtapas.map((e: any) => <option key={String(e.value)} value={String(e.value)}>{String(e.label)}</option>)}
                         </select>
 
                         {/* 4. Eje */}
