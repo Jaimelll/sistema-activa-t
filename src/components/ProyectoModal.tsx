@@ -28,7 +28,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
         region_id: "",
         etapa_id: "",
         monto_fondoempleo: 0,
-        monto_contrapartida: 0,
+        avance: 0,
         beneficiarios: 0,
         gestora: "",
         institucion_ejecutora_id: "",
@@ -49,7 +49,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 region_id: proyecto.regionId || "",
                 etapa_id: proyecto.etapaId || "",
                 monto_fondoempleo: proyecto.monto_fondoempleo || 0,
-                monto_contrapartida: proyecto.monto_contrapartida || 0,
+                avance: proyecto.avance || 0,
                 beneficiarios: proyecto.beneficiarios || 0,
                 gestora: proyecto.gestora || "",
                 institucion_ejecutora_id: proyecto.institucionId || "",
@@ -66,7 +66,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 region_id: "",
                 etapa_id: "",
                 monto_fondoempleo: 0,
-                monto_contrapartida: 0,
+                avance: 0,
                 beneficiarios: 0,
                 gestora: "",
                 institucion_ejecutora_id: "",
@@ -255,8 +255,8 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                             <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avance (S/)</label>
                             <input
                                 type="number"
-                                name="monto_contrapartida"
-                                value={formData.monto_contrapartida}
+                                name="avance"
+                                value={formData.avance}
                                 onChange={handleChange}
                                 className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none shadow-inner"
                             />

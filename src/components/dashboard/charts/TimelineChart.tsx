@@ -78,7 +78,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 region: project.region || '-',
                 gestora: project.gestora || '-',
                 monto: project.monto_fondoempleo || 0,
-                avance: project.monto_contrapartida || 0,
+                avance: project.avance || 0,
                 fecha_inicio: project.fecha_inicio || null,
                 fecha_fin: project.fecha_fin || null,
                 etapa: project.etapa || project.estado || '-'

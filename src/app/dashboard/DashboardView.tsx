@@ -116,7 +116,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
         const totalFondo = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_fondoempleo) || 0), 0);
-        const totalContra = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_contrapartida) || 0), 0);
+        const totalContra = filteredData.reduce((acc, curr) => acc + (Number(curr.avance) || 0), 0);
         const totalBen = filteredData.reduce((acc, curr) => acc + (Number(curr.beneficiarios) || 0), 0);
         const totalProjects = filteredData.length;
 
@@ -138,7 +138,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, proyectos: 0, etapa: d.etapa });
             const entry = map.get(r);
             entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
-            entry.contrapartida += (Number(d.monto_contrapartida) || 0);
+            entry.contrapartida += (Number(d.avance) || 0);
             entry.proyectos += 1;
             // Si hay múltiples proyectos en la región, la etapa se muestra del último o se simplifica.
             // Para regiones, suele haber una etapa predominante o se muestra la del registro actual.
@@ -418,7 +418,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                         })
                                         .map((proj, idx) => {
                                             const presupuestado = Number(proj.monto_fondoempleo) || 0;
-                                            const avance = Number(proj.monto_contrapartida) || 0;
+                                            const avance = Number(proj.avance) || 0;
                                             const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
 
                                             return (

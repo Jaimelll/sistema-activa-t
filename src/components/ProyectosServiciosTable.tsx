@@ -101,7 +101,7 @@ export default function ProyectosServiciosTable({
       'Región': item.region || '',
       'Etapa': item.etapa || '',
       'Presupuestado': Number(item.monto_fondoempleo) || 0,
-      'Avance': Number(item.monto_contrapartida) || 0,
+      'Avance': Number(item.avance) || 0,
       'Beneficiarios': Number(item.beneficiarios) || 0,
       'Gestora': item.gestora || ''
     }));
@@ -314,7 +314,7 @@ export default function ProyectosServiciosTable({
                       S/ {row.monto_fondoempleo?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-emerald-700">
-                      S/ {row.monto_contrapartida?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
+                      S/ {row.avance?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-gray-500">
                       {row.beneficiarios?.toLocaleString('es-PE')}
@@ -361,7 +361,7 @@ export default function ProyectosServiciosTable({
             <div className="flex flex-col items-end">
                 <span className="text-[10px] text-gray-400 font-bold uppercase">Total Avance</span>
                 <span className="text-sm font-bold text-emerald-700">
-                    S/ {filteredData.reduce((acc, curr) => acc + (Number(curr.monto_contrapartida) || 0), 0).toLocaleString('es-PE')}
+                    S/ {filteredData.reduce((acc, curr) => acc + (Number(curr.avance) || 0), 0).toLocaleString('es-PE')}
                 </span>
             </div>
         </div>
