@@ -33,8 +33,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
         gestora: "",
         institucion_ejecutora_id: "",
         modalidad_id: "",
-        año: new Date().getFullYear(),
-        estado: 'Activo'
+        año: new Date().getFullYear()
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +53,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 gestora: proyecto.gestora || "",
                 institucion_ejecutora_id: proyecto.institucionId || "",
                 modalidad_id: proyecto.modalidadId || "",
-                año: proyecto.año || new Date().getFullYear(),
-                estado: proyecto.estado || 'Activo'
+                año: proyecto.año || new Date().getFullYear()
             });
         } else {
             setFormData({
@@ -71,8 +69,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 gestora: "",
                 institucion_ejecutora_id: "",
                 modalidad_id: "",
-                año: new Date().getFullYear(),
-                estado: 'Activo'
+                año: new Date().getFullYear()
             });
         }
     }, [proyecto, isOpen]);
@@ -284,15 +281,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                             />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Estado Texto</label>
-                            <input
-                                name="estado"
-                                value={formData.estado}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none shadow-inner"
-                            />
-                        </div>
+
                     </div>
                 </form>
 

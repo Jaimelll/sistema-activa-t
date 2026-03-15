@@ -35,7 +35,6 @@ export default function EdicionPage() {
         const m: any = {};
 
         setFormData({
-            estado: p.estado || 'Registrado',
             monto_fondoempleo: m?.monto_fondoempleo || 0,
             avance: m?.avance || 0,
             metricas_id: m?.id
@@ -45,12 +44,7 @@ export default function EdicionPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        setMessage('')
-
-        // Update Proyecto
-        const { error: errP } = await supabase.from('proyectos').update({
-            estado: formData.estado
-        }).eq('id', selectedId)
+        setMessage('');
 
         // Update Metricas - UPSERT logic manually
         let errM = null
@@ -68,7 +62,7 @@ export default function EdicionPage() {
             errM = error
         }
 
-        if (!errP && !errM) {
+        if (!errM) {
             setMessage('Actualización exitosa. Registrado en auditoría.')
             // Reload to ensure sync
             loadProjectDetails(selectedId)
@@ -99,20 +93,7 @@ export default function EdicionPage() {
 
                     {selectedId && formData && (
                         <form onSubmit={handleSubmit} className="space-y-6 border-t pt-6 border-gray-100">
-                            <div>
-                                <label className="label">Estado del Proyecto</label>
-                                <select
-                                    className="input"
-                                    value={formData.estado || ''}
-                                    onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
-                                >
-                                    <option value="Registrado">Registrado</option>
-                                    <option value="En Evaluación">En Evaluación</option>
-                                    <option value="Aprobado">Aprobado</option>
-                                    <option value="Rechazado">Rechazado</option>
-                                    <option value="Finalizado">Finalizado</option>
-                                </select>
-                            </div>
+
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>

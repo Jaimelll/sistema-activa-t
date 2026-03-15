@@ -54,14 +54,13 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   applyFilter('linea_id', filters?.linea); // Correct column name from schema check: linea_id
   applyFilter('modalidad_id', filters?.modalidad);
 
-  // Note: 'etapa' maps to 'estado'
   if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
-    query = query.eq('estado', filters.etapa);
+    query = query.eq('etapa_id', filters.etapa);
   }
 
   // --- 3. Status Exclusion (Always applied at end as requested) ---
-  // "La exclusión de .not('estado', 'ilike', 'no habilitada') debe estar siempre presente al final"
-  query = query.not('estado', 'ilike', 'no habilitada').order('id', { ascending: true });
+  // "La exclusión de .not('etapas.descripcion', 'ilike', 'no habilitada') debe estar siempre presente al final"
+  query = query.not('etapas.descripcion', 'ilike', 'no habilitada').order('id', { ascending: true });
 
   const { data, error } = await query;
 
@@ -90,7 +89,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       lineaId: p.linea_id, // Correct column: linea_id
       eje: p.ejes?.descripcion || 'Sin Eje',
       ejeId: p.eje_id, // Correct column: eje_id
-      etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa', // Map descriptive stage
+      etapa: p.etapas?.descripcion || 'Sin Etapa', // Map descriptive stage
       etapaId: p.etapa_id, // Added: Mapped for execution filter
       institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
       institucionId: p.institucion_ejecutora_id,
@@ -99,7 +98,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       modalidad: p.modalidades?.descripcion || 'Desconocido', // Added: Modality description
 
       modalidadId: p.modalidad_id, // Added: Modality ID for filtering
-      estado: p.estado || 'Activo',
+      estado: p.etapas?.descripcion || 'Activo',
       year: year,
       año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
@@ -210,9 +209,9 @@ export async function getEtapas() {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from('proyectos_servicios')
-    .select('estado')
-    .not('estado', 'ilike', 'no habilitada');
+    .from('etapas')
+    .select('descripcion')
+    .not('descripcion', 'ilike', 'no habilitada');
 
   if (error) {
     console.error("Error fetching stages:", error);
@@ -221,8 +220,7 @@ export async function getEtapas() {
 
   if (!data) return [];
 
-  // Extract unique stages
-  const uniqueStages = Array.from(new Set(data.map((d: any) => d.estado)))
+  const uniqueStages = Array.from(new Set(data.map((d: any) => d.descripcion)))
     .filter(Boolean)
     .sort();
 
@@ -278,9 +276,9 @@ export async function getBecasData(filters?: { periodo?: string; eje?: string; l
   // 2. Other Filters
   if (filters?.eje && filters.eje !== 'all') query = query.eq('eje_id', filters.eje);
   if (filters?.linea && filters.linea !== 'all') query = query.eq('linea_id', filters.linea);
-  if (filters?.etapa && filters.etapa !== 'all') query = query.eq('estado', filters.etapa);
+  if (filters?.etapa && filters.etapa !== 'all') query = query.eq('etapa_id', filters.etapa);
 
-  query = query.not('estado', 'ilike', 'no habilitada');
+  query = query.not('etapas.descripcion', 'ilike', 'no habilitada');
 
   const { data, error } = await query;
 
@@ -300,10 +298,10 @@ export async function getBecasData(filters?: { periodo?: string; eje?: string; l
     lineaId: p.linea_id,
     eje: p.ejes?.descripcion || 'Sin Eje',
     ejeId: p.eje_id,
-    etapa: p.estado || 'Sin Etapa',
+    etapa: p.etapas?.descripcion || 'Sin Etapa',
     etapaId: p.etapa_id, // Added: Mapped for execution filter
     institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
-    estado: p.estado || 'Activo',
+    estado: p.etapas?.descripcion || 'Activo',
     year: p.año ? String(p.año) : 'Unknown',
     año: Number(p.año) || 0,
     monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
@@ -336,14 +334,14 @@ export async function getEtapasBecas() {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   const { data, error } = await supabase
-    .from('becas')
-    .select('estado')
-    .not('estado', 'ilike', 'no habilitada');
+    .from('etapas')
+    .select('descripcion')
+    .not('descripcion', 'ilike', 'no habilitada');
 
   if (error) return [];
   if (!data) return [];
 
-  return Array.from(new Set(data.map((d: any) => d.estado))).filter(Boolean).sort();
+  return Array.from(new Set(data.map((d: any) => d.descripcion))).filter(Boolean).sort();
 }
 
 export async function getTimelineData() {
@@ -356,7 +354,6 @@ export async function getTimelineData() {
     .select(`
       id,
       nombre,
-      estado,
       etapa_id,
       eje_id,
       linea_id,
@@ -375,7 +372,7 @@ export async function getTimelineData() {
         etapa_id
       )
     `)
-    .not('estado', 'ilike', 'no habilitada');
+    .not('etapas.descripcion', 'ilike', 'no habilitada');
 
   if (error) {
     console.error("Error fetching timeline data:", error);
@@ -386,7 +383,7 @@ export async function getTimelineData() {
   const mappedData = data.map((p: any) => ({
     id: p.id,
     nombre: p.nombre,
-    estado: p.estado,
+    estado: p.etapas?.descripcion || 'Activo',
     eje_id: p.eje_id,
     linea_id: p.linea_id,
     eje: p.ejes?.descripcion || `Eje ${p.eje_id}`,
@@ -397,7 +394,7 @@ export async function getTimelineData() {
     avance: Number(p.avance) || 0,
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
-    etapa: p.etapas?.descripcion || p.estado || 'Sin Etapa',
+    etapa: p.etapas?.descripcion || 'Sin Etapa',
     fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
     fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
     avances: p.avance_proyecto.map((a: any) => ({

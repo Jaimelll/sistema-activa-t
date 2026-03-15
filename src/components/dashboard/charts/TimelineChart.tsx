@@ -428,13 +428,13 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                     .slice()
                                     .sort((a: any, b: any) => {
                                         // Logging for first comparison only to avoid flood
-                                        if (!window.__debug_sort_done) {
+                                        if (!(window as any).__debug_sort_done) {
                                             console.log('[DEBUG SORT] Project A:', { codigo: a.codigo, fin: a.fecha_fin, type: typeof a.fecha_fin });
                                             console.log('[DEBUG SORT] Project B:', { codigo: b.codigo, fin: b.fecha_fin, type: typeof b.fecha_fin });
                                             const tA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
                                             const tB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
                                             console.log('[DEBUG SORT] Parsed Times:', { tA, tB });
-                                            window.__debug_sort_done = true;
+                                            (window as any).__debug_sort_done = true;
                                         }
                                         const dateA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
                                         const dateB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
