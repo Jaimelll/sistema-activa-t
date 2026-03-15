@@ -37,7 +37,7 @@ export default function EdicionPage() {
         setFormData({
             estado: p.estado || 'Registrado',
             monto_fondoempleo: m?.monto_fondoempleo || 0,
-            monto_contrapartida: m?.monto_contrapartida || 0,
+            avance: m?.avance || 0,
             metricas_id: m?.id
         })
     }
@@ -57,7 +57,7 @@ export default function EdicionPage() {
         const metricUpdates = {
             proyecto_id: selectedId,
             monto_fondoempleo: parseFloat(formData.monto_fondoempleo),
-            monto_contrapartida: parseFloat(formData.monto_contrapartida)
+            avance: parseFloat(formData.avance)
         }
 
         if (formData.metricas_id) {
@@ -131,8 +131,8 @@ export default function EdicionPage() {
                                         type="number"
                                         step="0.01"
                                         className="input"
-                                        value={formData.monto_contrapartida}
-                                        onChange={(e) => setFormData({ ...formData, monto_contrapartida: e.target.value })}
+                                        value={formData.avance}
+                                        onChange={(e) => setFormData({ ...formData, avance: e.target.value })}
                                     />
                                 </div>
                             </div>

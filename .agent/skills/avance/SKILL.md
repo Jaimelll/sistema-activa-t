@@ -1,30 +1,31 @@
 ---
 name: avance
-description: Protocolo de actualización atómica para montos de contrapartida en Sistema Activa-T.
+description: Protocolo de actualización atómica para el campo 'avance' en el Sistema Activa-T.
 ---
 
-# SKILL: Actualización Selectiva de Contrapartida (Estándar 2026)
+# SKILL: Actualización Selectiva de Avance (Estándar 2026)
 
-Este protocolo está diseñado para actualizar datos financieros específicos sin comprometer la integridad de las tablas maestras ni la estructura general del proyecto.
+Este protocolo está diseñado para actualizar el progreso financiero (campo `avance`) sin comprometer la integridad de las tablas maestras.
 
-## 1. Protocolo de Actualización Puntual (Fase 3)
+## 1. Protocolo de Actualización Puntual
 
-Este skill debe ejecutarse de forma aislada para procesar archivos de avance (ej. `avance0403.xlsx`).
+Este skill debe ejecutarse para procesar archivos de seguimiento de ejecución (ej. `avance0403.xlsx`).
 
 ### A. Restricciones Críticas de Seguridad
-- **PROHIBICIÓN DE TRUNCATE**: Está estrictamente prohibido usar comandos `TRUNCATE` o `DELETE` durante la ejecución de este skill.
-- **PROTECCIÓN DE COLUMNAS**: No se debe modificar el `codigo_proyecto`, `nombre`, `gestora` ni ninguna clave foránea (`FK`).
-- **AISLAMIENTO**: No ejecutar lógicas de "Skill Base" o "Fase 0/1" que impliquen recarga de tablas maestras.
+- **PROHIBICIÓN DE TRUNCATE**: Está estrictamente prohibido usar comandos `TRUNCATE` o `DELETE`.
+- **PROTECCIÓN DE COLUMNAS**: No se debe modificar el `codigo_proyecto`, `nombre`, `gestora` ni claves foráneas.
+- **INTEGRIDAD**: Este skill ahora escribe exclusivamente en la columna `avance`.
 
 ### B. Procedimiento ETL Atómico
 1. **Origen**: Leer el archivo Excel definido por el usuario (ej. `avance0403.xlsx`).
-2. **Identificación**: Localizar la columna `id` (Primary Key) y la columna `monto_contrapartida`.
+2. **Identificación**: Localizar la columna `id` (Primary Key) y el valor numérico destinado al progreso.
 3. **Ejecución en Supabase**:
    - Realizar un `UPDATE` en la tabla `public.proyectos_servicios`.
    - **Match**: `WHERE id = excel.id`.
-   - **Set**: `monto_contrapartida = excel.monto_contrapartida`.
-4. **Validación**: Ignorar cualquier fila donde el `id` no exista en la base de datos o el monto sea nulo.
+   - **Set**: `avance = excel.nuevo_valor_del_excel`.
+4. **Validación**: 
+   - Ignorar filas donde el `id` no exista.
+   - Si el Excel aún usa el encabezado "monto_contrapartida", mapearlo automáticamente hacia la columna `avance` en la base de datos.
 
 ## 2. Verificación de Despliegue
-- **Docker**: Ejecutar `docker compose up -d --build frontend` solo si el cambio requiere una actualización en el estado de los componentes del dashboard.
-- **Reporte**: Informar al usuario el número exacto de filas procesadas (Ej: "56 registros actualizados exitosamente").
+- **Reporte**: Informar al usuario el número exacto de filas procesadas y confirmar que los datos se reflejaron en la columna `avance`.

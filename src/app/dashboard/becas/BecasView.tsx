@@ -86,7 +86,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
     const metrics = useMemo(() => {
         // En Becas, asumimos las mismas columnas de montos si existen en Base4.
         const totalFondo = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_fondoempleo) || 0), 0);
-        const totalContra = filteredData.reduce((acc, curr) => acc + (Number(curr.monto_contrapartida) || 0), 0);
+        const totalContra = filteredData.reduce((acc, curr) => acc + (Number(curr.avance) || 0), 0);
         const totalBen = filteredData.reduce((acc, curr) => acc + (Number(curr.beneficiarios) || 0), 0);
         const totalBecas = filteredData.length;
 
@@ -106,7 +106,7 @@ export default function BecasView({ initialData, years = [], stages = [], lines 
             if (!map.has(r)) map.set(r, { name: r, fondoempleo: 0, contrapartida: 0, count: 0, tooltipName: `Región ${r}` });
             const entry = map.get(r);
             entry.fondoempleo += (Number(d.monto_fondoempleo) || 0);
-            entry.contrapartida += (Number(d.monto_contrapartida) || 0);
+            entry.contrapartida += (Number(d.avance) || 0);
             entry.count += 1;
         });
         return Array.from(map.values());
