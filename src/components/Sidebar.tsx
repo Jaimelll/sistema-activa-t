@@ -35,7 +35,7 @@ export function Sidebar() {
         { name: 'Corporativo', icon: LayoutDashboard, href: '/dashboard/corporativo' },
         { name: 'Documentos', icon: FolderOpen, href: '/dashboard/corporativo/documentos' },
         { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
-        { name: 'Proyectos y Servicios', icon: FolderOpen, href: '/dashboard/proyectos-y-servicios' },
+        { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];

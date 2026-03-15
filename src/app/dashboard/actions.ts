@@ -462,7 +462,7 @@ export async function createProyecto(formData: any) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/dashboard/proyectos-y-servicios');
+  revalidatePath('/dashboard/gestion-proyectos');
   return data;
 }
 
@@ -482,7 +482,7 @@ export async function updateProyecto(id: any, formData: any) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/dashboard/proyectos-y-servicios');
+  revalidatePath('/dashboard/gestion-proyectos');
   return data;
 }
 
@@ -501,7 +501,7 @@ export async function deleteProyecto(id: any) {
     throw new Error(error.message);
   }
 
-  revalidatePath('/dashboard/proyectos-y-servicios');
+  revalidatePath('/dashboard/gestion-proyectos');
   return { success: true };
 }
 
