@@ -108,7 +108,7 @@ export default function ProyectosServiciosTable({
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Proyectos y Servicios");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Gestión de Proyectos");
     
     // Auto-size columns
     const maxWidths = Object.keys(dataToExport[0]).map(key => {

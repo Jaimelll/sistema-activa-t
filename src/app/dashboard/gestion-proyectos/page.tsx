@@ -20,7 +20,7 @@ export default async function ProyectosPage() {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Proyectos y Servicios</h2>
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Gestión de Proyectos</h2>
             </div>
             <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                 <ProyectosServiciosTable 
