@@ -20,7 +20,7 @@ Este skill debe ejecutarse para procesar archivos de seguimiento de ejecución (
 1. **Origen**: Leer el archivo Excel definido por el usuario (ej. `avance0403.xlsx`).
 2. **Identificación**: Localizar la columna `id` (Primary Key) y el valor numérico destinado al progreso.
 3. **Ejecución en Supabase**:
-   - Realizar un `UPDATE` en la tabla `public.proyectos_servicios`.
+   - Realizar un `UPDATE` en la tabla `public.proyectos`.
    - **Match**: `WHERE id = excel.id`.
    - **Set**: `avance = excel.nuevo_valor_del_excel`.
 4. **Validación**: 
