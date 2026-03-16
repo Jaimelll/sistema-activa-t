@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { PERMISOS_POR_USUARIO, getNormalizedEmail } from '@/config/permissions';
 
 export default function DashboardLayout({
     children,
@@ -16,13 +17,32 @@ export default function DashboardLayout({
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Notificación de acceso restringido
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('error') === 'restriccion') {
+                alert('Acceso restringido: No tienes permisos para ver este módulo.');
+                router.replace('/dashboard');
+            }
+        }
+
         const checkAccess = async () => {
             const { data: { user } } = await supabase.auth.getUser();
-            // BLOQUEO ROBUSTO: Maneja rcabajal / rcarbajal
-            const isRestricted = user?.email?.toLowerCase().includes('bajal@fondoempleo.com.pe');
+            const email = getNormalizedEmail(user?.email);
+            const permisos = PERMISOS_POR_USUARIO[email];
 
-            if (isRestricted && pathname !== '/dashboard') {
-                router.push('/dashboard');
+            let isAllowed = true;
+            if (permisos) {
+                if (permisos.rutasPermitidas && !permisos.rutasPermitidas.includes(pathname)) {
+                    isAllowed = false;
+                }
+                if (permisos.rutasBloqueadas && permisos.rutasBloqueadas.some(r => pathname.startsWith(r))) {
+                    isAllowed = false;
+                }
+            }
+
+            if (!isAllowed) {
+                router.push('/dashboard?error=restriccion');
             } else {
                 setLoading(false);
             }

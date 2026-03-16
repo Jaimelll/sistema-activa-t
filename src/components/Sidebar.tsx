@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 
 import { createClient } from '@/utils/supabase/client';
+import { getUserPermissions } from '@/config/permissions';
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -42,13 +43,18 @@ export function Sidebar() {
 
     // FUNCIÓN PURA DE NAVEGACIÓN: Aislamiento absoluto del arreglo de items
     const getMenuItems = (email: string | null | undefined) => {
-        // Coincidencia robusta para rcabajal o rcarbajal
-        if (email?.includes('cabajal@fondoempleo.com.pe')) {
-            return [
-                { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' }
-            ];
+        const permisos = getUserPermissions(email);
+        let itemsFinales = [...allMenuItems];
+
+        if (permisos?.modulosPermitidos) {
+            itemsFinales = itemsFinales.filter(item => permisos.modulosPermitidos!.includes(item.name));
         }
-        return allMenuItems;
+
+        if (permisos?.modulosBloqueados) {
+            itemsFinales = itemsFinales.filter(item => !permisos.modulosBloqueados!.includes(item.name));
+        }
+
+        return itemsFinales;
     };
 
     return (
@@ -75,12 +81,7 @@ export function Sidebar() {
 
                 <nav className="flex-1 p-4 space-y-1">
                     {(() => {
-                        // BLOQUEO DE ÚLTIMO RECURSO: Validación forzada e infalible en el ciclo de render
-                        // Maneja variantes: rcabajal / rcarbajal mediante coincidencia de 'bajal'
-                        const isRestricted = user?.email?.toLowerCase().includes('bajal@fondoempleo.com.pe');
-                        const itemsFinales = isRestricted
-                            ? allMenuItems.filter(item => item.name === 'Proyectos')
-                            : (user ? allMenuItems : []);
+                        const itemsFinales = getMenuItems(user?.email);
 
                         return itemsFinales.map((item) => {
                             const Icon = item.icon;
