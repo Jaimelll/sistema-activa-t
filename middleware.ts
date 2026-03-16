@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { PERMISOS_POR_USUARIO, getNormalizedEmail } from '@/config/permissions'
 
 export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
@@ -56,22 +57,24 @@ export async function middleware(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    // COINCIDENCIA ROBUSTA: rcabajal o rcarbajal mediante 'bajal'
-    const isRestrictedUser = user?.email?.toLowerCase().includes('bajal@fondoempleo.com.pe')
+    if (user && user.email) {
+        const email = getNormalizedEmail(user.email);
+        const { pathname } = request.nextUrl;
+        const permisos = PERMISOS_POR_USUARIO[email];
 
-    if (isRestrictedUser) {
-        const { pathname } = request.nextUrl
-        // Bloqueo total: Solo se permite la raíz, /dashboard exacto y logout/callback
-        const isAllowed = [
-            '/',
-            '/dashboard',
-            '/auth/signout',
-            '/auth/callback'
-        ].includes(pathname)
+        if (permisos) {
+            let isAllowedRoute = true;
 
-        // Si intenta entrar a cualquier subruta de /dashboard/ o cualquier otra ruta no permitida
-        if (!isAllowed) {
-            return NextResponse.redirect(new URL('/dashboard', request.url), 307)
+            if (permisos.rutasPermitidas && !permisos.rutasPermitidas.includes(pathname)) {
+                isAllowedRoute = false;
+            }
+            if (permisos.rutasBloqueadas && permisos.rutasBloqueadas.some(r => pathname.startsWith(r))) {
+                isAllowedRoute = false;
+            }
+
+            if (!isAllowedRoute) {
+                return NextResponse.redirect(new URL('/dashboard?error=restriccion', request.url), 307);
+            }
         }
     }
 
