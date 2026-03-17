@@ -1,0 +1,79 @@
+--- Data from Excel ---
+[
+  {
+    "id": 520,
+    "a├▒o": 2024,
+    "eje_id": 1,
+    "linea_id": 3,
+    "nombre": "PROGRAMA MUJER UNICA: CAPACITACION EN LA ELABORACION DE VELAS AROMATICAS, VELAS ESCULTURA Y PERFUMERIA, PARA LA PROMOCION Y EL FORTALECIMIENTO DEL EMPRENDIMIENTO EN MUJERES DE UNA POBLACION VULNERABLE DE LA CIUDAD DE LIMA",
+    "instituciones_ejecurtoras.nombre": "GRUPO LA ├ÜNICA SAC",
+    "gestora": "GRUPO LA ├ÜNICA",
+    "codigo_proyecto": "C-24-21",
+    "modalidades.descripcion": "DIRECTA",
+    "regiones.descripcion": "Lima",
+    "beneficiarios": 40,
+    "monto_fondoempleo": 179300,
+    "etapas.descripcion": "resuelto"
+  },
+  {
+    "id": 521,
+    "a├▒o": 2026,
+    "eje_id": 2,
+    "linea_id": 3,
+    "nombre": "MEJORAMIENTO DE LA INFRAESTRUCTURA DE MERCADOS  (MERCADOS EN ACCI├ôN)",
+    "instituciones_ejecurtoras.nombre": "PRODUCE",
+    "gestora": "POR COMPLETAR",
+    "codigo_proyecto": "Sin c├│digo",
+    "modalidades.descripcion": "Indirecta",
+    "regiones.descripcion": "Multirregional",
+    "beneficiarios": 120,
+    "monto_fondoempleo": 0,
+    "etapas.descripcion": "Lanzamiento"
+  },
+  {
+    "id": 522,
+    "a├▒o": 2026,
+    "eje_id": 2,
+    "linea_id": 4,
+    "nombre": "MEJORAMIENTO DE LA CADENA DE POTA PARA ELIMINAR ACOPIADORES SECTOR PESQUERO ARTESANAL",
+    "instituciones_ejecurtoras.nombre": "PRODUCE",
+    "gestora": "POR COMPLETAR",
+    "codigo_proyecto": "Sin c├│digo",
+    "modalidades.descripcion": "Indirecta",
+    "regiones.descripcion": "Multirregional",
+    "beneficiarios": 240,
+    "monto_fondoempleo": 0,
+    "etapas.descripcion": "Lanzamiento"
+  },
+  {
+    "id": 523,
+    "a├▒o": 2026,
+    "eje_id": 2,
+    "linea_id": 4,
+    "nombre": "ECONOM├ìA CIRCULAR DEL CACAO",
+    "instituciones_ejecurtoras.nombre": "PRODUCE",
+    "gestora": "POR COMPLETAR",
+    "codigo_proyecto": "Sin c├│digo",
+    "modalidades.descripcion": "Indirecta",
+    "regiones.descripcion": "Multirregional",
+    "beneficiarios": 240,
+    "monto_fondoempleo": 0,
+    "etapas.descripcion": "Lanzamiento"
+  },
+  {
+    "id": 524,
+    "a├▒o": 2026,
+    "eje_id": 2,
+    "linea_id": 1,
+    "nombre": "CAPACITACI├ôN PARA LA INSERCI├ôN LABORAL DEL MTPE.",
+    "instituciones_ejecurtoras.nombre": "MTPE",
+    "gestora": "POR COMPLETAR",
+    "codigo_proyecto": "Sin c├│digo",
+    "modalidades.descripcion": "Indirecta",
+    "regiones.descripcion": "Multirregional",
+    "beneficiarios": 0,
+    "monto_fondoempleo": 0,
+    "etapas.descripcion": "Lanzamiento"
+  }
+]
+-----------------------
