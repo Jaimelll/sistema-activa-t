@@ -1,0 +1,40 @@
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+- Experiments (use with caution):
+  ┬À serverActions
+
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 6.2s
+  Running TypeScript ...
+  Collecting page data using 13 workers ...
+  Generating static pages using 13 workers (0/12) ...
+  Generating static pages using 13 workers (3/12) 
+  Generating static pages using 13 workers (6/12) 
+  Generating static pages using 13 workers (9/12) 
+Ô£ô Generating static pages using 13 workers (12/12) in 1467.5ms
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî ãÆ /
+Ôö£ Ôùï /_not-found
+Ôö£ ãÆ /auth/login
+Ôö£ ãÆ /auth/signout
+Ôö£ ãÆ /dashboard
+Ôö£ ãÆ /dashboard/aportantes
+Ôö£ ãÆ /dashboard/becas
+Ôö£ Ôùï /dashboard/corporativo
+Ôö£ Ôùï /dashboard/corporativo/documentos
+Ôö£ Ôùï /dashboard/evaluacion
+Ôö£ Ôùï /dashboard/evaluacion/configuracion
+Ôö£ ãÆ /dashboard/gestion-aportantes
+Ôö£ ãÆ /dashboard/gestion-proyectos
+Ôö£ Ôùï /dashboard/institucion-ejecutora
+Ôö£ Ôùï /edicion
+Ôöö ãÆ /maestro
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

@@ -32,11 +32,13 @@ export function Sidebar() {
 
     const allMenuItems = [
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Aportantes', icon: LayoutDashboard, href: '/dashboard/aportantes' },
         { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Corporativo', icon: LayoutDashboard, href: '/dashboard/corporativo' },
         { name: 'Documentos', icon: FolderOpen, href: '/dashboard/corporativo/documentos' },
         { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
+        { name: 'Gestión de Aportantes', icon: Users, href: '/dashboard/gestion-aportantes' },
         { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
         { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];
