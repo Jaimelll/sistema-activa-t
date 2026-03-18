@@ -262,8 +262,9 @@ export async function getBecasData(filters?: { periodo?: string; eje?: string; l
       lineas (descripcion),
       ejes (descripcion),
       regiones (descripcion),
-      instituciones_ejecutoras (nombre)
-    `);
+      instituciones_ejecutoras (nombre),
+      etapas (descripcion)
+     `); // <-- Aquí agregamos la relación que faltaba
 
   // 1. Filter by Year
   if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
@@ -283,7 +284,9 @@ export async function getBecasData(filters?: { periodo?: string; eje?: string; l
   const { data, error } = await query;
 
   if (error) {
-    console.error("Error fetching becas data:", error);
+    console.dir(error, { depth: null });
+    // O simplemente:
+    console.error("Detalle del error:", JSON.stringify(error, null, 2));
     return [];
   }
 
