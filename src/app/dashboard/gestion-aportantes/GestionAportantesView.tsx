@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useTransition, Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
-import { X, Save } from "lucide-react";
+import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2, X, Save } from "lucide-react";
 import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte } from "./actions";
+import EmpresaModal from "./EmpresaModal";
+import AporteModal from "./AporteModal";
 
 interface Aporte { id: string; anio: number; monto: number; }
 interface EmpresaRow {
@@ -16,43 +17,6 @@ interface EmpresaRow {
     total_aportes: number;
     aportes_count: number;
     aportes: Aporte[];
-}
-
-// ─── Small inline Modal ────────────────────────────────────────────────────────
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
-                {children}
-            </div>
-        </div>
-    );
-}
-
-function ModalFooter({ onClose, isSubmitting, label = 'Guardar' }: { onClose: () => void; isSubmitting: boolean; label?: string }) {
-    return (
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors">Cancelar</button>
-            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20">
-                {isSubmitting ? 'Guardando...' : <><Save className="w-4 h-4" />{label}</>}
-            </button>
-        </div>
-    );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div className="space-y-1">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</label>
-            {children}
-        </div>
-    );
 }
 
 const inputCls = "w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner text-sm";
@@ -272,8 +236,37 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                 </div>
             </div>
 
-            {/* Modals remained the same as they were already correctly keyed or don't use list iteration */}
-            {/* ... rest of your code ... */}
+            {/* Modals for creation and management */}
+            <EmpresaModal
+                isOpen={showNuevaEmpresa}
+                onClose={() => setShowNuevaEmpresa(false)}
+                onSave={async (data) => {
+                    await handleCreateEmpresa({ preventDefault: () => { }, target: { ruc: { value: data.ruc }, razon_social: { value: data.razon_social }, ciiu_id: { value: data.ciiu_id } } } as any);
+                }}
+                sectores={sectores}
+            />
+
+            <EmpresaModal
+                isOpen={!!editingEmpresa}
+                onClose={() => setEditingEmpresa(null)}
+                onSave={async (data) => {
+                    if (!editingEmpresa) return;
+                    await updateEmpresa(editingEmpresa.ruc, { razon_social: data.razon_social, ciiu_id: data.ciiu_id });
+                    setEditingEmpresa(null);
+                    refresh();
+                }}
+                sectores={sectores}
+            />
+
+            <AporteModal
+                isOpen={!!managingEmpresa}
+                onClose={() => setManagingEmpresa(null)}
+                empresa={managingEmpresa ? { ruc: managingEmpresa.ruc, razon_social: managingEmpresa.razon_social } : null}
+                onSave={async (data) => {
+                    await createAporte(data);
+                    refresh();
+                }}
+            />
         </div>
     );
 }
