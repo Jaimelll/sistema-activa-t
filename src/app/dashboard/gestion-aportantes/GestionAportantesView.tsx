@@ -181,8 +181,30 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                                             <div className="text-sm text-gray-800 max-w-xs truncate" title={empresa.sector}>{empresa.sector}</div>
                                             <div className="text-xs text-gray-400">{empresa.ciiu_codigo}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">{empresa.aportes_count} {empresa.aportes_count === 1 ? 'aporte' : 'aportes'}</span>
+                                        <td className="px-6 py-4 text-right relative group">
+                                            <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 cursor-help transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">
+                                                {empresa.aportes_count} {empresa.aportes_count === 1 ? 'aporte' : 'aportes'}
+                                            </span>
+
+                                            {/* Hover Popover — Quick Breakdown */}
+                                            <div className="absolute right-0 top-12 z-50 hidden group-hover:block w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 animate-in fade-in zoom-in-95 duration-200 text-left">
+                                                <div className="flex items-center gap-2 mb-3 border-b border-slate-50 pb-2">
+                                                    <Wallet className="w-3 h-3 text-blue-500" />
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Historial Rápido</p>
+                                                </div>
+                                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                                    {empresa.aportes.length > 0 ? (
+                                                        empresa.aportes.sort((a, b) => b.anio - a.anio).map(a => (
+                                                            <div key={a.id} className="flex justify-between items-center text-[11px] border-b border-slate-50 last:border-0 pb-1.5 last:pb-0">
+                                                                <span className="font-bold text-slate-500">{a.anio}</span>
+                                                                <span className="font-black text-slate-900">{fmt(a.monto)}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-[10px] text-slate-400 italic">Sin registros</p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right text-sm font-bold text-gray-900">{fmt(empresa.total_aportes)}</td>
                                         <td className="px-6 py-4 text-center">
