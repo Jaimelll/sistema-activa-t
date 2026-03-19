@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
@@ -32,6 +32,14 @@ export default function AportantesView({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSector, setSelectedSector] = useState<string>('all');
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Compute the last 5 years from the data
     const last5Years = useMemo(() => {
@@ -104,7 +112,10 @@ export default function AportantesView({
     const pieData = useMemo(() => {
         const groups = new Map<string, number>();
         baseData.forEach(d => groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto));
-        return Array.from(groups.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+        return Array.from(groups.entries())
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 8);
     }, [baseData]);
 
     // KPIs
@@ -186,90 +197,65 @@ export default function AportantesView({
                 </div>
             </div>
 
-            {/* Main Stacked Bar Chart — Corporativo style */}
+            {/* Main Historical Line Chart — Now at the top */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-10 text-center md:text-left">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Composición de Aportantes</h3>
-                    <p className="text-slate-400 font-medium">Distribución por empresa y año • {yearRange}</p>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica</h3>
+                    <p className="text-slate-400 font-medium">Aportes totales por año • 1998 - 2025</p>
                 </div>
                 <div className="h-[500px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={highlightedEmpresa
-                                // If an empresa is highlighted, show only that company's bars (not stacked, single bar per year)
-                                ? last5Years.map(year => {
-                                    const entry = baseData.find(d => d.anio === year && d.razon_social === highlightedEmpresa);
-                                    return { year: year.toString(), [highlightedEmpresa]: entry ? entry.monto : 0 };
-                                })
-                                : stackedData
-                            }
-                            layout="vertical"
-                            margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                            <XAxis
-                                type="number"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                tickFormatter={fmtM}
-                            />
-                            <YAxis
-                                dataKey="year"
-                                type="category"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#64748b', fontWeight: 800, fontSize: 14 }}
-                            />
+                        <LineChart data={lineData} margin={{ top: 10, right: 30, left: 20, bottom: 40 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={fmtM} />
                             <Tooltip
                                 formatter={(value: number) => fmt(value)}
                                 contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
                             />
-                            <Legend
-                                verticalAlign="bottom"
-                                align="center"
-                                iconType="circle"
-                                wrapperStyle={{ paddingTop: '50px', fontSize: '10px', fontWeight: 700 }}
-                            />
-                            {highlightedEmpresa
-                                ? <Bar key={highlightedEmpresa} dataKey={highlightedEmpresa} stackId="a" fill={companyColorMap.get(highlightedEmpresa) || '#2563eb'} barSize={32} radius={[0, 4, 4, 0]} />
-                                : top10Companies.map((company, index) => (
-                                    <Bar
-                                        key={company}
-                                        dataKey={company}
-                                        stackId="a"
-                                        fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]}
-                                        barSize={32}
-                                    />
-                                ))
-                            }
-                        </BarChart>
+                            <Line type="monotone" dataKey="total" name="Total Aportado" stroke="#2563eb" strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8 }} />
+                        </LineChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* Bottom Row: Line + Pie */}
+            {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Historical Line Chart */}
+                {/* Stacked Bar Chart */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica</h3>
-                        <p className="text-slate-400 font-medium">Aportes totales por año • 1998 - 2025</p>
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Composición de Aportantes</h3>
+                        <p className="text-slate-400 font-medium">Distribución por empresa y año • {yearRange}</p>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={lineData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} interval={3} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={fmtM} />
+                            <BarChart
+                                data={highlightedEmpresa
+                                    ? last5Years.map(year => {
+                                        const entry = baseData.find(d => d.anio === year && d.razon_social === highlightedEmpresa);
+                                        return { year: year.toString(), [highlightedEmpresa]: entry ? entry.monto : 0 };
+                                    })
+                                    : stackedData
+                                }
+                                layout="vertical"
+                                margin={{ top: 5, right: 20, left: 10, bottom: 10 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="year" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 12 }} />
                                 <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
-                                <Line type="monotone" dataKey="total" name="Total Aportado" stroke="#2563eb" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 7 }} />
-                            </LineChart>
+                                {highlightedEmpresa
+                                    ? <Bar key={highlightedEmpresa} dataKey={highlightedEmpresa} stackId="a" fill={companyColorMap.get(highlightedEmpresa) || '#2563eb'} barSize={24} radius={[0, 4, 4, 0]} />
+                                    : top10Companies.map((company, index) => (
+                                        <Bar key={company} dataKey={company} stackId="a" fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} barSize={24} />
+                                    ))
+                                }
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Sector Pie */}
+                {/* Sector Bar Chart (Formerly Pie) */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector</h3>
@@ -277,19 +263,38 @@ export default function AportantesView({
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={pieData} cx="40%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={2} dataKey="value">
+                            <BarChart
+                                data={pieData}
+                                layout="vertical"
+                                margin={{ top: 5, right: 30, left: isMobile ? 10 : 80, bottom: 5 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                <XAxis type="number" hide />
+                                <YAxis
+                                    dataKey="name"
+                                    type="category"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontWeight: 600, fontSize: isMobile ? 9 : 10 }}
+                                    width={isMobile ? 110 : 150}
+                                    tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val}
+                                />
+                                <Tooltip
+                                    formatter={(value: number) => fmt(value)}
+                                    labelStyle={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b', fontSize: '13px' }}
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '16px', maxWidth: '300px' }}
+                                />
+                                <Bar dataKey="value" name="Monto" radius={[0, 4, 4, 0]} barSize={20}>
                                     {pieData.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
                                     ))}
-                                </Pie>
-                                <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '16px' }} />
-                                <Legend layout="vertical" verticalAlign="middle" align="right" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 700, maxWidth: '160px' }} />
-                            </PieChart>
+                                </Bar>
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
             </div>
+
         </div>
     );
 }
