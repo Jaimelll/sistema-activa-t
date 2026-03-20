@@ -1,0 +1,58 @@
+--- Table: becas_nueva ---
+id: integer integer
+periodo: integer integer
+eje_id: integer integer
+linea_id: integer integer
+nombre: string text
+documento: string text
+institucion_id: integer integer
+modalidad_id: integer integer
+region_id: integer integer
+beneficiarios: integer integer
+presupuesto: number numeric
+avance: number numeric
+etapa_id: integer integer
+provincia_procedencia: string text
+distrito_procedencia: string text
+edad: integer integer
+tipo_estudio_id: integer integer
+naturaleza_ie_id: integer integer
+especialidad: string text
+formato_id: integer integer
+condicion_id: integer integer
+duracion_meses: integer integer
+created_at: string timestamp with time zone
+--- Table: institucion ---
+id: integer integer
+descripcion: string text
+--- Table: regiones ---
+id: integer integer
+descripcion: string text
+--- Table: etapas ---
+id: integer integer
+descripcion: string text
+fase: string text
+--- Table: modalidades ---
+id: integer integer
+descripcion: string text
+fase: string text
+--- Table: formato ---
+id: integer integer
+descripcion: string text
+--- Table: condicion ---
+id: integer integer
+descripcion: string text
+--- Table: naturaleza_ie ---
+id: integer integer
+descripcion: string text
+--- Table: tipo_estudio ---
+id: integer integer
+descripcion: string text
+--- Table: ejes ---
+id: integer integer
+descripcion: string text
+fase: string text
+--- Table: lineas ---
+id: integer integer
+descripcion: string text
+fase: string text

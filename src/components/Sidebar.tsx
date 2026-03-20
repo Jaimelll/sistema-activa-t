@@ -32,6 +32,7 @@ export function Sidebar() {
 
     const allMenuItems = [
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
+        { name: 'Servicios', icon: FolderOpen, href: '/dashboard/servicios' },
         { name: 'Aportantes', icon: LayoutDashboard, href: '/dashboard/aportantes' },
         { name: 'Becas', icon: LayoutDashboard, href: '/dashboard/becas' },
         { name: 'Corporativo', icon: LayoutDashboard, href: '/dashboard/corporativo' },

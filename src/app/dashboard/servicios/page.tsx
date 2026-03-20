@@ -1,0 +1,235 @@
+"use client";
+
+import { useEffect, useState, useMemo } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { ServiciosKPIs } from '@/components/servicios/ServiciosKPIs';
+import { ServiciosFilters } from '@/components/servicios/ServiciosFilters';
+import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
+import { ServiciosTable } from '@/components/servicios/ServiciosTable';
+
+export default function ServiciosPage() {
+    const supabase = createClient();
+    const [data, setData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        etapas: [] as any[],
+        ejes: [] as any[],
+        lineas: [] as any[],
+        condiciones: [] as any[],
+        search: '',
+        enProceso: false
+    });
+
+    const [activeFilters, setActiveFilters] = useState({
+        etapas: [] as number[],
+        ejes: [] as number[],
+        lineas: [] as number[],
+        condiciones: [] as number[]
+    });
+
+    useEffect(() => {
+        async function loadInitialData() {
+            setLoading(true);
+            
+            // Fetch all catalog options for filters
+            const [
+                { data: etapas },
+                { data: ejes },
+                { data: lineas },
+                { data: condiciones }
+            ] = await Promise.all([
+                supabase.from('etapas').select('id, descripcion'),
+                supabase.from('ejes').select('id, descripcion'),
+                supabase.from('lineas').select('id, descripcion'),
+                supabase.from('condicion').select('id, descripcion')
+            ]);
+
+            setFilters(prev => ({
+                ...prev,
+                etapas: etapas || [],
+                ejes: ejes || [],
+                lineas: lineas || [],
+                condiciones: condiciones || []
+            }));
+
+            // Set all active by default
+            setActiveFilters({
+                etapas: (etapas || []).map(e => e.id),
+                ejes: (ejes || []).map(e => e.id),
+                lineas: (lineas || []).map(e => e.id),
+                condiciones: (condiciones || []).map(e => e.id)
+            });
+
+            // Fetch Becas with relations
+            const { data: becas, error } = await supabase
+                .from('becas_nueva')
+                .select(`
+                    *,
+                    institucion:institucion_id(descripcion),
+                    eje:eje_id(descripcion),
+                    linea:linea_id(descripcion),
+                    etapa:etapa_id(descripcion),
+                    condicion:condicion_id(descripcion),
+                    avances:avance_beca(fecha, etapa_id)
+                `)
+                .order('id', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching becas:', error);
+            } else {
+                // Pre-process dates (Unpivot logic)
+                const processed = (becas || []).map(b => {
+                    const inicio = b.avances?.find((a: any) => a.etapa_id === 1)?.fecha;
+                    const fin = b.avances?.find((a: any) => a.etapa_id === 10)?.fecha;
+                    return {
+                        ...b,
+                        fecha_inicio: inicio,
+                        fecha_fin: fin
+                    };
+                });
+                setData(processed);
+            }
+            setLoading(false);
+        }
+
+        loadInitialData();
+    }, []);
+
+    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+    const [processState, setProcessState] = useState<'Todos' | 'En proceso'>('Todos');
+
+    // Dynamic Filter Options
+    const availableFilters = useMemo(() => {
+        const etapas = new Map();
+        const ejes = new Map();
+        const lineas = new Map();
+        const condiciones = new Map();
+
+        data.forEach(item => {
+            if (item.etapa) etapas.set(item.etapa_id, item.etapa.descripcion);
+            if (item.eje) ejes.set(item.eje_id, item.eje.descripcion);
+            if (item.linea) lineas.set(item.linea_id, item.linea.descripcion);
+            if (item.condicion) condiciones.set(item.condicion_id, item.condicion.descripcion);
+        });
+
+        return {
+            etapas: Array.from(etapas.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
+            ejes: Array.from(ejes.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
+            lineas: Array.from(lineas.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
+            condiciones: Array.from(condiciones.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
+        };
+    }, [data]);
+
+    // Initial Filter Setup: Seleccionar todos por defecto
+    useEffect(() => {
+        if (data.length > 0 && activeFilters.etapas.length === 0) {
+            setActiveFilters({
+                etapas: availableFilters.etapas.map(o => o.id),
+                ejes: availableFilters.ejes.map(o => o.id),
+                lineas: availableFilters.lineas.map(o => o.id),
+                condiciones: availableFilters.condiciones.map(o => o.id),
+            });
+        }
+    }, [data, availableFilters]);
+
+    // Filter Logic
+    const filteredData = useMemo(() => {
+        let result = data.filter(item => {
+            const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
+            const matchEje = activeFilters.ejes.includes(item.eje_id);
+            const matchLinea = activeFilters.lineas.includes(item.linea_id);
+            const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
+            const matchSearch = !filters.search || 
+                item.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
+                item.documento?.toLowerCase().includes(filters.search.toLowerCase());
+            
+            // New "Estado de Proceso" logic: En proceso if etapa_id in [6, 8]
+            const matchProcess = processState === 'Todos' || [6, 8].includes(item.etapa_id);
+
+            return matchEtapa && matchEje && matchLinea && matchCondicion && matchSearch && matchProcess;
+        });
+
+        if (selectedGroup) {
+            result = result.filter(item => {
+                const itemGroupKey = `${item.eje_id}-${item.linea_id}`;
+                return itemGroupKey === selectedGroup;
+            });
+        }
+
+        return result;
+    }, [data, activeFilters, filters.search, processState, selectedGroup]);
+
+    const selectedGroupLabel = useMemo(() => {
+        if (!selectedGroup) return '';
+        const item = data.find(item => `${item.eje_id}-${item.linea_id}` === selectedGroup);
+        if (!item) return '';
+        return `${item.eje?.descripcion || 'Sin Eje'} > ${item.linea?.descripcion || 'Sin Línea'}`;
+    }, [selectedGroup, data]);
+
+    return (
+        <div className="space-y-6 pb-12">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center gap-4 flex-shrink-0">
+                    <img 
+                        src="/fondoempleo.jpg" 
+                        alt="Fondoempleo" 
+                        className="h-[85px] object-contain" 
+                        style={{ filter: 'contrast(1.1) saturate(1.2)' }}
+                    />
+                </div>
+
+                <div className="flex-1 w-full">
+                    <ServiciosFilters 
+                        options={availableFilters}
+                        active={activeFilters}
+                        setActive={setActiveFilters}
+                        search={filters.search}
+                        setSearch={(s: string) => setFilters(f => ({ ...f, search: s }))}
+                        processState={processState}
+                        setProcessState={setProcessState}
+                    />
+                </div>
+            </div>
+
+            <ServiciosKPIs data={filteredData} />
+            
+            <div className="w-full">
+                <ServiciosTimeline 
+                    data={data.filter(item => {
+                        const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
+                        const matchEje = activeFilters.ejes.includes(item.eje_id);
+                        const matchLinea = activeFilters.lineas.includes(item.linea_id);
+                        const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
+                        return matchEtapa && matchEje && matchLinea && matchCondicion;
+                    })} 
+                    onSelectGroup={setSelectedGroup}
+                    selectedGroup={selectedGroup}
+                />
+            </div>
+
+            <div className="w-full">
+                <div className="flex justify-between items-center mb-4 px-2">
+                    <div className="flex flex-col">
+                        <h3 className="text-xl font-black text-gray-900 tracking-tight">
+                            Becas en Detalle
+                        </h3>
+                        {selectedGroup && (
+                            <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mt-1">
+                                Filtrando por: {selectedGroupLabel}
+                            </p>
+                        )}
+                    </div>
+                    {selectedGroup && (
+                        <button 
+                            onClick={() => setSelectedGroup(null)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-md shadow-blue-100 flex items-center gap-2"
+                        >
+                            <span>Mostrar Todo</span>
+                        </button>
+                    )}
+                </div>
+                <ServiciosTable data={filteredData} loading={loading} />
+            </div>
+        </div>
+    );
+}
