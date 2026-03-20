@@ -1,0 +1,79 @@
+Leyendo archivo: c:\trabajo\fondo\beca_nuevas.xlsx
+Hojas encontradas: [
+  'beca',
+  'institucion',
+  'condicion',
+  'formato',
+  'naturaleza_IE',
+  'tipo_estudio'
+]
+--- Sheet: beca ---
+Total filas: 811
+Columnas: [
+  'id',
+  'periodo',
+  'eje_id',
+  'línea_id',
+  'nombre ',
+  'institución.descripcion',
+  'documento',
+  'modalidades.descripcion',
+  'regiones.descripcion',
+  'cantidad de beneficiarios',
+  'fondoempleo ',
+  'Avance',
+  'estapas.descripcion',
+  'Provincia procedencia',
+  'Distrito procedencia',
+  'Edad',
+  'tipo_estudio.descripcion',
+  'Naturaleza IE',
+  'Especialidad',
+  'formato.descripcion',
+  'condicion.descripcion',
+  'duracion_meses'
+]
+Ejemplo fila 1: {
+  id: 1,
+  periodo: 2025,
+  eje_id: 5,
+  'línea_id': 8,
+  'nombre ': 'AGUILAR MACEDO INES',
+  'institución.descripcion': 'Servicio Nacional de Adiestramiento en Trabajo Industrial - Senati',
+  documento: 60114600,
+  'modalidades.descripcion': 'directa',
+  'regiones.descripcion': 'Loreto',
+  'cantidad de beneficiarios': 1,
+  'fondoempleo ': 66838,
+  Avance: 11871.200000000012,
+  'estapas.descripcion': 'En ejecución',
+  'Provincia procedencia': 'Ucayali',
+  'Distrito procedencia': 'Sarayacu',
+  Edad: 19,
+  'tipo_estudio.descripcion': 'Técnica',
+  'Naturaleza IE': 'Privado',
+  Especialidad: 'Administración Industrial',
+  'formato.descripcion': 'Presencial',
+  'condicion.descripcion': 'Activo',
+  duracion_meses: 36
+}
+--- Sheet: institucion ---
+Total filas: 66
+Columnas: [ 'id', 'descripcion' ]
+Ejemplo fila 1: { id: 1, descripcion: 'ADEX Global Learning' }
+--- Sheet: condicion ---
+Total filas: 5
+Columnas: [ 'id', 'descripcion' ]
+Ejemplo fila 1: { id: 1, descripcion: 'Activo' }
+--- Sheet: formato ---
+Total filas: 348
+Columnas: [ 'id', 'descripcion' ]
+Ejemplo fila 1: { id: 1, descripcion: 'Presencial' }
+--- Sheet: naturaleza_IE ---
+Total filas: 3
+Columnas: [ 'Naturaleza IE' ]
+Ejemplo fila 1: { 'Naturaleza IE': 'Privado' }
+--- Sheet: tipo_estudio ---
+Total filas: 7
+Columnas: [ 'id', 'descripcion' ]
+Ejemplo fila 1: { id: 1, descripcion: 'Técnica' }

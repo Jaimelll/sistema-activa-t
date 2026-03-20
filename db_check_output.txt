@@ -1,0 +1,11 @@
+[dotenv@17.2.4] injecting env (6) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+Checking tables in Supabase...
+Table institucion: EXISTS
+Table condicion: EXISTS
+Table formato: EXISTS
+Table naturaleza_ie: EXISTS
+Table tipo_estudio: EXISTS
+Table modalidades: EXISTS
+Table regiones: EXISTS
+Table etapas: EXISTS
+Table becas_nueva: EXISTS

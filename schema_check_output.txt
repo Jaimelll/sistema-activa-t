@@ -1,0 +1,11 @@
+[dotenv@17.2.4] injecting env (6) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Checking table schemas...
+Table institucion Columns: No data, columns unknown via select
+Table condicion Columns: No data, columns unknown via select
+Table formato Columns: No data, columns unknown via select
+Table naturaleza_ie Columns: No data, columns unknown via select
+Table tipo_estudio Columns: No data, columns unknown via select
+Table modalidades Columns: [ 'id', 'descripcion', 'fase' ]
+Table regiones Columns: [ 'id', 'descripcion' ]
+Table etapas Columns: [ 'id', 'descripcion', 'fase' ]
+Table becas_nueva Columns: No data, columns unknown via select

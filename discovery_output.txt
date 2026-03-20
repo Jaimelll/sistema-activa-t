@@ -1,0 +1,12 @@
+[dotenv@17.2.4] injecting env (6) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+--- Table: becas_nueva ---
+--- Table: ejes ---
+Insert Error (lists columns often): null value in column "id" of relation "ejes" violates not-null constraint
+--- Table: lineas ---
+Insert Error (lists columns often): null value in column "id" of relation "lineas" violates not-null constraint
+--- Table: institucion ---
+Insert Error (lists columns often): null value in column "descripcion" of relation "institucion" violates not-null constraint
+--- Table: regiones ---
+Insert Error (lists columns often): null value in column "id" of relation "regiones" violates not-null constraint
+--- Table: etapas ---
+Insert Error (lists columns often): null value in column "id" of relation "etapas" violates not-null constraint
