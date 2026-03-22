@@ -6,6 +6,8 @@ import { clsx } from 'clsx';
 interface ServiciosTableProps {
     data: any[];
     loading: boolean;
+    groupStartDate?: number | null;   // timestamp del grupo (opcional)
+    groupEndDate?: number | null;     // timestamp del grupo (opcional)
 }
 
 // Stage colours — kept in sync with ServiciosTimeline
@@ -19,10 +21,16 @@ const STAGE_COLORS: Record<number, string> = {
     7: '#94a3b8',
 };
 
-export function ServiciosTable({ data, loading }: ServiciosTableProps) {
+export function ServiciosTable({ data, loading, groupStartDate, groupEndDate }: ServiciosTableProps) {
     const sortedData = useMemo(() => {
         return [...data].sort((a, b) => a.id - b.id);
     }, [data]);
+
+    const fmtDate = (ts: number | null | undefined) => {
+        if (!ts || isNaN(ts)) return '-';
+        const d = new Date(ts);
+        return `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}/${d.getUTCFullYear()}`;
+    };
 
     const COLS = 9;
 
@@ -59,11 +67,17 @@ export function ServiciosTable({ data, loading }: ServiciosTableProps) {
                         ) : (
                             sortedData.map((item, idx) => {
                                 const presupuestado = Number(item.presupuesto) || 0;
-                                const avance        = Number(item.avance) || 0;
-                                const progress      = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
-                                const etapaId       = item.etapa_id ?? 0;
-                                const etapaNombre   = item.etapa?.descripcion || `Etapa ${etapaId}`;
-                                const etapaColor    = STAGE_COLORS[etapaId] ?? '#94a3b8';
+                                const avance = Number(item.avance) || 0;
+                                const progress = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
+                                const etapaId = item.etapa_id ?? 0;
+                                const etapaNombre = item.etapa?.descripcion || `Etapa ${etapaId}`;
+                                const etapaColor = STAGE_COLORS[etapaId] ?? '#94a3b8';
+
+                                // Si tenemos fecha de grupo, la usamos; si no, la individual
+                                const fechaInicio = groupStartDate ? fmtDate(groupStartDate) :
+                                    (item.fecha_inicio ? new Date(item.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-');
+                                const fechaFin = groupEndDate ? fmtDate(groupEndDate) :
+                                    (item.fecha_fin ? new Date(item.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-');
 
                                 return (
                                     <tr
@@ -73,12 +87,9 @@ export function ServiciosTable({ data, loading }: ServiciosTableProps) {
                                             idx % 2 === 0 ? "bg-white" : "bg-gray-50/20"
                                         )}
                                     >
-                                        {/* ID */}
                                         <td className="px-3 py-1.5 font-extrabold text-blue-600 tabular-nums whitespace-nowrap">
                                             {item.id}
                                         </td>
-
-                                        {/* Nombre */}
                                         <td className="px-3 py-1.5">
                                             <div
                                                 className="font-bold text-gray-800 line-clamp-1 group-hover:text-blue-700 transition-colors"
@@ -90,13 +101,9 @@ export function ServiciosTable({ data, loading }: ServiciosTableProps) {
                                                 {item.documento || 'PENDIENTE'}
                                             </div>
                                         </td>
-
-                                        {/* Institución */}
                                         <td className="px-3 py-1.5 text-gray-600 font-medium whitespace-nowrap">
                                             {item.institucion?.descripcion || '-'}
                                         </td>
-
-                                        {/* Estado */}
                                         <td className="px-3 py-1.5">
                                             <span
                                                 className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wide text-white whitespace-nowrap"
@@ -105,43 +112,29 @@ export function ServiciosTable({ data, loading }: ServiciosTableProps) {
                                                 {etapaNombre}
                                             </span>
                                         </td>
-
-                                        {/* Presupuesto */}
                                         <td className="px-3 py-1.5 text-right font-bold text-blue-900 tabular-nums whitespace-nowrap">
                                             S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
-
-                                        {/* Avance */}
                                         <td className="px-3 py-1.5 text-right font-bold text-emerald-700 tabular-nums whitespace-nowrap">
                                             S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
-
-                                        {/* % */}
                                         <td className="px-3 py-1.5 text-center">
                                             <span className={clsx(
                                                 "px-1.5 py-0.5 rounded-full font-bold text-[8px] min-w-[36px] inline-block ring-1 ring-inset",
                                                 progress >= 100
                                                     ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
                                                     : progress > 50
-                                                    ? "bg-blue-50 text-blue-700 ring-blue-200"
-                                                    : "bg-orange-50 text-orange-700 ring-orange-200"
+                                                        ? "bg-blue-50 text-blue-700 ring-blue-200"
+                                                        : "bg-orange-50 text-orange-700 ring-orange-200"
                                             )}>
                                                 {progress.toFixed(1)}%
                                             </span>
                                         </td>
-
-                                        {/* Inicio */}
                                         <td className="px-3 py-1.5 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
-                                            {item.fecha_inicio
-                                                ? new Date(item.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                                                : '-'}
+                                            {fechaInicio}
                                         </td>
-
-                                        {/* Fin */}
                                         <td className="px-3 py-1.5 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
-                                            {item.fecha_fin
-                                                ? new Date(item.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                                                : '-'}
+                                            {fechaFin}
                                         </td>
                                     </tr>
                                 );
