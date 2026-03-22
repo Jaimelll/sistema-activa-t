@@ -6,13 +6,15 @@ import {
     ResponsiveContainer, CartesianGrid, Cell, ReferenceLine
 } from 'recharts';
 
-import { ServiciosTable as DetalleBecasTable } from './ServiciosTable';
+import { ServiciosTable as DetalleServiciosTable } from './ServiciosTable';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROPS
 // ─────────────────────────────────────────────────────────────────────────────
 interface ServiciosTimelineProps {
     data: any[];
+    onSelectGroup?: (groupKey: string | null) => void;
+    selectedGroup?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,7 +37,7 @@ const MARGIN_DAYS = 30;
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
+export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: ServiciosTimelineProps) {
 
     const [selectedGroupIds, setSelectedGroupIds] = useState<number[] | null>(null);
 
@@ -47,13 +49,13 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
         const groupMap = new Map<string, any>();
 
-        data.forEach((beca: any) => {
-            const ejeId = beca.eje_id || 0;
-            const lineaId = beca.linea_id || 0;
-            const ejeDesc = beca.eje?.descripcion || 'Sin Eje';
-            const lineaDesc = beca.linea?.descripcion || 'Sin Línea';
+        data.forEach((servicio: any) => {
+            const ejeId = servicio.eje_id || 0;
+            const lineaId = servicio.linea_id || 0;
+            const ejeDesc = servicio.eje?.descripcion || 'Sin Eje';
+            const lineaDesc = servicio.linea?.descripcion || 'Sin Línea';
 
-            const etapa1 = (beca.avances || []).find((a: any) => Number(a.etapa_id) === 1);
+            const etapa1 = (servicio.avances || []).find((a: any) => Number(a.etapa_id) === 1);
             let fechaE1 = 'sin_fecha';
             if (etapa1 && etapa1.fecha) {
                 const parsed = new Date(etapa1.fecha);
@@ -82,13 +84,13 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
             const g = groupMap.get(groupKey)!;
             g.count++;
-            g.totalBudget += Number(beca.presupuesto) || 0;
-            g.totalAvance += Number(beca.avance) || 0;
-            g.ids.push(beca.id);
+            g.totalBudget += Number(servicio.presupuesto) || 0;
+            g.totalAvance += Number(servicio.avance) || 0;
+            g.ids.push(servicio.id);
 
-            if ((beca.etapa_id || 0) > g.maxStageId) g.maxStageId = beca.etapa_id;
+            if ((servicio.etapa_id || 0) > g.maxStageId) g.maxStageId = servicio.etapa_id;
 
-            (beca.avances || []).forEach((av: any) => {
+            (servicio.avances || []).forEach((av: any) => {
                 if (!av.fecha) return;
                 const t = new Date(av.fecha).getTime();
                 if (isNaN(t)) return;
@@ -255,7 +257,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
     // Datos filtrados para la tabla de detalle
     const filteredData = useMemo(() => {
         if (!selectedGroupIds || selectedGroupIds.length === 0) return [];
-        return data.filter((beca: any) => selectedGroupIds.includes(beca.id));
+        return data.filter((servicio: any) => selectedGroupIds.includes(servicio.id));
     }, [selectedGroupIds, data]);
 
     // Obtener las fechas del grupo seleccionado (para mostrarlas en la tabla)
@@ -302,7 +304,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             {fmtDate(d.firstStart)} – {fmtDate(d.lastEnd)}
                         </span>
                     </TooltipRow>
-                    <TooltipRow label="Becas">
+                    <TooltipRow label="Servicios">
                         <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.count} u.</span>
                     </TooltipRow>
                     <TooltipRow label="Presupuesto total">
@@ -348,7 +350,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 <div className="w-2.5 h-10 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30 flex-shrink-0" />
                 <div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                        Línea de Tiempo de Becas
+                        Línea de Tiempo de Servicios
                     </h3>
                 </div>
             </div>
@@ -424,13 +426,20 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                                     isAnimationActive={false}
                                     cursor="pointer"
                                     onClick={(eventData) => {
-                                        if (eventData?.payload?.ids) {
+                                        if (eventData?.payload) {
+                                            const clickedKey = eventData.payload.key;
                                             const clickedIds = eventData.payload.ids;
-                                            setSelectedGroupIds(
-                                                JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
-                                                    ? null
-                                                    : clickedIds
-                                            );
+                                            
+                                            // Prefer onSelectGroup if provided (controlled)
+                                            if (onSelectGroup) {
+                                                onSelectGroup(selectedGroup === clickedKey ? null : clickedKey);
+                                            } else {
+                                                setSelectedGroupIds(
+                                                    JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
+                                                        ? null
+                                                        : clickedIds
+                                                );
+                                            }
                                         }
                                     }}
                                 >
@@ -438,10 +447,10 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                                         <Cell
                                             key={`cell-${sid}-${idx}`}
                                             style={{
-                                                filter: selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids)
+                                                filter: (selectedGroup && selectedGroup === entry.key) || (selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids))
                                                     ? 'drop-shadow(0px 0px 8px rgba(59,130,246,0.5))'
                                                     : 'none',
-                                                opacity: selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids) ? 0.2 : 1,
+                                                opacity: (selectedGroup && selectedGroup !== entry.key) || (selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids)) ? 0.2 : 1,
                                                 transition: 'all 0.3s ease',
                                             }}
                                         />
@@ -474,10 +483,10 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 <div className="mt-8 pt-6 border-t border-gray-100 animate-in fade-in zoom-in-95 duration-500">
                     <div className="mb-4">
                         <h4 className="text-lg font-bold text-gray-800 uppercase tracking-wide">
-                            Becas Vinculadas al Grupo
+                            Servicios Vinculados al Grupo
                         </h4>
                     </div>
-                    <DetalleBecasTable
+                    <DetalleServiciosTable
                         data={filteredData}
                         loading={false}
                         groupStartDate={selectedGroupStartDate}
