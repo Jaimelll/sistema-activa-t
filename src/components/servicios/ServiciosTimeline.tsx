@@ -24,13 +24,13 @@ const STAGES = [
     { id: 3, name: 'Aprobación consejo', color: '#eab308' },
     { id: 4, name: 'Firma convenio', color: '#22c55e' },
     { id: 5, name: 'En ejecución', color: '#3b82f6' },
-    { id: 6, name: 'Ejecutado', color: '#dc2626' }, // 🔴 rojo (1 día)
+    { id: 6, name: 'Ejecutado', color: '#dc2626' },
     { id: 7, name: 'Resuelto', color: '#94a3b8' },
 ];
 const STAGE_BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s]));
 
-const ONE_DAY = 24 * 60 * 60 * 1000;      // 1 día en ms
-const MARGIN_DAYS = 30;                   // margen de 30 días
+const ONE_DAY = 24 * 60 * 60 * 1000;
+const MARGIN_DAYS = 30;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT
@@ -47,7 +47,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
         const groupMap = new Map<string, any>();
 
-        // Agrupar por (eje, línea, fecha de etapa 1)
         data.forEach((beca: any) => {
             const ejeId = beca.eje_id || 0;
             const lineaId = beca.linea_id || 0;
@@ -103,7 +102,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
         let globalMin = Infinity;
         let globalMax = -Infinity;
 
-        // Primera pasada: recolectar todas las fechas de inicio y fin de etapas
         const rowsRaw = Array.from(groupMap.values()).map(g => {
             const stageStart: Record<number, number> = {};
             const stageEnd: Record<number, number> = {};
@@ -118,15 +116,16 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 foundStageIds.add(sid);
             });
 
+            if (stageStart[1] === undefined) return null;
+
             const sortedSids = Object.keys(stageStart).map(Number).sort((a, b) => a - b);
-            if (sortedSids.length === 0) return null;
 
-            const firstStart = stageStart[sortedSids[0]];
-            const lastSid = sortedSids[sortedSids.length - 1];
-            const lastEnd = stageEnd[6] ?? stageStart[lastSid];
+            const etapa1Date = stageStart[1];
+            const endDate = stageEnd[6] ?? null;
 
-            if (firstStart < globalMin) globalMin = firstStart;
-            if (lastEnd > globalMax) globalMax = lastEnd;
+            if (etapa1Date < globalMin) globalMin = etapa1Date;
+            if (endDate !== null && endDate > globalMax) globalMax = endDate;
+            else if (etapa1Date > globalMax) globalMax = etapa1Date;
 
             const row: any = {
                 key: g.key,
@@ -139,35 +138,31 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 stageStart,
                 stageEnd,
                 sortedSids,
-                firstStart,
-                lastEnd,
+                firstStart: etapa1Date,
+                lastEnd: endDate,
+                etapa1Date: etapa1Date,
             };
             return row;
         }).filter(Boolean);
 
-        // Si no hay fechas, usar valores por defecto
         if (globalMin === Infinity) {
             const defaultDate = new Date('2022-01-01').getTime();
             globalMin = defaultDate;
             globalMax = defaultDate + ONE_DAY * 365 * 5;
         }
 
-        // Incluir la fecha actual en el rango si es posterior (usando UTC)
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
         const todayTs = today.getTime();
         if (todayTs > globalMax) globalMax = todayTs;
 
-        // Aplicar márgenes (30 días)
         const marginMs = ONE_DAY * MARGIN_DAYS;
-        let domainMin = globalMin - marginMs;
-        let domainMax = globalMax + marginMs;
+        const domainMin = globalMin - marginMs;
+        const domainMax = globalMax + marginMs;
 
-        // Segunda pasada: calcular duraciones con ajuste especial para etapa 6 (duración = 1 día)
         const rows = rowsRaw.map(row => {
-            const { stageStart, stageEnd, sortedSids, firstStart, lastEnd } = row;
+            const { stageStart, stageEnd, sortedSids, firstStart, lastEnd, etapa1Date } = row;
 
-            // Calcular duraciones originales
             const originalDurations: Record<number, number> = {};
 
             for (let i = 0; i < sortedSids.length; i++) {
@@ -184,7 +179,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                     sEnd = Math.max(sStart, Date.now());
                 }
 
-                // Recortar al dominio visible
                 if (sStart < domainMin) sStart = domainMin;
                 if (sEnd > domainMax) sEnd = domainMax;
 
@@ -194,8 +188,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 originalDurations[sid] = dur;
             }
 
-            // Aplicar ajuste: etapa 6 (Ejecutado) dura exactamente 1 día
-            // y el tiempo sobrante se suma a la etapa anterior (5 - En ejecución)
             const adjustedDurations = { ...originalDurations };
 
             if (adjustedDurations[6] !== undefined) {
@@ -206,11 +198,9 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 adjustedDurations[6] = newDur6;
 
                 if (extra > 0) {
-                    // Sumar el excedente a la etapa 5 (si existe)
                     if (adjustedDurations[5] !== undefined) {
                         adjustedDurations[5] = (adjustedDurations[5] || 0) + extra;
                     } else {
-                        // Si no existe etapa 5, creamos una artificial con el excedente
                         adjustedDurations[5] = extra;
                         if (!foundStageIds.has(5)) {
                             foundStageIds.add(5);
@@ -222,19 +212,23 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             const inicioVacio = firstStart - domainMin;
 
             const rowData: any = {
-                ...row,
+                key: row.key,
+                name: row.name,
+                totalBudget: row.totalBudget,
+                totalAvance: row.totalAvance,
+                count: row.count,
+                maxStageId: row.maxStageId,
+                ids: row.ids,
+                firstStart: row.firstStart,
+                lastEnd: row.lastEnd,
+                etapa1Date: row.etapa1Date,
                 inicioVacio,
                 ...adjustedDurations,
             };
 
-            delete rowData.stageStart;
-            delete rowData.stageEnd;
-            delete rowData.sortedSids;
-
             return rowData;
         }).sort((a, b) => a.firstStart - b.firstStart);
 
-        // Actualizar usedStageIds con los que puedan haber sido añadidos (ej. etapa 5)
         const finalUsedStageIds = Array.from(foundStageIds).sort((a, b) => a - b);
 
         return {
@@ -251,19 +245,32 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
         return data.filter((beca: any) => selectedGroupIds.includes(beca.id));
     }, [selectedGroupIds, data]);
 
-    // ── TOOLTIP (con fechas UTC) ─────────────────────────────────────────────
+    // Obtener las fechas del grupo seleccionado (para mostrarlas en la tabla)
+    const selectedGroupData = useMemo(() => {
+        if (!selectedGroupIds || selectedGroupIds.length === 0) return null;
+        const group = chartData.find((g: any) =>
+            JSON.stringify(g.ids) === JSON.stringify(selectedGroupIds)
+        );
+        if (group) {
+            return {
+                startDate: group.firstStart,
+                endDate: group.lastEnd,
+            };
+        }
+        return null;
+    }, [selectedGroupIds, chartData]);
+
+    const selectedGroupStartDate = selectedGroupData?.startDate;
+    const selectedGroupEndDate = selectedGroupData?.endDate;
+
+    // ── TOOLTIP ─────────────────────────────────────────────────────────────
     const CustomTooltip = ({ active, payload }: any) => {
         if (!active || !payload?.length) return null;
         const d = payload[0].payload;
 
-        // Convertir offsets a fechas reales (en UTC)
-        const realStart = (minTimestamp ?? 0) + d.firstStart - (minTimestamp ?? 0);
-        const realEnd = (minTimestamp ?? 0) + d.lastEnd - (minTimestamp ?? 0);
-
-        const fmtDate = (ts: number) => {
-            if (!ts || isNaN(ts)) return 'N/A';
+        const fmtDate = (ts: number | null) => {
+            if (!ts || isNaN(ts)) return '-';
             const d = new Date(ts);
-            // Usar UTC para evitar desfase horario
             return `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}/${d.getUTCFullYear()}`;
         };
 
@@ -276,13 +283,10 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
         return (
             <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-200 text-[11px] min-w-[280px]" style={{ zIndex: 9999 }}>
-                <p className="font-black text-gray-900 border-b border-gray-100 pb-2 mb-3 text-[10px] uppercase tracking-widest font-mono">
-                    {d.name}
-                </p>
                 <div className="space-y-2">
                     <TooltipRow label="Temporalidad">
                         <span className="font-extrabold text-gray-800 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 italic">
-                            {fmtDate(realStart)} – {fmtDate(realEnd)}
+                            {fmtDate(d.firstStart)} – {fmtDate(d.lastEnd)}
                         </span>
                     </TooltipRow>
                     <TooltipRow label="Becas">
@@ -308,16 +312,14 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
         return <div className="text-center p-8 text-gray-500">No hay datos para mostrar</div>;
     }
 
-    // Generar ticks para los años usando UTC
     const startYear = new Date(minTimestamp).getUTCFullYear();
     const endYear = new Date(maxTimestamp).getUTCFullYear();
     const yearTicks: number[] = [];
     for (let y = startYear; y <= endYear; y++) {
-        const ts = Date.UTC(y, 0, 1); // 1 de enero a las 00:00 UTC
+        const ts = Date.UTC(y, 0, 1);
         yearTicks.push(ts - minTimestamp);
     }
 
-    // Calcular offset para el día de hoy (UTC)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const todayTs = today.getTime();
@@ -349,7 +351,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
 
-                        {/* Eje X superior e inferior con dominio relativo */}
                         <XAxis
                             xAxisId="main"
                             orientation="top"
@@ -387,7 +388,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
 
-                        {/* Barra transparente para posicionar el inicio */}
                         <Bar
                             dataKey="inicioVacio"
                             stackId="a"
@@ -397,7 +397,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             hide={false}
                         />
 
-                        {/* Barras de colores para cada etapa */}
                         {usedStageIds.map(sid => {
                             const stage = STAGE_BY_ID[sid];
                             return (
@@ -438,7 +437,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             );
                         })}
 
-                        {/* Línea vertical para el día de hoy (roja discontinua) */}
                         {todayOffset !== null && (
                             <ReferenceLine
                                 xAxisId="main"
@@ -466,7 +464,12 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             Becas Vinculadas al Grupo
                         </h4>
                     </div>
-                    <DetalleBecasTable data={filteredData} loading={false} />
+                    <DetalleBecasTable
+                        data={filteredData}
+                        loading={false}
+                        groupStartDate={selectedGroupStartDate}
+                        groupEndDate={selectedGroupEndDate}
+                    />
                 </div>
             )}
 
