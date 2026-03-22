@@ -1,25 +1,17 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
     ResponsiveContainer, CartesianGrid, Cell, ReferenceLine
 } from 'recharts';
 
-import { ServiciosTable as DetalleServiciosTable } from './ServiciosTable';
+import { ServiciosTable as DetalleBecasTable } from './ServiciosTable';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROPS
-// ─────────────────────────────────────────────────────────────────────────────
 interface ServiciosTimelineProps {
     data: any[];
-    onSelectGroup?: (groupKey: string | null) => void;
-    selectedGroup?: string | null;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STAGE DEFINITIONS  (IDs 1–7 from DB)
-// ─────────────────────────────────────────────────────────────────────────────
 const STAGES = [
     { id: 1, name: 'Aprobación de bases', color: '#ef4444' },
     { id: 2, name: 'Lanzamiento', color: '#f97316' },
@@ -34,12 +26,15 @@ const STAGE_BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s]));
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const MARGIN_DAYS = 30;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
-export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: ServiciosTimelineProps) {
-
+export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
     const [selectedGroupIds, setSelectedGroupIds] = useState<number[] | null>(null);
+
+    // 🔥 Fuerza un re‑render después del montaje para que el gráfico se dibuje correctamente
+    const [forceRender, setForceRender] = useState(0);
+    useEffect(() => {
+        const timer = setTimeout(() => setForceRender(prev => prev + 1), 200);
+        return () => clearTimeout(timer);
+    }, []);
 
     // ── BUILD CHART ROWS & DYNAMIC DOMAIN ───────────────────────────────────
     const { chartData, usedStageIds, minTimestamp, maxTimestamp } = useMemo(() => {
@@ -49,13 +44,13 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
 
         const groupMap = new Map<string, any>();
 
-        data.forEach((servicio: any) => {
-            const ejeId = servicio.eje_id || 0;
-            const lineaId = servicio.linea_id || 0;
-            const ejeDesc = servicio.eje?.descripcion || 'Sin Eje';
-            const lineaDesc = servicio.linea?.descripcion || 'Sin Línea';
+        data.forEach((beca: any) => {
+            const ejeId = beca.eje_id || 0;
+            const lineaId = beca.linea_id || 0;
+            const ejeDesc = beca.eje?.descripcion || 'Sin Eje';
+            const lineaDesc = beca.linea?.descripcion || 'Sin Línea';
 
-            const etapa1 = (servicio.avances || []).find((a: any) => Number(a.etapa_id) === 1);
+            const etapa1 = (beca.avances || []).find((a: any) => Number(a.etapa_id) === 1);
             let fechaE1 = 'sin_fecha';
             if (etapa1 && etapa1.fecha) {
                 const parsed = new Date(etapa1.fecha);
@@ -77,20 +72,20 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                     count: 0,
                     maxStageId: 0,
                     ids: [],
-                    ejeId,          // guardamos ejeId para ordenamiento
-                    lineaId,        // guardamos lineaId para ordenamiento
+                    ejeId,
+                    lineaId,
                 });
             }
 
             const g = groupMap.get(groupKey)!;
             g.count++;
-            g.totalBudget += Number(servicio.presupuesto) || 0;
-            g.totalAvance += Number(servicio.avance) || 0;
-            g.ids.push(servicio.id);
+            g.totalBudget += Number(beca.presupuesto) || 0;
+            g.totalAvance += Number(beca.avance) || 0;
+            g.ids.push(beca.id);
 
-            if ((servicio.etapa_id || 0) > g.maxStageId) g.maxStageId = servicio.etapa_id;
+            if ((beca.etapa_id || 0) > g.maxStageId) g.maxStageId = beca.etapa_id;
 
-            (servicio.avances || []).forEach((av: any) => {
+            (beca.avances || []).forEach((av: any) => {
                 if (!av.fecha) return;
                 const t = new Date(av.fecha).getTime();
                 if (isNaN(t)) return;
@@ -215,7 +210,9 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                 }
             }
 
-            const inicioVacio = firstStart - domainMin;
+            let inicioVacio = firstStart - domainMin;
+            // Asegurar que sea al menos 1ms (evita que la barra transparente desaparezca)
+            if (inicioVacio <= 0) inicioVacio = 1;
 
             const rowData: any = {
                 key: row.key,
@@ -257,10 +254,9 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
     // Datos filtrados para la tabla de detalle
     const filteredData = useMemo(() => {
         if (!selectedGroupIds || selectedGroupIds.length === 0) return [];
-        return data.filter((servicio: any) => selectedGroupIds.includes(servicio.id));
+        return data.filter((beca: any) => selectedGroupIds.includes(beca.id));
     }, [selectedGroupIds, data]);
 
-    // Obtener las fechas del grupo seleccionado (para mostrarlas en la tabla)
     const selectedGroupData = useMemo(() => {
         if (!selectedGroupIds || selectedGroupIds.length === 0) return null;
         const group = chartData.find((g: any) =>
@@ -304,7 +300,7 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                             {fmtDate(d.firstStart)} – {fmtDate(d.lastEnd)}
                         </span>
                     </TooltipRow>
-                    <TooltipRow label="Servicios">
+                    <TooltipRow label="Becas">
                         <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.count} u.</span>
                     </TooltipRow>
                     <TooltipRow label="Presupuesto total">
@@ -345,12 +341,11 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
 
     return (
         <div className="w-full bg-white p-6 md:p-10 rounded-[2.5rem] shadow-2xl border border-gray-100/50 mb-12">
-
             <div className="mb-6 flex items-center gap-4 pb-2">
                 <div className="w-2.5 h-10 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30 flex-shrink-0" />
                 <div>
                     <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                        Línea de Tiempo de Servicios
+                        Línea de Tiempo de Becas
                     </h3>
                 </div>
             </div>
@@ -358,6 +353,7 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
             <div style={{ width: '100%', height: 500 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
+                        key={forceRender}   // 🔥 Forzar montaje después del retraso
                         layout="vertical"
                         data={chartData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
@@ -365,7 +361,6 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                         barCategoryGap="10%"
                     >
                         <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
-
                         <XAxis
                             xAxisId="main"
                             orientation="top"
@@ -388,7 +383,6 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                             axisLine={{ stroke: '#cbd5e1' }}
                             tickLine={{ stroke: '#cbd5e1' }}
                         />
-
                         <YAxis
                             orientation="left"
                             type="category"
@@ -399,10 +393,8 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                             axisLine={{ stroke: '#e2e8f0' }}
                             tickLine={false}
                         />
-
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
-
                         <Bar
                             dataKey="inicioVacio"
                             stackId="a"
@@ -410,8 +402,8 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                             fill="transparent"
                             isAnimationActive={false}
                             hide={false}
+                            minPointSize={1}
                         />
-
                         {usedStageIds.map(sid => {
                             const stage = STAGE_BY_ID[sid];
                             return (
@@ -425,21 +417,15 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                                     fillOpacity={1}
                                     isAnimationActive={false}
                                     cursor="pointer"
+                                    minPointSize={1}
                                     onClick={(eventData) => {
-                                        if (eventData?.payload) {
-                                            const clickedKey = eventData.payload.key;
+                                        if (eventData?.payload?.ids) {
                                             const clickedIds = eventData.payload.ids;
-                                            
-                                            // Prefer onSelectGroup if provided (controlled)
-                                            if (onSelectGroup) {
-                                                onSelectGroup(selectedGroup === clickedKey ? null : clickedKey);
-                                            } else {
-                                                setSelectedGroupIds(
-                                                    JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
-                                                        ? null
-                                                        : clickedIds
-                                                );
-                                            }
+                                            setSelectedGroupIds(
+                                                JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
+                                                    ? null
+                                                    : clickedIds
+                                            );
                                         }
                                     }}
                                 >
@@ -447,10 +433,10 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                                         <Cell
                                             key={`cell-${sid}-${idx}`}
                                             style={{
-                                                filter: (selectedGroup && selectedGroup === entry.key) || (selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids))
+                                                filter: selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids)
                                                     ? 'drop-shadow(0px 0px 8px rgba(59,130,246,0.5))'
                                                     : 'none',
-                                                opacity: (selectedGroup && selectedGroup !== entry.key) || (selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids)) ? 0.2 : 1,
+                                                opacity: selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids) ? 0.2 : 1,
                                                 transition: 'all 0.3s ease',
                                             }}
                                         />
@@ -458,7 +444,6 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                                 </Bar>
                             );
                         })}
-
                         {todayOffset !== null && (
                             <ReferenceLine
                                 xAxisId="main"
@@ -483,10 +468,10 @@ export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: Servic
                 <div className="mt-8 pt-6 border-t border-gray-100 animate-in fade-in zoom-in-95 duration-500">
                     <div className="mb-4">
                         <h4 className="text-lg font-bold text-gray-800 uppercase tracking-wide">
-                            Servicios Vinculados al Grupo
+                            Becas Vinculadas al Grupo
                         </h4>
                     </div>
-                    <DetalleServiciosTable
+                    <DetalleBecasTable
                         data={filteredData}
                         loading={false}
                         groupStartDate={selectedGroupStartDate}
