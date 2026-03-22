@@ -1,390 +1,499 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, Legend } from 'recharts';
+import { useMemo, useState } from 'react';
+import {
+    BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
+    ResponsiveContainer, CartesianGrid, Cell, ReferenceLine
+} from 'recharts';
 
+import { ServiciosTable as DetalleBecasTable } from './ServiciosTable';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROPS
+// ─────────────────────────────────────────────────────────────────────────────
 interface ServiciosTimelineProps {
     data: any[];
-    onSelectGroup: (groupKey: string | null) => void;
-    selectedGroup: string | null;
 }
 
-const STAGE_COLORS: Record<number, string> = {
-    1: '#60a5fa',  // Aprobación de bases (Blue)
-    2: '#34d399',  // Lanzamiento (Emerald)
-    3: '#fbbf24',  // Recepción de propuestas (Amber)
-    4: '#a78bfa',  // Evaluación y Selección (Violet)
-    5: '#f472b6',  // Aprobación de consejo (Pink)
-    6: '#6366f1',  // Firma convenio (Indigo)
-    7: '#ec4899',  // Desembolso (Fuchsia)
-    8: '#2dd4bf',  // En ejecución (Teal)
-    9: '#f59e0b',  // Liquidación (Orange)
-    10: '#f43f5e', // Ejecutado (Rose)
-    11: '#94a3b8', // Resuelto (Slate)
-    12: '#10b981', // Rendición de cuentas (Green)
-};
-
-const STAGE_NAMES: Record<number, string> = {
-    1: 'Aprobación de bases',
-    2: 'Lanzamiento',
-    3: 'Recepción de propuestas',
-    4: 'Evaluación y Selección',
-    5: 'Aprobación de consejo',
-    6: 'Firma convenio',
-    7: 'Desembolso',
-    8: 'En ejecución',
-    9: 'Liquidación',
-    10: 'Ejecutado',
-    11: 'Resuelto',
-    12: 'Rendición de cuentas'
-};
-
-const MIN_DATE = new Date('2022-01-01').getTime();
-const MAX_DATE = new Date('2027-12-31').getTime();
-
-// Define yearly ticks for the axis
-const YEARLY_TICKS = [
-    new Date('2022-01-01').getTime(),
-    new Date('2023-01-01').getTime(),
-    new Date('2024-01-01').getTime(),
-    new Date('2025-01-01').getTime(),
-    new Date('2026-01-01').getTime(),
-    new Date('2027-01-01').getTime(),
-    new Date('2027-12-31').getTime(),
+// ─────────────────────────────────────────────────────────────────────────────
+// STAGE DEFINITIONS  (IDs 1–7 from DB)
+// ─────────────────────────────────────────────────────────────────────────────
+const STAGES = [
+    { id: 1, name: 'Aprobación de bases', color: '#ef4444' },
+    { id: 2, name: 'Lanzamiento', color: '#f97316' },
+    { id: 3, name: 'Aprobación consejo', color: '#eab308' },
+    { id: 4, name: 'Firma convenio', color: '#22c55e' },
+    { id: 5, name: 'En ejecución', color: '#3b82f6' },
+    { id: 6, name: 'Ejecutado', color: '#dc2626' }, // 🔴 rojo (1 día)
+    { id: 7, name: 'Resuelto', color: '#94a3b8' },
 ];
+const STAGE_BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s]));
 
-export function ServiciosTimeline({ data, onSelectGroup, selectedGroup }: ServiciosTimelineProps) {
-    const [isMobile, setIsMobile] = useState(false);
+const ONE_DAY = 24 * 60 * 60 * 1000;      // 1 día en ms
+const MARGIN_DAYS = 30;                   // margen de 30 días
 
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
-    const { chartData, stagesInvolved } = useMemo(() => {
-        if (!data || data.length === 0) return { chartData: [], stagesInvolved: [] };
+    const [selectedGroupIds, setSelectedGroupIds] = useState<number[] | null>(null);
 
-        const groups = new Map();
-        const TODAY = new Date().getTime();
+    // ── BUILD CHART ROWS & DYNAMIC DOMAIN ───────────────────────────────────
+    const { chartData, usedStageIds, minTimestamp, maxTimestamp } = useMemo(() => {
+        if (!data || data.length === 0) {
+            return { chartData: [], usedStageIds: [], minTimestamp: null, maxTimestamp: null };
+        }
 
+        const groupMap = new Map<string, any>();
+
+        // Agrupar por (eje, línea, fecha de etapa 1)
         data.forEach((beca: any) => {
             const ejeId = beca.eje_id || 0;
             const lineaId = beca.linea_id || 0;
             const ejeDesc = beca.eje?.descripcion || 'Sin Eje';
             const lineaDesc = beca.linea?.descripcion || 'Sin Línea';
-            
-            const groupKey = `${ejeId}-${lineaId}`;
-            const groupLabel = `${ejeId} - ${ejeDesc} | ${lineaId} - ${lineaDesc}`;
 
-            if (!groups.has(groupKey)) {
-                groups.set(groupKey, {
+            const etapa1 = (beca.avances || []).find((a: any) => Number(a.etapa_id) === 1);
+            let fechaE1 = 'sin_fecha';
+            if (etapa1 && etapa1.fecha) {
+                const parsed = new Date(etapa1.fecha);
+                if (!isNaN(parsed.getTime())) {
+                    fechaE1 = parsed.toISOString().split('T')[0];
+                }
+            }
+
+            const groupKey = `${ejeId}-${lineaId}-${fechaE1}`;
+            const label = `${ejeId} - ${ejeDesc} | ${lineaId} - ${lineaDesc}`;
+
+            if (!groupMap.has(groupKey)) {
+                groupMap.set(groupKey, {
                     key: groupKey,
-                    label: groupLabel,
-                    ejeId,
-                    lineaId,
-                    stageDates: {} as Record<number, number[]>,
+                    label,
+                    stageDates: {},
                     totalBudget: 0,
+                    totalAvance: 0,
                     count: 0,
-                    maxStageId: 0
+                    maxStageId: 0,
+                    ids: [],
                 });
             }
 
-            const g = groups.get(groupKey);
+            const g = groupMap.get(groupKey)!;
             g.count++;
-            g.totalBudget += (Number(beca.presupuesto) || 0);
-            if (beca.etapa_id > g.maxStageId) g.maxStageId = beca.etapa_id;
+            g.totalBudget += Number(beca.presupuesto) || 0;
+            g.totalAvance += Number(beca.avance) || 0;
+            g.ids.push(beca.id);
+
+            if ((beca.etapa_id || 0) > g.maxStageId) g.maxStageId = beca.etapa_id;
 
             (beca.avances || []).forEach((av: any) => {
-                const time = new Date(av.fecha).getTime();
-                if (!time || isNaN(time)) return;
-
+                if (!av.fecha) return;
+                const t = new Date(av.fecha).getTime();
+                if (isNaN(t)) return;
                 const sid = Number(av.etapa_id);
                 if (!g.stageDates[sid]) g.stageDates[sid] = [];
-                g.stageDates[sid].push(time);
+                g.stageDates[sid].push(t);
             });
         });
 
-        const stageOrder = Object.keys(STAGE_NAMES).map(Number).sort((a,b) => a - b);
-        const resolvedStages = new Set<number>();
+        const stageOrder = STAGES.map(s => s.id);
+        const foundStageIds = new Set<number>();
 
-        const finalData = Array.from(groups.values()).map(g => {
-            const stageBoundaries: Record<number, { min: number, max: number }> = {};
-            
+        let globalMin = Infinity;
+        let globalMax = -Infinity;
+
+        // Primera pasada: recolectar todas las fechas de inicio y fin de etapas
+        const rowsRaw = Array.from(groupMap.values()).map(g => {
+            const stageStart: Record<number, number> = {};
+            const stageEnd: Record<number, number> = {};
+
             stageOrder.forEach(sid => {
-                if (!g.stageDates[sid]) return;
-                stageBoundaries[sid] = {
-                    min: Math.min(...g.stageDates[sid]),
-                    max: Math.max(...g.stageDates[sid])
-                };
-                resolvedStages.add(sid);
+                const dates = g.stageDates[sid];
+                if (!dates || dates.length === 0) return;
+                stageStart[sid] = Math.min(...dates);
+                if (sid === 6) {
+                    stageEnd[6] = Math.max(...dates);
+                }
+                foundStageIds.add(sid);
             });
 
-            const sortedStages = Object.keys(stageBoundaries).map(Number).sort((a,b) => a - b);
-            if (sortedStages.length === 0) return null;
+            const sortedSids = Object.keys(stageStart).map(Number).sort((a, b) => a - b);
+            if (sortedSids.length === 0) return null;
 
-            // REAL BOUNDARIES FOR TOOLTIP
-            const realStart = stageBoundaries[sortedStages[0]].min;
-            const realEnd = stageBoundaries[sortedStages[sortedStages.length - 1]].max;
+            const firstStart = stageStart[sortedSids[0]];
+            const lastSid = sortedSids[sortedSids.length - 1];
+            const lastEnd = stageEnd[6] ?? stageStart[lastSid];
 
-            // VISUAL CLIP START (MUST BE >= MIN_DATE)
-            const visualStart = Math.max(realStart, MIN_DATE);
-            
-            // IF THE GROUP STARTS AFTER OUR 2027 LIMIT, IGNORE
-            if (visualStart > MAX_DATE) return null; 
+            if (firstStart < globalMin) globalMin = firstStart;
+            if (lastEnd > globalMax) globalMax = lastEnd;
 
             const row: any = {
                 key: g.key,
-                displayLabel: g.label,
+                name: g.label,
                 totalBudget: g.totalBudget,
+                totalAvance: g.totalAvance,
                 count: g.count,
                 maxStageId: g.maxStageId,
-                
-                // BAR OFFSET: Distance from AXIS_START (MIN_DATE) to DATA_START
-                // In stacked mode, this is the first transparent bar.
-                startOffset: Math.max(0, visualStart - MIN_DATE), 
-                
-                tooltipStart: realStart,
-                tooltipEnd: realEnd,
-                sortStart: realStart
+                ids: g.ids,
+                stageStart,
+                stageEnd,
+                sortedSids,
+                firstStart,
+                lastEnd,
             };
+            return row;
+        }).filter(Boolean);
 
-            for (let i = 0; i < sortedStages.length; i++) {
-                const sid = sortedStages[i];
-                const nextSid = sortedStages[i+1];
-                
-                let sStart = Math.max(stageBoundaries[sid].min, MIN_DATE);
-                let sEnd;
+        // Si no hay fechas, usar valores por defecto
+        if (globalMin === Infinity) {
+            const defaultDate = new Date('2022-01-01').getTime();
+            globalMin = defaultDate;
+            globalMax = defaultDate + ONE_DAY * 365 * 5;
+        }
 
-                if (nextSid) {
-                    sEnd = Math.max(stageBoundaries[nextSid].min, MIN_DATE);
+        // Incluir la fecha actual en el rango si es posterior (usando UTC)
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        const todayTs = today.getTime();
+        if (todayTs > globalMax) globalMax = todayTs;
+
+        // Aplicar márgenes (30 días)
+        const marginMs = ONE_DAY * MARGIN_DAYS;
+        let domainMin = globalMin - marginMs;
+        let domainMax = globalMax + marginMs;
+
+        // Segunda pasada: calcular duraciones con ajuste especial para etapa 6 (duración = 1 día)
+        const rows = rowsRaw.map(row => {
+            const { stageStart, stageEnd, sortedSids, firstStart, lastEnd } = row;
+
+            // Calcular duraciones originales
+            const originalDurations: Record<number, number> = {};
+
+            for (let i = 0; i < sortedSids.length; i++) {
+                const sid = sortedSids[i];
+                const nextSid = sortedSids[i + 1];
+
+                let sStart = stageStart[sid];
+                let sEnd: number;
+                if (sid === 6) {
+                    sEnd = stageEnd[6] ?? sStart;
+                } else if (nextSid !== undefined) {
+                    sEnd = stageStart[nextSid];
                 } else {
-                    if (sid === 10) {
-                        sEnd = Math.max(stageBoundaries[sid].max, MIN_DATE);
-                    } else {
-                        sEnd = Math.max(stageBoundaries[sid].min, TODAY, MIN_DATE);
-                    }
+                    sEnd = Math.max(sStart, Date.now());
                 }
 
-                // Final relative clipping against 2027
-                sStart = Math.min(sStart, MAX_DATE);
-                sEnd = Math.min(sEnd, MAX_DATE);
-                
-                // VALUE IS DURATION (NOT DATE TIMESTAMP)
-                row[`duration_${sid}`] = Math.max(0, sEnd - sStart);
+                // Recortar al dominio visible
+                if (sStart < domainMin) sStart = domainMin;
+                if (sEnd > domainMax) sEnd = domainMax;
+
+                let dur = sEnd - sStart;
+                if (isNaN(dur) || dur < 0) dur = 0;
+
+                originalDurations[sid] = dur;
             }
 
-            return row;
-        }).filter(Boolean).sort((a, b) => a!.sortStart - b!.sortStart);
+            // Aplicar ajuste: etapa 6 (Ejecutado) dura exactamente 1 día
+            // y el tiempo sobrante se suma a la etapa anterior (5 - En ejecución)
+            const adjustedDurations = { ...originalDurations };
 
-        return { 
-            chartData: finalData, 
-            stagesInvolved: Array.from(resolvedStages).sort((a,b) => a - b) 
+            if (adjustedDurations[6] !== undefined) {
+                const originalDur6 = adjustedDurations[6];
+                const newDur6 = Math.min(originalDur6, ONE_DAY);
+                const extra = originalDur6 - newDur6;
+
+                adjustedDurations[6] = newDur6;
+
+                if (extra > 0) {
+                    // Sumar el excedente a la etapa 5 (si existe)
+                    if (adjustedDurations[5] !== undefined) {
+                        adjustedDurations[5] = (adjustedDurations[5] || 0) + extra;
+                    } else {
+                        // Si no existe etapa 5, creamos una artificial con el excedente
+                        adjustedDurations[5] = extra;
+                        if (!foundStageIds.has(5)) {
+                            foundStageIds.add(5);
+                        }
+                    }
+                }
+            }
+
+            const inicioVacio = firstStart - domainMin;
+
+            const rowData: any = {
+                ...row,
+                inicioVacio,
+                ...adjustedDurations,
+            };
+
+            delete rowData.stageStart;
+            delete rowData.stageEnd;
+            delete rowData.sortedSids;
+
+            return rowData;
+        }).sort((a, b) => a.firstStart - b.firstStart);
+
+        // Actualizar usedStageIds con los que puedan haber sido añadidos (ej. etapa 5)
+        const finalUsedStageIds = Array.from(foundStageIds).sort((a, b) => a - b);
+
+        return {
+            chartData: rows,
+            usedStageIds: finalUsedStageIds,
+            minTimestamp: domainMin,
+            maxTimestamp: domainMax,
         };
     }, [data]);
 
-    const formatXAxis = (tick: number) => {
-        const date = new Date(tick);
-        if (isNaN(date.getTime())) return '';
-        const month = date.toLocaleDateString('es-PE', { month: 'short' }).replace('.', '');
-        const year = date.getFullYear();
-        return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
-    };
+    // Datos filtrados para la tabla de detalle
+    const filteredData = useMemo(() => {
+        if (!selectedGroupIds || selectedGroupIds.length === 0) return [];
+        return data.filter((beca: any) => selectedGroupIds.includes(beca.id));
+    }, [selectedGroupIds, data]);
 
+    // ── TOOLTIP (con fechas UTC) ─────────────────────────────────────────────
     const CustomTooltip = ({ active, payload }: any) => {
-        if (active && payload && payload.length) {
-            const d = payload[0].payload;
-            const maxStageId = d.maxStageId;
-            const currentStage = STAGE_NAMES[maxStageId] || 'Sin Etapa';
-            
-            const startDate = new Date(d.tooltipStart).toLocaleDateString('es-PE', { month: 'short', year: 'numeric' });
-            const endDate = new Date(d.tooltipEnd).toLocaleDateString('es-PE', { month: 'short', year: 'numeric' });
+        if (!active || !payload?.length) return null;
+        const d = payload[0].payload;
 
-            return (
-                <div className="bg-white p-5 rounded-2xl shadow-2xl border border-gray-300 text-[11px] min-w-[300px] z-50">
-                    <p className="font-black text-gray-900 border-b border-gray-100 pb-2 mb-3 leading-tight uppercase tracking-tight text-sm font-mono">{d.displayLabel}</p>
-                    <div className="space-y-2.5">
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-400 font-bold uppercase tracking-tighter">Temporalidad Real:</span>
-                            <span className="font-extrabold text-gray-800 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 italic">{startDate} - {endDate}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-400 font-bold uppercase tracking-tighter">Cantidad de Becas:</span>
-                            <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.count} u.</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-gray-400 font-bold uppercase tracking-tighter">Inversión del Grupo:</span>
-                            <span className="font-black text-gray-900 px-2 bg-slate-50 rounded border border-slate-100">S/ {d.totalBudget.toLocaleString('es-PE')}</span>
-                        </div>
-                        <div className="flex justify-between items-center bg-blue-600/5 p-3 rounded-xl border border-blue-600/10 mt-3">
-                            <span className="text-blue-600 font-black uppercase tracking-widest text-[9px]">Avance más avanzado:</span>
-                            <span className="px-3 py-1 rounded-full text-[10px] text-white font-black uppercase tracking-wider" style={{ backgroundColor: STAGE_COLORS[maxStageId] }}>
-                                {currentStage}
-                            </span>
-                        </div>
-                        <p className="text-[9px] text-blue-500 font-black mt-3 text-center animate-pulse uppercase tracking-[0.2em] bg-blue-50 py-1.5 rounded-lg border border-blue-100 cursor-pointer">
-                            {selectedGroup === d.key ? '✕ Mostrar Todo el Universo' : 'Click para filtrar detalle'}
-                        </p>
-                    </div>
+        // Convertir offsets a fechas reales (en UTC)
+        const realStart = (minTimestamp ?? 0) + d.firstStart - (minTimestamp ?? 0);
+        const realEnd = (minTimestamp ?? 0) + d.lastEnd - (minTimestamp ?? 0);
+
+        const fmtDate = (ts: number) => {
+            if (!ts || isNaN(ts)) return 'N/A';
+            const d = new Date(ts);
+            // Usar UTC para evitar desfase horario
+            return `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}/${d.getUTCFullYear()}`;
+        };
+
+        const fmtMoney = (n: number) => {
+            if (isNaN(n)) return 'S/ 0.00';
+            return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const stageColor = STAGE_BY_ID[d.maxStageId]?.color || '#64748b';
+
+        return (
+            <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-200 text-[11px] min-w-[280px]" style={{ zIndex: 9999 }}>
+                <p className="font-black text-gray-900 border-b border-gray-100 pb-2 mb-3 text-[10px] uppercase tracking-widest font-mono">
+                    {d.name}
+                </p>
+                <div className="space-y-2">
+                    <TooltipRow label="Temporalidad">
+                        <span className="font-extrabold text-gray-800 bg-gray-50 px-2 py-0.5 rounded border border-gray-100 italic">
+                            {fmtDate(realStart)} – {fmtDate(realEnd)}
+                        </span>
+                    </TooltipRow>
+                    <TooltipRow label="Becas">
+                        <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.count} u.</span>
+                    </TooltipRow>
+                    <TooltipRow label="Presupuesto total">
+                        <span className="font-black text-gray-900 px-2 bg-slate-50 rounded border border-slate-100">
+                            {fmtMoney(d.totalBudget)}
+                        </span>
+                    </TooltipRow>
+                    <TooltipRow label="Avance total">
+                        <span className="font-black tabular-nums px-2 bg-slate-50 rounded border border-slate-100" style={{ color: stageColor }}>
+                            {fmtMoney(d.totalAvance)}
+                        </span>
+                    </TooltipRow>
                 </div>
-            );
-        }
-        return null;
+            </div>
+        );
     };
 
-    const handleChartClick = (state: any) => {
-        if (state && state.activePayload && state.activePayload.length) {
-            const d = state.activePayload[0].payload;
-            onSelectGroup(selectedGroup === d.key ? null : d.key);
-        }
-    };
+    // ── RENDER ───────────────────────────────────────────────────────────────
+    if (!minTimestamp || !maxTimestamp || chartData.length === 0) {
+        return <div className="text-center p-8 text-gray-500">No hay datos para mostrar</div>;
+    }
+
+    // Generar ticks para los años usando UTC
+    const startYear = new Date(minTimestamp).getUTCFullYear();
+    const endYear = new Date(maxTimestamp).getUTCFullYear();
+    const yearTicks: number[] = [];
+    for (let y = startYear; y <= endYear; y++) {
+        const ts = Date.UTC(y, 0, 1); // 1 de enero a las 00:00 UTC
+        yearTicks.push(ts - minTimestamp);
+    }
+
+    // Calcular offset para el día de hoy (UTC)
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const todayTs = today.getTime();
+    let todayOffset: number | null = null;
+    if (todayTs >= minTimestamp && todayTs <= maxTimestamp) {
+        todayOffset = todayTs - minTimestamp;
+    }
 
     return (
-        <div className="w-full bg-white p-6 md:p-12 rounded-[2.5rem] shadow-2xl border border-gray-100/50 transition-all duration-700 hover:shadow-blue-900/10 mb-12">
-            <div className="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 border-b border-gray-50 pb-8">
+        <div className="w-full bg-white p-6 md:p-10 rounded-[2.5rem] shadow-2xl border border-gray-100/50 mb-12">
+
+            <div className="mb-6 flex items-center gap-4 pb-2">
+                <div className="w-2.5 h-10 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30 flex-shrink-0" />
                 <div>
-                    <div className="flex items-center gap-4 mb-3">
-                        <div className="w-2.5 h-10 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30" />
-                        <h3 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Linea de Tiempo de Becas</h3>
-                    </div>
-                    <p className="text-xs text-slate-400 font-black uppercase tracking-[0.4em] ml-6 flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                        Agrupación Estratégica [Eje / Línea de Intervención]
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex items-center gap-4 shadow-sm hover:border-blue-200 transition-colors duration-300">
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                        <span className="text-xs text-slate-600 font-black uppercase tracking-tighter italic whitespace-nowrap">
-                            Estatus al {new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        </span>
-                    </div>
+                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                        Línea de Tiempo de Becas
+                    </h3>
                 </div>
             </div>
 
-            <div className="w-full relative" style={{ height: Math.max(550, (chartData.length || 1) * 70 + 220) + 'px' }}>
+            <div style={{ width: '100%', height: 500 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         layout="vertical"
                         data={chartData}
-                        margin={{ top: 40, right: 80, left: 10, bottom: 40 }}
-                        barSize={40}
-                        onClick={handleChartClick}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                        barSize={30}
+                        barCategoryGap="10%"
                     >
-                        <CartesianGrid strokeDasharray="6 6" horizontal={true} vertical={true} stroke="#e2e8f0" opacity={0.4} />
-                        
-                        {/* SUPERIOR AXIS (Starts at MIN_DATE = 2022-01-01) */}
+                        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
+
+                        {/* Eje X superior e inferior con dominio relativo */}
                         <XAxis
-                            xAxisId="top"
+                            xAxisId="main"
                             orientation="top"
                             type="number"
-                            scale="time"
-                            domain={[MIN_DATE, MAX_DATE]}
-                            ticks={YEARLY_TICKS}
-                            tickFormatter={formatXAxis}
-                            tick={{ fontSize: 10, fill: '#64748b', fontWeight: 900 }}
-                            stroke="#888888"
-                            axisLine={{ stroke: '#e2e8f0', strokeWidth: 2 }}
-                            tickLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+                            domain={[0, maxTimestamp - minTimestamp]}
+                            ticks={yearTicks}
+                            tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
+                            tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                            axisLine={{ stroke: '#cbd5e1' }}
+                            tickLine={{ stroke: '#cbd5e1' }}
                         />
-
-                        {/* INFERIOR AXIS (Mirror) */}
                         <XAxis
-                            xAxisId="bottom"
+                            xAxisId="main"
                             orientation="bottom"
                             type="number"
-                            scale="time"
-                            domain={[MIN_DATE, MAX_DATE]}
-                            ticks={YEARLY_TICKS}
-                            tickFormatter={formatXAxis}
-                            tick={{ fontSize: 10, fill: '#64748b', fontWeight: 900 }}
-                            stroke="#888888"
-                            axisLine={{ stroke: '#e2e8f0', strokeWidth: 2 }}
-                            tickLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+                            domain={[0, maxTimestamp - minTimestamp]}
+                            ticks={yearTicks}
+                            tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
+                            tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                            axisLine={{ stroke: '#cbd5e1' }}
+                            tickLine={{ stroke: '#cbd5e1' }}
                         />
 
                         <YAxis
+                            orientation="left"
                             type="category"
-                            dataKey="displayLabel"
-                            width={isMobile ? 140 : 280}
-                            tick={{ fontSize: 9, fill: '#1e293b', fontWeight: 950, width: isMobile ? 130 : 270 }}
+                            dataKey="name"
+                            width={220}
                             interval={0}
-                            axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }}
+                            tick={{ fontSize: 14, fontWeight: 500, fill: '#374151' }}
+                            axisLine={{ stroke: '#e2e8f0' }}
                             tickLine={false}
                         />
-                        <Tooltip 
-                            content={<CustomTooltip />} 
-                            cursor={{ fill: 'rgba(59, 130, 246, 0.04)' }} 
-                            position={{ y: 0 }}
-                            wrapperStyle={{ zIndex: 1000 }}
-                        />
-                        
-                        {/* FIRST Transparent Bar: Offset from Axis start (MIN_DATE) to Bar start */}
-                        <Bar dataKey="startOffset" stackId="a" fill="transparent" legendType="none" xAxisId="top" />
-                        
-                        {stagesInvolved.map((sid) => (
-                            <Bar 
-                                key={sid}
-                                dataKey={`duration_${sid}`} 
-                                stackId="a" 
-                                fill={STAGE_COLORS[sid]}
-                                name={STAGE_NAMES[sid]}
-                                xAxisId="top"
-                            >
-                                {chartData.map((entry: any, index: number) => (
-                                    <Cell 
-                                        key={`cell-${sid}-${index}`}
-                                        className={`cursor-pointer transition-all duration-500 ${selectedGroup && selectedGroup !== entry.key ? 'opacity-10 grayscale' : 'opacity-100 hover:brightness-110'}`}
-                                        style={{ 
-                                            filter: selectedGroup && selectedGroup === entry.key ? 'drop-shadow(0 0 15px rgba(59, 130, 246, 0.6))' : 'none',
-                                            transition: 'all 0.8s cubic-bezier(0.19, 1, 0.22, 1)'
-                                        }}
-                                    />
-                                ))}
-                            </Bar>
-                        ))}
 
-                        <ReferenceLine 
-                            xAxisId="top"
-                            x={Math.min(Math.max(new Date().getTime(), MIN_DATE), MAX_DATE)} 
-                            stroke="#ef4444" 
-                            strokeWidth={4}
-                            strokeDasharray="8 4" 
-                            label={{ 
-                                value: 'Hoy', 
-                                fill: '#ef4444', 
-                                fontSize: 11, 
-                                fontWeight: 900, 
-                                position: 'top', 
-                                offset: 25
-                            }} 
-                            z={2000}
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
+                        <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
+
+                        {/* Barra transparente para posicionar el inicio */}
+                        <Bar
+                            dataKey="inicioVacio"
+                            stackId="a"
+                            xAxisId="main"
+                            fill="transparent"
+                            isAnimationActive={false}
+                            hide={false}
                         />
-                        
-                        <Legend 
-                            wrapperStyle={{ paddingTop: '80px', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em' }}
-                            iconType="rect"
-                            align="center"
-                            verticalAlign="bottom"
-                        />
+
+                        {/* Barras de colores para cada etapa */}
+                        {usedStageIds.map(sid => {
+                            const stage = STAGE_BY_ID[sid];
+                            return (
+                                <Bar
+                                    key={sid}
+                                    dataKey={sid}
+                                    stackId="a"
+                                    xAxisId="main"
+                                    name={stage?.name ?? `Etapa ${sid}`}
+                                    fill={stage?.color ?? '#94a3b8'}
+                                    fillOpacity={1}
+                                    isAnimationActive={false}
+                                    cursor="pointer"
+                                    onClick={(eventData) => {
+                                        if (eventData?.payload?.ids) {
+                                            const clickedIds = eventData.payload.ids;
+                                            setSelectedGroupIds(
+                                                JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
+                                                    ? null
+                                                    : clickedIds
+                                            );
+                                        }
+                                    }}
+                                >
+                                    {chartData.map((entry: any, idx: number) => (
+                                        <Cell
+                                            key={`cell-${sid}-${idx}`}
+                                            style={{
+                                                filter: selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids)
+                                                    ? 'drop-shadow(0px 0px 8px rgba(59,130,246,0.5))'
+                                                    : 'none',
+                                                opacity: selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids) ? 0.2 : 1,
+                                                transition: 'all 0.3s ease',
+                                            }}
+                                        />
+                                    ))}
+                                </Bar>
+                            );
+                        })}
+
+                        {/* Línea vertical para el día de hoy (roja discontinua) */}
+                        {todayOffset !== null && (
+                            <ReferenceLine
+                                xAxisId="main"
+                                x={todayOffset}
+                                stroke="red"
+                                strokeDasharray="5 5"
+                                strokeWidth={2}
+                                label={{
+                                    value: "Hoy",
+                                    position: "top",
+                                    fill: "red",
+                                    fontSize: 10,
+                                    fontWeight: "bold",
+                                }}
+                            />
+                        )}
                     </BarChart>
                 </ResponsiveContainer>
             </div>
-            
-            <div className="mt-16 pt-10 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
-                <div className="flex items-center gap-10">
-                    <div className="flex items-center gap-2">
-                        <div className="w-1 h-4 bg-blue-600 rounded-full" />
-                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] font-mono">Panel de Control Operativo</span>
+
+            {selectedGroupIds && selectedGroupIds.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-100 animate-in fade-in zoom-in-95 duration-500">
+                    <div className="mb-4">
+                        <h4 className="text-lg font-bold text-gray-800 uppercase tracking-wide">
+                            Becas Vinculadas al Grupo
+                        </h4>
                     </div>
+                    <DetalleBecasTable data={filteredData} loading={false} />
                 </div>
-                <div className="flex items-center gap-5 bg-slate-50/80 px-8 py-4 rounded-[2rem] border border-slate-100 shadow-inner">
-                    <img src="/fondoempleo.jpg" alt="Logo" className="h-10 opacity-90 contrast-125" />
-                    <div className="h-10 w-[2px] bg-slate-200" />
-                    <span className="text-[11px] text-slate-400 font-extrabold uppercase tracking-[0.5em] font-mono">SISTEMA ACTIVA-T V2.5</span>
+            )}
+
+            <div className="mt-10 pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] font-mono">
+                        Panel de Control Operativo
+                    </span>
+                </div>
+                <div className="flex items-center gap-4 bg-slate-50/80 px-6 py-2.5 rounded-[2rem] border border-slate-100 shadow-inner">
+                    <img src="/fondoempleo.jpg" alt="Logo" className="h-8 opacity-90 contrast-125" />
+                    <div className="h-7 w-[2px] bg-slate-200" />
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-[0.5em] font-mono">
+                        SISTEMA ACTIVA-T V2.5
+                    </span>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function TooltipRow({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="flex justify-between items-center gap-3">
+            <span className="text-gray-400 font-bold uppercase tracking-tighter">{label}</span>
+            {children}
         </div>
     );
 }
