@@ -75,6 +75,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                     count: 0,
                     maxStageId: 0,
                     ids: [],
+                    ejeId,          // guardamos ejeId para ordenamiento
+                    lineaId,        // guardamos lineaId para ordenamiento
                 });
             }
 
@@ -141,6 +143,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 firstStart: etapa1Date,
                 lastEnd: endDate,
                 etapa1Date: etapa1Date,
+                ejeId: g.ejeId,
+                lineaId: g.lineaId,
             };
             return row;
         }).filter(Boolean);
@@ -224,15 +228,24 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 etapa1Date: row.etapa1Date,
                 inicioVacio,
                 ...adjustedDurations,
+                ejeId: row.ejeId,
+                lineaId: row.lineaId,
             };
 
             return rowData;
-        }).sort((a, b) => a.firstStart - b.firstStart);
+        });
+
+        // ORDEN: primero por eje, luego por línea, luego por fecha (firstStart)
+        const sortedRows = rows.sort((a, b) => {
+            if (a.ejeId !== b.ejeId) return a.ejeId - b.ejeId;
+            if (a.lineaId !== b.lineaId) return a.lineaId - b.lineaId;
+            return a.firstStart - b.firstStart;
+        });
 
         const finalUsedStageIds = Array.from(foundStageIds).sort((a, b) => a - b);
 
         return {
-            chartData: rows,
+            chartData: sortedRows,
             usedStageIds: finalUsedStageIds,
             minTimestamp: domainMin,
             maxTimestamp: domainMax,
