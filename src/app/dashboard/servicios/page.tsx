@@ -207,29 +207,28 @@ export default function ServiciosPage() {
                 />
             </div>
 
-            <div className="w-full">
-                <div className="flex justify-between items-center mb-4 px-2">
-                    <div className="flex flex-col">
-                        <h3 className="text-xl font-black text-gray-900 tracking-tight">
-                            Becas en Detalle
-                        </h3>
-                        {selectedGroup && (
-                            <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mt-1">
+            {/* ── Becas en Detalle: visible ONLY after clicking a Gantt bar ── */}
+            {selectedGroup && (
+                <div className="w-full animate-in fade-in duration-300">
+                    <div className="flex justify-between items-center mb-3 px-2">
+                        <div className="flex flex-col">
+                            <h3 className="text-lg font-black text-gray-900 tracking-tight">
+                                Becas en Detalle
+                            </h3>
+                            <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mt-0.5">
                                 Filtrando por: {selectedGroupLabel}
                             </p>
-                        )}
-                    </div>
-                    {selectedGroup && (
-                        <button 
+                        </div>
+                        <button
                             onClick={() => setSelectedGroup(null)}
                             className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-md shadow-blue-100 flex items-center gap-2"
                         >
-                            <span>Mostrar Todo</span>
+                            <span>✕ Cerrar</span>
                         </button>
-                    )}
+                    </div>
+                    <ServiciosTable data={filteredData} loading={loading} />
                 </div>
-                <ServiciosTable data={filteredData} loading={loading} />
-            </div>
+            )}
         </div>
     );
 }

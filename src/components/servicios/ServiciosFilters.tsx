@@ -68,7 +68,7 @@ export function ServiciosFilters({
                         {isAllSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo'}
                     </button>
                     <div className="space-y-0.5 mt-1">
-                        {items.sort((a,b) => a.descripcion.localeCompare(b.descripcion)).map(item => (
+                        {[...items].sort((a, b) => Number(a.id) - Number(b.id)).map(item => (
                             <button
                                 key={item.id}
                                 onClick={() => toggleFilter(category, item.id)}
