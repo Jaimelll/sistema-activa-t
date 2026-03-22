@@ -41,7 +41,7 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate }: 
                     <thead>
                         <tr className="bg-gray-100 border-b-2 border-gray-200 text-gray-700 text-[9px] uppercase font-extrabold tracking-widest">
                             <th className="px-3 py-2">ID</th>
-                            <th className="px-3 py-2 min-w-[200px]">Nombre de Beca</th>
+                            <th className="px-3 py-2 min-w-[200px]">Nombre de Servicio</th>
                             <th className="px-3 py-2">Institución</th>
                             <th className="px-3 py-2">Estado</th>
                             <th className="px-3 py-2 text-right">Presupuesto</th>
@@ -61,7 +61,7 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate }: 
                         ) : sortedData.length === 0 ? (
                             <tr>
                                 <td colSpan={COLS} className="px-3 py-8 text-center text-gray-400 text-sm italic">
-                                    No se encontraron becas para mostrar.
+                                    No se encontraron servicios para mostrar.
                                 </td>
                             </tr>
                         ) : (
@@ -150,7 +150,7 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate }: 
                         Total
                     </span>
                     <span className="text-[9px] text-gray-500 font-bold">
-                        {sortedData.length} becas listadas
+                        {sortedData.length} servicios listados
                     </span>
                 </div>
             )}

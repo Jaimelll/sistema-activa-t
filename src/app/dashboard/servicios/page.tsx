@@ -60,8 +60,8 @@ export default function ServiciosPage() {
                 condiciones: (condiciones || []).map(e => e.id)
             });
 
-            // Fetch Becas with relations
-            const { data: becas, error } = await supabase
+            // Fetch Servicios with relations
+            const { data: servicios, error } = await supabase
                 .from('becas_nueva')
                 .select(`
                     *,
@@ -75,10 +75,10 @@ export default function ServiciosPage() {
                 .order('id', { ascending: true });
 
             if (error) {
-                console.error('Error fetching becas:', error);
+                console.error('Error fetching servicios:', error);
             } else {
                 // Pre-process dates (Unpivot logic)
-                const processed = (becas || []).map(b => {
+                const processed = (servicios || []).map(b => {
                     const inicio = b.avances?.find((a: any) => a.etapa_id === 1)?.fecha;
                     const fin = b.avances?.find((a: any) => a.etapa_id === 10)?.fecha;
                     return {
@@ -207,13 +207,13 @@ export default function ServiciosPage() {
                 />
             </div>
 
-            {/* ── Becas en Detalle: visible ONLY after clicking a Gantt bar ── */}
+            {/* ── Servicios en Detalle: visible ONLY after clicking a Gantt bar ── */}
             {selectedGroup && (
                 <div className="w-full animate-in fade-in duration-300">
                     <div className="flex justify-between items-center mb-3 px-2">
                         <div className="flex flex-col">
                             <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                                Becas en Detalle
+                                Servicios en Detalle
                             </h3>
                             <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mt-0.5">
                                 Filtrando por: {selectedGroupLabel}
