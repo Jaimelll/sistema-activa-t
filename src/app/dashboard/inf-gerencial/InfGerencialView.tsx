@@ -16,18 +16,34 @@ interface AporteFlat {
     seccion_desc: string;
 }
 
+interface FinanzasItem {
+    año: number;
+    rubro: string;
+    monto: number;
+}
+
 const VIBRANT_PALETTE = [
     '#ff7f50', '#ffdb58', '#8a2be2', '#008080', '#ff4500',
     '#2f4f4f', '#ec4899', '#06b6d4', '#f59e0b', '#10b981',
     '#1d4ed8', '#15803d', '#dc2626', '#7c3aed', '#db2777',
 ];
 
-export default function AportantesView({
+const COLORS_FINANZAS = {
+    'Aportes': '#dc2626',       // Rojo
+    'Intereses': '#94a3b8',     // Plomo/Gris
+    'G. Operativos': '#86efac', // Verde claro
+    'Proyectos': '#facc15',     // Amarillo
+    'Becas': '#0ea5e9',         // Celeste
+};
+
+export default function InfGerencialView({
     initialData,
-    sectores
+    sectores,
+    finanzasData
 }: {
     initialData: AporteFlat[],
-    sectores: string[]
+    sectores: string[],
+    finanzasData: FinanzasItem[]
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSector, setSelectedSector] = useState<string>('all');
@@ -40,6 +56,50 @@ export default function AportantesView({
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // --- Finanzas Processing ---
+    const groupedFinanzas = useMemo(() => {
+        const years = [2021, 2022, 2023, 2024, 2025, 2026];
+        return years.map(year => {
+            const yearItems = finanzasData.filter(d => d.año === year && d.rubro !== 'Saldos en Bancos');
+            const row: any = { year };
+            yearItems.forEach(item => {
+                row[item.rubro] = item.monto;
+            });
+            return row;
+        });
+    }, [finanzasData]);
+
+    const activeRubros = Object.keys(COLORS_FINANZAS);
+
+    const historicalSaldos = useMemo(() => {
+        return finanzasData
+            .filter(d => d.rubro === 'Saldos en Bancos')
+            .sort((a, b) => b.año - a.año);
+    }, [finanzasData]);
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('es-PE', {
+            style: 'currency',
+            currency: 'PEN',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(value);
+    };
+
+    const formatCurrencyWithCents = (value: number) => {
+        return new Intl.NumberFormat('es-PE', {
+            style: 'currency',
+            currency: 'PEN',
+            minimumFractionDigits: 2,
+        }).format(value);
+    };
+
+    const formatCompactCurrency = (value: number) => {
+        return `${(value / 1000000).toFixed(0)}M`;
+    };
+    // --- End Finanzas Processing ---
+
 
     // Compute the last 5 years from the data
     const last5Years = useMemo(() => {
@@ -128,6 +188,11 @@ export default function AportantesView({
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 space-y-8 animate-in fade-in duration-500 max-w-full overflow-x-hidden pb-16">
+
+            {/* Header Title */}
+            <div className="flex items-center justify-between mb-4">
+                <h1 className="text-3xl font-black text-slate-800 tracking-tight">Información Gerencial</h1>
+            </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -291,6 +356,85 @@ export default function AportantesView({
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* NEW: Financial Evolution and Bank Balances Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+                {/* 1. Grouped Bar Chart (Finance) */}
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 h-full">
+                    <div className="mb-10 text-center md:text-left">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera</h3>
+                        <p className="text-slate-400 font-medium">Comparativa de rubros principales • 2021 - 2026</p>
+                    </div>
+                    <div className="h-[350px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={groupedFinanzas} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis
+                                    dataKey="year"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }}
+                                    dy={15}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                    tickFormatter={formatCompactCurrency}
+                                />
+                                <Tooltip
+                                    formatter={(value: number) => formatCurrency(value)}
+                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
+                                />
+                                <Legend
+                                    verticalAlign="top"
+                                    align="center"
+                                    iconType="circle"
+                                    wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '11px', fontWeight: 700 }}
+                                />
+                                {activeRubros.map((rubro) => (
+                                    <Bar
+                                        key={rubro}
+                                        dataKey={rubro}
+                                        fill={COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS]}
+                                        radius={[4, 4, 0, 0]}
+                                        barSize={12}
+                                    />
+                                ))}
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 2. Bank Balances Table */}
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 h-full">
+                    <div className="mb-8">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Saldos Bancarios</h3>
+                        <p className="text-slate-400 font-medium line-clamp-1">Liquidez anual histórica</p>
+                    </div>
+                    <div className="overflow-hidden rounded-2xl border border-slate-50">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+                                <tr>
+                                    <th className="px-4 py-4">Año</th>
+                                    <th className="px-4 py-4 text-right">Monto (S/)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {historicalSaldos.map((item) => (
+                                    <tr key={item.año} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-4 py-4 font-black text-slate-700">{item.año}</td>
+                                        <td className="px-4 py-4 text-right font-bold text-slate-900 text-sm">
+                                            {formatCurrencyWithCents(item.monto)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

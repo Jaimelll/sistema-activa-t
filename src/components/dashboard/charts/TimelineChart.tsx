@@ -336,7 +336,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" xAxisId="bottom" />
 
                         {/* 1. Bases (Blue) */}
-                        <Bar dataKey="d1_safe" stackId="a" name="Aprobación de bases" fill={COLORS.bases} minPointSize={0} xAxisId="bottom">
+                        <Bar dataKey="d1_safe" stackId="a" name="Bases" fill={COLORS.bases} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d1-${index}`} fill={d.d1_safe > 0 ? COLORS.bases : 'transparent'} stroke="none" />
                             ))}
@@ -350,21 +350,21 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         </Bar>
 
                         {/* 3. Consejo (Amber) */}
-                        <Bar dataKey="d3_safe" stackId="a" name="Aprobación de consejo" fill={COLORS.consejo} minPointSize={0} xAxisId="bottom">
+                        <Bar dataKey="d3_safe" stackId="a" name="Aprobado" fill={COLORS.consejo} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d3-${index}`} fill={d.d3_safe > 0 ? COLORS.consejo : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 4. Firma (Violet) */}
-                        <Bar dataKey="d4_safe" stackId="a" name="Firma convenio" fill={COLORS.firma} minPointSize={0} xAxisId="bottom">
+                        <Bar dataKey="d4_safe" stackId="a" name="Firma" fill={COLORS.firma} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d4-${index}`} fill={d.d4_safe > 0 ? COLORS.firma : 'transparent'} stroke="none" />
                             ))}
                         </Bar>
 
                         {/* 5. En Ejecución (Indigo) */}
-                        <Bar dataKey="d5_safe" stackId="a" name="En Ejecución" fill={COLORS.ejecucion} minPointSize={0} xAxisId="bottom">
+                        <Bar dataKey="d5_safe" stackId="a" name="Ejecución" fill={COLORS.ejecucion} minPointSize={0} xAxisId="bottom">
                             {processedData.map((d: any, index: number) => (
                                 <Cell key={`cell-d5-${index}`} fill={d.d5_safe > 0 ? COLORS.ejecucion : 'transparent'} stroke="none" />
                             ))}
