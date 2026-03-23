@@ -13,11 +13,11 @@ interface ServiciosTimelineProps {
 }
 
 const STAGES = [
-    { id: 1, name: 'Aprobación de bases', color: '#ef4444' },
+    { id: 1, name: 'Bases', color: '#ef4444' },
     { id: 2, name: 'Lanzamiento', color: '#f97316' },
-    { id: 3, name: 'Aprobación consejo', color: '#eab308' },
-    { id: 4, name: 'Firma convenio', color: '#22c55e' },
-    { id: 5, name: 'En ejecución', color: '#3b82f6' },
+    { id: 3, name: 'Aprobado', color: '#eab308' },
+    { id: 4, name: 'Firma', color: '#22c55e' },
+    { id: 5, name: 'Ejecución', color: '#3b82f6' },
     { id: 6, name: 'Ejecutado', color: '#dc2626' },
     { id: 7, name: 'Resuelto', color: '#94a3b8' },
 ];
@@ -29,7 +29,7 @@ const MARGIN_DAYS = 30;
 export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
     const [selectedGroupIds, setSelectedGroupIds] = useState<number[] | null>(null);
 
-    // 🔥 Fuerza un re‑render después del montaje para que el gráfico se dibuje correctamente
+    // Fuerza un re‑render después del montaje para que el gráfico se dibuje correctamente
     const [forceRender, setForceRender] = useState(0);
     useEffect(() => {
         const timer = setTimeout(() => setForceRender(prev => prev + 1), 200);
@@ -62,10 +62,14 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             const groupKey = `${ejeId}-${lineaId}-${fechaE1}`;
             const label = `${ejeId} - ${ejeDesc} | ${lineaId} - ${lineaDesc}`;
 
+            // Extraer solo la parte después del pipe para mostrar en el eje Y
+            const displayName = label.split('|')[1]?.trim() || label;
+
             if (!groupMap.has(groupKey)) {
                 groupMap.set(groupKey, {
                     key: groupKey,
-                    label,
+                    label: displayName,  // ← Usar el nombre simplificado
+                    fullLabel: label,    // Guardar el nombre completo por si se necesita
                     stageDates: {},
                     totalBudget: 0,
                     totalAvance: 0,
@@ -128,7 +132,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
             const row: any = {
                 key: g.key,
-                name: g.label,
+                name: g.label,  // ← Nombre simplificado para el eje Y
+                fullName: g.fullLabel,
                 totalBudget: g.totalBudget,
                 totalAvance: g.totalAvance,
                 count: g.count,
@@ -211,12 +216,12 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             }
 
             let inicioVacio = firstStart - domainMin;
-            // Asegurar que sea al menos 1ms (evita que la barra transparente desaparezca)
             if (inicioVacio <= 0) inicioVacio = 1;
 
             const rowData: any = {
                 key: row.key,
                 name: row.name,
+                fullName: row.fullName,
                 totalBudget: row.totalBudget,
                 totalAvance: row.totalAvance,
                 count: row.count,
@@ -266,6 +271,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             return {
                 startDate: group.firstStart,
                 endDate: group.lastEnd,
+                fullName: group.fullName,
             };
         }
         return null;
@@ -353,7 +359,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             <div style={{ width: '100%', height: 500 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        key={forceRender}   // 🔥 Forzar montaje después del retraso
+                        key={forceRender}
                         layout="vertical"
                         data={chartData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
@@ -387,14 +393,17 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             orientation="left"
                             type="category"
                             dataKey="name"
-                            width={220}
+                            width={180}
                             interval={0}
-                            tick={{ fontSize: 14, fontWeight: 500, fill: '#374151' }}
+                            tick={{ fontSize: 12, fontWeight: 500, fill: '#374151' }}
                             axisLine={{ stroke: '#e2e8f0' }}
                             tickLine={false}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
-                        <Legend verticalAlign="bottom" wrapperStyle={{ paddingTop: '20px' }} />
+                        <Legend
+                            verticalAlign="top"    // ← Leyenda arriba
+                            wrapperStyle={{ paddingBottom: '20px' }}
+                        />
                         <Bar
                             dataKey="inicioVacio"
                             stackId="a"
