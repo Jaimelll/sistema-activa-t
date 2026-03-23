@@ -141,7 +141,7 @@ export default function InfGerencialView({
     // Data for horizontal stacked bar chart (year as Y-axis, companies stacked)
     // Each row = one year; bars = one company; stacked
     const stackedData = useMemo(() => {
-        return last5Years.map(year => {
+        return [...last5Years].reverse().map(year => {
             const row: any = { year: year.toString() };
             top10Companies.forEach(company => {
                 const entry = baseData.find(d => d.anio === year && d.razon_social === company);
@@ -296,7 +296,7 @@ export default function InfGerencialView({
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={highlightedEmpresa
-                                    ? last5Years.map(year => {
+                                    ? [...last5Years].reverse().map(year => {
                                         const entry = baseData.find(d => d.anio === year && d.razon_social === highlightedEmpresa);
                                         return { year: year.toString(), [highlightedEmpresa]: entry ? entry.monto : 0 };
                                     })
