@@ -16,8 +16,8 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
         rutasBloqueadas: ['/dashboard/institucion-ejecutora', '/dashboard/settings'],
     },
     'invitado@fondoempleo.com.pe': {
-        modulosPermitidos: ['Proyectos'],
-        rutasPermitidas: ['/', '/dashboard', '/auth/signout', '/auth/callback'],
+        modulosPermitidos: ['Proyectos', 'Servicios', 'Inf. Gerencial'],
+        rutasPermitidas: ['/dashboard', '/dashboard/servicios', '/dashboard/inf-gerencial', '/auth/signout', '/auth/callback'],
     }
 };
 
