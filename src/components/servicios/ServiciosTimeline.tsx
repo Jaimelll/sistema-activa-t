@@ -13,11 +13,11 @@ interface ServiciosTimelineProps {
 }
 
 const STAGES = [
-    { id: 1, name: 'Bases', color: '#ef4444' },
+    { id: 1, name: 'Aprobación de bases', color: '#ef4444' },
     { id: 2, name: 'Lanzamiento', color: '#f97316' },
-    { id: 3, name: 'Aprobado', color: '#eab308' },
-    { id: 4, name: 'Firma', color: '#22c55e' },
-    { id: 5, name: 'Ejecución', color: '#3b82f6' },
+    { id: 3, name: 'Aprobación consejo', color: '#eab308' },
+    { id: 4, name: 'Firma convenio', color: '#22c55e' },
+    { id: 5, name: 'En ejecución', color: '#3b82f6' },
     { id: 6, name: 'Ejecutado', color: '#dc2626' },
     { id: 7, name: 'Resuelto', color: '#94a3b8' },
 ];
@@ -42,46 +42,47 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             return { chartData: [], usedStageIds: [], minTimestamp: null, maxTimestamp: null };
         }
 
-        const groupMap = new Map<string, any>();
+        // Agrupar por grupo_id
+        const groupMap = new Map<number, any>();
 
         data.forEach((beca: any) => {
-            const ejeId = beca.eje_id || 0;
-            const lineaId = beca.linea_id || 0;
-            const ejeDesc = beca.eje?.descripcion || 'Sin Eje';
-            const lineaDesc = beca.linea?.descripcion || 'Sin Línea';
+            const grupoId = beca.grupo_id;
 
-            const etapa1 = (beca.avances || []).find((a: any) => Number(a.etapa_id) === 1);
-            let fechaE1 = 'sin_fecha';
-            if (etapa1 && etapa1.fecha) {
-                const parsed = new Date(etapa1.fecha);
-                if (!isNaN(parsed.getTime())) {
-                    fechaE1 = parsed.toISOString().split('T')[0];
-                }
+            if (!grupoId) {
+                console.warn(`Beca ID ${beca.id} no tiene grupo asignado, se omitirá del gráfico`);
+                return;
             }
 
-            const groupKey = `${ejeId}-${lineaId}-${fechaE1}`;
-            const label = `${ejeId} - ${ejeDesc} | ${lineaId} - ${lineaDesc}`;
+            // Obtener datos del grupo
+            const grupoDescripcion = beca.grupo?.descripcion || '';
+            const grupoOrden = beca.grupo?.orden || grupoId;
 
-            // Extraer solo la parte después del pipe para mostrar en el eje Y
-            const displayName = label.split('|')[1]?.trim() || label;
+            // Obtener la línea original (ej: "7 - Beca Trabajadores")
+            const lineaOriginal = `${beca.linea_id} - ${beca.linea?.descripcion || 'Sin Línea'}`;
 
-            if (!groupMap.has(groupKey)) {
-                groupMap.set(groupKey, {
-                    key: groupKey,
-                    label: displayName,  // ← Usar el nombre simplificado
-                    fullLabel: label,    // Guardar el nombre completo por si se necesita
+            // Combinar: "7 - Beca Trabajadores Hijos" (solo espacio, sin dos puntos)
+            const etiquetaCompleta = grupoDescripcion
+                ? `${lineaOriginal} ${grupoDescripcion}`
+                : lineaOriginal;
+
+            if (!groupMap.has(grupoId)) {
+                groupMap.set(grupoId, {
+                    key: String(grupoId),
+                    name: etiquetaCompleta,
+                    fullName: etiquetaCompleta,
+                    lineaOriginal: lineaOriginal,
+                    grupoDescripcion: grupoDescripcion,
+                    grupoOrden: grupoOrden,
                     stageDates: {},
                     totalBudget: 0,
                     totalAvance: 0,
                     count: 0,
                     maxStageId: 0,
                     ids: [],
-                    ejeId,
-                    lineaId,
                 });
             }
 
-            const g = groupMap.get(groupKey)!;
+            const g = groupMap.get(grupoId)!;
             g.count++;
             g.totalBudget += Number(beca.presupuesto) || 0;
             g.totalAvance += Number(beca.avance) || 0;
@@ -132,8 +133,10 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
 
             const row: any = {
                 key: g.key,
-                name: g.label,  // ← Nombre simplificado para el eje Y
-                fullName: g.fullLabel,
+                name: g.name,
+                fullName: g.fullName,
+                lineaOriginal: g.lineaOriginal,
+                grupoDescripcion: g.grupoDescripcion,
                 totalBudget: g.totalBudget,
                 totalAvance: g.totalAvance,
                 count: g.count,
@@ -145,8 +148,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 firstStart: etapa1Date,
                 lastEnd: endDate,
                 etapa1Date: etapa1Date,
-                ejeId: g.ejeId,
-                lineaId: g.lineaId,
+                grupoId: Number(g.key),
+                grupoOrden: g.grupoOrden,
             };
             return row;
         }).filter(Boolean);
@@ -222,6 +225,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 key: row.key,
                 name: row.name,
                 fullName: row.fullName,
+                lineaOriginal: row.lineaOriginal,
+                grupoDescripcion: row.grupoDescripcion,
                 totalBudget: row.totalBudget,
                 totalAvance: row.totalAvance,
                 count: row.count,
@@ -232,17 +237,16 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 etapa1Date: row.etapa1Date,
                 inicioVacio,
                 ...adjustedDurations,
-                ejeId: row.ejeId,
-                lineaId: row.lineaId,
+                grupoId: row.grupoId,
+                grupoOrden: row.grupoOrden,
             };
 
             return rowData;
         });
 
-        // ORDEN: primero por eje, luego por línea, luego por fecha (firstStart)
+        // ORDEN: primero por grupoOrden, luego por fecha (firstStart)
         const sortedRows = rows.sort((a, b) => {
-            if (a.ejeId !== b.ejeId) return a.ejeId - b.ejeId;
-            if (a.lineaId !== b.lineaId) return a.lineaId - b.lineaId;
+            if (a.grupoOrden !== b.grupoOrden) return a.grupoOrden - b.grupoOrden;
             return a.firstStart - b.firstStart;
         });
 
@@ -393,15 +397,15 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             orientation="left"
                             type="category"
                             dataKey="name"
-                            width={180}
+                            width={280}
                             interval={0}
-                            tick={{ fontSize: 12, fontWeight: 500, fill: '#374151' }}
+                            tick={{ fontSize: 11, fontWeight: 500, fill: '#374151' }}
                             axisLine={{ stroke: '#e2e8f0' }}
                             tickLine={false}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
                         <Legend
-                            verticalAlign="top"    // ← Leyenda arriba
+                            verticalAlign="top"
                             wrapperStyle={{ paddingBottom: '20px' }}
                         />
                         <Bar

@@ -30,7 +30,7 @@ export default function ServiciosPage() {
     useEffect(() => {
         async function loadInitialData() {
             setLoading(true);
-            
+
             // Fetch all catalog options for filters
             const [
                 { data: etapas },
@@ -70,7 +70,8 @@ export default function ServiciosPage() {
                     linea:linea_id(descripcion),
                     etapa:etapa_id(descripcion),
                     condicion:condicion_id(descripcion),
-                    avances:avance_beca(fecha, etapa_id)
+                    avances:avance_beca(fecha, etapa_id),
+                    grupo:grupo_id(descripcion, orden) 
                 `)
                 .order('id', { ascending: true });
 
@@ -139,10 +140,10 @@ export default function ServiciosPage() {
             const matchEje = activeFilters.ejes.includes(item.eje_id);
             const matchLinea = activeFilters.lineas.includes(item.linea_id);
             const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
-            const matchSearch = !filters.search || 
+            const matchSearch = !filters.search ||
                 item.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
                 item.documento?.toLowerCase().includes(filters.search.toLowerCase());
-            
+
             // New "Estado de Proceso" logic: En proceso if etapa_id in [6, 8]
             const matchProcess = processState === 'Todos' || [6, 8].includes(item.etapa_id);
 
@@ -170,16 +171,16 @@ export default function ServiciosPage() {
         <div className="space-y-6 pb-12">
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex items-center gap-4 flex-shrink-0">
-                    <img 
-                        src="/fondoempleo.jpg" 
-                        alt="Fondoempleo" 
-                        className="h-[85px] object-contain" 
+                    <img
+                        src="/fondoempleo.jpg"
+                        alt="Fondoempleo"
+                        className="h-[85px] object-contain"
                         style={{ filter: 'contrast(1.1) saturate(1.2)' }}
                     />
                 </div>
 
                 <div className="flex-1 w-full">
-                    <ServiciosFilters 
+                    <ServiciosFilters
                         options={availableFilters}
                         active={activeFilters}
                         setActive={setActiveFilters}
@@ -192,16 +193,16 @@ export default function ServiciosPage() {
             </div>
 
             <ServiciosKPIs data={filteredData} />
-            
+
             <div className="w-full">
-                <ServiciosTimeline 
+                <ServiciosTimeline
                     data={data.filter(item => {
                         const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
                         const matchEje = activeFilters.ejes.includes(item.eje_id);
                         const matchLinea = activeFilters.lineas.includes(item.linea_id);
                         const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
                         return matchEtapa && matchEje && matchLinea && matchCondicion;
-                    })} 
+                    })}
                     onSelectGroup={setSelectedGroup}
                     selectedGroup={selectedGroup}
                 />
