@@ -13,11 +13,11 @@ interface ServiciosTimelineProps {
 }
 
 const STAGES = [
-    { id: 1, name: 'Aprobación de bases', color: '#ef4444' },
+    { id: 1, name: 'Bases', color: '#ef4444' },
     { id: 2, name: 'Lanzamiento', color: '#f97316' },
-    { id: 3, name: 'Aprobación consejo', color: '#eab308' },
-    { id: 4, name: 'Firma convenio', color: '#22c55e' },
-    { id: 5, name: 'En ejecución', color: '#3b82f6' },
+    { id: 3, name: 'Aprobado', color: '#eab308' },
+    { id: 4, name: 'Firma', color: '#22c55e' },
+    { id: 5, name: 'Ejecución', color: '#3b82f6' },
     { id: 6, name: 'Ejecutado', color: '#dc2626' },
     { id: 7, name: 'Resuelto', color: '#94a3b8' },
 ];
