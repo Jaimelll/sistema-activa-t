@@ -95,10 +95,50 @@ export async function deleteServicio(id: any) {
   return { success: true };
 }
 
+async function recalculateBecaAvance(becaId: any, supabase: any) {
+  const { data: avances, error: fetchError } = await supabase
+    .from('avance_beca')
+    .select('monto_avance')
+    .eq('beca_id', becaId);
+
+  if (fetchError) {
+    console.error("Error fetching advances for recalculation:", fetchError);
+    return;
+  }
+
+  const totalAvance = (avances || []).reduce((sum: number, av: any) => sum + Number(av.monto_avance || 0), 0);
+
+  // Get the latest etapa_id from the latest avance (by date and id)
+  const { data: latestAvance, error: latestError } = await supabase
+    .from('avance_beca')
+    .select('etapa_id')
+    .eq('beca_id', becaId)
+    .order('fecha', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(1)
+    .single();
+
+  const updatePayload: any = {
+    avance: totalAvance
+  };
+
+  if (latestAvance) {
+    updatePayload.etapa_id = latestAvance.etapa_id;
+  }
+
+  const { error: updateError } = await supabase
+    .from('becas_nueva')
+    .update(updatePayload)
+    .eq('id', becaId);
+
+  if (updateError) {
+    console.error("Error updating becas_nueva after recalculation:", updateError);
+  }
+}
+
 export async function addAvanceServicio(becaId: any, avanceData: any) {
   const supabase = getSupabase();
   
-  // 1. Insert into avance_beca
   const { data, error: insertError } = await supabase
     .from('avance_beca')
     .insert([{ ...avanceData, beca_id: becaId }])
@@ -110,38 +150,52 @@ export async function addAvanceServicio(becaId: any, avanceData: any) {
     throw new Error(insertError.message);
   }
 
-  // 2. Update master table (becas_nueva)
-  // We update etapa_id and increment the total avance if provided
-  const updatePayload: any = {
-    etapa_id: data.etapa_id
-  };
-  
-  // If the new advance has an amount, we could either sum it or replace. 
-  // User said: "actualizar automáticamente el campo etapa_id y avance en la tabla maestra becas_nueva"
-  // Usually 'avance' in master corresponds to the sum or the latest. 
-  // Given 'monto_fondoempleo' context in projects, I'll sum the advances if it's cumulative or just set it if it's a progress value.
-  // I'll fetch current total and sum it if it's incremental, or just use the new value if it's total progress.
-  // Actually, I'll just set it to the value provided in the new avance record for now, or sum it.
-  // Let's check how 'avance' is used in page.tsx: `Number(item.avance) || 0`.
-  
-  if (data.monto_avance !== undefined) {
-      // Get current accumulated
-      const { data: beca } = await supabase.from('becas_nueva').select('avance').eq('id', becaId).single();
-      const currentAvance = Number(beca?.avance || 0);
-      updatePayload.avance = currentAvance + Number(data.monto_avance);
-  }
+  await recalculateBecaAvance(becaId, supabase);
 
-  const { error: updateError } = await supabase
-    .from('becas_nueva')
-    .update(updatePayload)
-    .eq('id', becaId);
+  revalidatePath('/dashboard/gestion-servicios');
+  return data;
+}
+
+export async function updateAvanceServicio(id: any, avanceData: any) {
+  const supabase = getSupabase();
+  
+  const { data, error: updateError } = await supabase
+    .from('avance_beca')
+    .update(avanceData)
+    .eq('id', id)
+    .select()
+    .single();
 
   if (updateError) {
-    console.error("Error updating becas_nueva after avance:", updateError);
+    console.error("Error updating avance:", updateError);
+    throw new Error(updateError.message);
+  }
+
+  if (data?.beca_id) {
+    await recalculateBecaAvance(data.beca_id, supabase);
   }
 
   revalidatePath('/dashboard/gestion-servicios');
   return data;
+}
+
+export async function deleteAvanceServicio(id: any, becaId: any) {
+  const supabase = getSupabase();
+  
+  const { error: deleteError } = await supabase
+    .from('avance_beca')
+    .delete()
+    .eq('id', id);
+
+  if (deleteError) {
+    console.error("Error deleting avance:", deleteError);
+    throw new Error(deleteError.message);
+  }
+
+  await recalculateBecaAvance(becaId, supabase);
+
+  revalidatePath('/dashboard/gestion-servicios');
+  return { success: true };
 }
 
 export async function getCondiciones() {

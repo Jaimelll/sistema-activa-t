@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Save, Plus, History } from "lucide-react";
-import { addAvanceServicio } from "@/app/dashboard/gestion-servicios/actions";
+import { X, Save, Plus, History, Edit2, Trash2 } from "lucide-react";
+import { 
+    addAvanceServicio, 
+    updateAvanceServicio, 
+    deleteAvanceServicio 
+} from "@/app/dashboard/gestion-servicios/actions";
 
 interface ServicioModalProps {
     isOpen: boolean;
@@ -32,11 +36,13 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         condicion_id: "",
         presupuesto: 0,
         avance: 0,
+        contrapartida: 0,
         beneficiarios: 0
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAvances, setShowAvances] = useState(false);
+    const [editingAvance, setEditingAvance] = useState<any>(null);
     const [newAvance, setNewAvance] = useState({
         etapa_id: "",
         fecha: new Date().toISOString().split('T')[0],
@@ -58,9 +64,11 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 condicion_id: servicio.condicion_id || "",
                 presupuesto: servicio.presupuesto || 0,
                 avance: servicio.avance || 0,
+                contrapartida: servicio.contrapartida || 0,
                 beneficiarios: servicio.beneficiarios || 0
             });
             setShowAvances(false);
+            setEditingAvance(null);
         } else {
             setFormData({
                 nombre: "",
@@ -74,8 +82,10 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 condicion_id: "",
                 presupuesto: 0,
                 avance: 0,
+                contrapartida: 0,
                 beneficiarios: 0
             });
+            setEditingAvance(null);
         }
     }, [servicio, isOpen]);
 
@@ -128,15 +138,47 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 monto_avance: 0,
                 descripcion: ""
             });
-            // Update local state to reflect change
-            setFormData((prev: any) => ({
-                ...prev,
-                etapa_id: Number(newAvance.etapa_id),
-                avance: prev.avance + Number(newAvance.monto_avance)
-            }));
+            // Recalculated on server, but we can update local UI if needed or let revalidation handle it
+            onClose(); // Close and let parent revalidate
         } catch (error) {
             console.error("Error adding avance:", error);
             alert("Error al registrar avance");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateAvance = async () => {
+        if (!editingAvance) return;
+        try {
+            setIsSubmitting(true);
+            await updateAvanceServicio(editingAvance.id, {
+                etapa_id: Number(editingAvance.etapa_id),
+                fecha: editingAvance.fecha,
+                monto_avance: Number(editingAvance.monto_avance),
+                descripcion: editingAvance.descripcion
+            });
+            alert("Avance actualizado correctamente");
+            setEditingAvance(null);
+            onClose(); // Close and let parent revalidate
+        } catch (error) {
+            console.error("Error updating avance:", error);
+            alert("Error al actualizar avance");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteAvance = async (avanceId: any) => {
+        if (!window.confirm("¿Está seguro de eliminar este avance? El avance total se recalculará.")) return;
+        try {
+            setIsSubmitting(true);
+            await deleteAvanceServicio(avanceId, servicio.id);
+            alert("Avance eliminado correctamente");
+            onClose(); // Close and let parent revalidate
+        } catch (error) {
+            console.error("Error deleting avance:", error);
+            alert("Error al eliminar avance");
         } finally {
             setIsSubmitting(false);
         }
@@ -306,7 +348,19 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         type="number"
                                         name="presupuesto"
+                                        step="0.01"
                                         value={formData.presupuesto}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contrapartida (S/)</label>
+                                    <input
+                                        type="number"
+                                        name="contrapartida"
+                                        step="0.01"
+                                        value={formData.contrapartida}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                     />
@@ -317,6 +371,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         type="number"
                                         name="avance"
+                                        step="0.01"
                                         value={formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
@@ -372,6 +427,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                             <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/)</label>
                                             <input
                                                 type="number"
+                                                step="0.01"
                                                 value={newAvance.monto_avance}
                                                 onChange={(e) => setNewAvance({...newAvance, monto_avance: Number(e.target.value)})}
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
@@ -404,18 +460,36 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
 
                             {/* Existing History List */}
                             <div className="space-y-3">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial Reciente</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances</label>
                                 <div className="space-y-2">
                                     {servicio.avances && servicio.avances.length > 0 ? (
                                         [...servicio.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                                                <div className="flex flex-col">
+                                            <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
+                                                <div className="flex flex-col flex-1">
                                                     <span className="text-[10px] font-black text-blue-600">{new Date(av.fecha).toLocaleDateString('es-PE')}</span>
                                                     <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-xs font-bold text-emerald-700">S/ {Number(av.monto_avance || 0).toLocaleString('es-PE')}</span>
                                                     <p className="text-[9px] text-gray-400 italic mt-0.5">{av.descripcion || '-'}</p>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <span className="text-xs font-bold text-emerald-700 block">S/ {Number(av.monto_avance || 0).toLocaleString('es-PE')}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
+                                                       <button 
+                                                           onClick={(e) => { e.preventDefault(); setEditingAvance(av); }}
+                                                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                           title="Editar Avance"
+                                                       >
+                                                           <Edit2 className="w-3.5 h-3.5" />
+                                                       </button>
+                                                       <button 
+                                                           onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
+                                                           className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                           title="Eliminar Avance"
+                                                       >
+                                                           <Trash2 className="w-3.5 h-3.5" />
+                                                       </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -427,6 +501,69 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                         </div>
                     )}
                 </div>
+
+                {/* Sub-modal Overlay for Editing Advance */}
+                {editingAvance && (
+                   <div className="absolute inset-0 z-[110] bg-black/60 flex items-center justify-center p-4">
+                       <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                           <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                               <h4 className="text-sm font-black text-gray-900 uppercase italic">Editar Avance</h4>
+                               <button onClick={() => setEditingAvance(null)} className="p-1 hover:bg-gray-200 rounded-full"><X className="w-4 h-4 text-gray-500" /></button>
+                           </div>
+                           <div className="p-5 space-y-4">
+                               <div className="space-y-1">
+                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Etapa</label>
+                                   <select
+                                       value={editingAvance.etapa_id}
+                                       onChange={(e) => setEditingAvance({...editingAvance, etapa_id: e.target.value})}
+                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                   >
+                                       <option value="">Seleccione Etapa</option>
+                                       {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                   </select>
+                               </div>
+                               <div className="space-y-1">
+                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                   <input
+                                       type="date"
+                                       value={editingAvance.fecha}
+                                       onChange={(e) => setEditingAvance({...editingAvance, fecha: e.target.value})}
+                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                   />
+                               </div>
+                               <div className="space-y-1">
+                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/)</label>
+                                   <input
+                                       type="number"
+                                       step="0.01"
+                                       value={editingAvance.monto_avance}
+                                       onChange={(e) => setEditingAvance({...editingAvance, monto_avance: e.target.value})}
+                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                   />
+                               </div>
+                               <div className="space-y-1">
+                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
+                                   <textarea
+                                       value={editingAvance.descripcion || ""}
+                                       onChange={(e) => setEditingAvance({...editingAvance, descripcion: e.target.value})}
+                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
+                                       placeholder="Ej: Informe mensual aprobado"
+                                   />
+                               </div>
+                           </div>
+                           <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+                               <button onClick={() => setEditingAvance(null)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-xl">Cancelar</button>
+                               <button
+                                   onClick={handleUpdateAvance}
+                                   disabled={isSubmitting}
+                                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold"
+                               >
+                                   {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                               </button>
+                           </div>
+                       </div>
+                   </div>
+                )}
 
                 {/* Footer and Save Button (Only shown in Datos Generales or if new) */}
                 {!showAvances && (

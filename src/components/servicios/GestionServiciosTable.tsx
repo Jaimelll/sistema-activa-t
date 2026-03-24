@@ -89,6 +89,7 @@ export default function GestionServiciosTable({
       'Etapa': item.etapa?.descripcion || '',
       'Condición': item.condicion?.descripcion || '',
       'Presupuesto': Number(item.presupuesto) || 0,
+      'Contrapartida': Number(item.contrapartida) || 0,
       'Avance': Number(item.avance) || 0,
       '% Avance': item.presupuesto > 0 ? (item.avance / item.presupuesto) * 100 : 0,
       'Beneficiarios': Number(item.beneficiarios) || 0
@@ -244,6 +245,7 @@ export default function GestionServiciosTable({
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Documento</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Eje / Línea</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-right">Presupuesto</th>
+                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-right">Contrapartida</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-center">Avance (%)</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-center">Acciones</th>
               </tr>
@@ -280,6 +282,9 @@ export default function GestionServiciosTable({
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-right text-slate-700 tabular-nums">
                         S/ {Number(row.presupuesto || 0).toLocaleString('es-PE')}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-right text-emerald-700 tabular-nums">
+                        S/ {Number(row.contrapartida || 0).toLocaleString('es-PE')}
                     </td>
                     <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
