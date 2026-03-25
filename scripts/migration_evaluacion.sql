@@ -20,12 +20,16 @@ ALTER TABLE public.proyectos_servicios
 -- 3. Tabla de Resultados de Evaluación
 CREATE TABLE IF NOT EXISTS public.evaluaciones_resultados (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  proyecto_id INTEGER NOT NULL REFERENCES public.proyectos_servicios(id),
+  proyecto_id INTEGER NOT NULL REFERENCES public.proyectos(id),
   puntaje_total NUMERIC,
   mapeo_formato JSONB DEFAULT '{}',
   url_pdf_final TEXT,
   estado TEXT DEFAULT 'Pendiente'
     CHECK (estado IN ('Pendiente','Procesando','Completado')),
+  url_subsanacion TEXT,
+  url_resultado_subsanacion TEXT,
+  estado_subsanacion TEXT DEFAULT 'Pendiente'
+    CHECK (estado_subsanacion IN ('Pendiente','Procesando','Completado')),
   fecha_evaluacion TIMESTAMPTZ DEFAULT now()
 );
 
