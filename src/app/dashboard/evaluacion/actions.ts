@@ -546,12 +546,12 @@ export async function uploadSubsanacion(proyectoId: number, formData: FormData) 
 
     const fileName = `subsanacion_${proyectoId}_${Date.now()}.pdf`;
     const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("documentos_subsanacion")
+        .from("proyectos_postulantes")
         .upload(fileName, file, { contentType: "application/pdf", upsert: true });
 
     if (uploadError) return { success: false, error: `Error al subir: ${uploadError.message}` };
 
-    const { data: urlData } = supabase.storage.from("documentos_subsanacion").getPublicUrl(uploadData.path);
+    const { data: urlData } = supabase.storage.from("proyectos_postulantes").getPublicUrl(uploadData.path);
     const publicUrl = urlData.publicUrl;
 
     // Save URL in the latest evaluation record (or create one)
