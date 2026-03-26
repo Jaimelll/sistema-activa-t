@@ -12,6 +12,9 @@ import {
     getEvaluacionConfigs,
     vincularEvaluacionConfig,
     uploadArchivoProyecto,
+    uploadSubsanacion,
+    triggerSubsanacion,
+    uploadResultadoEvaluacion,
     type EvalFilters,
 } from './actions';
 import ResultadosEvaluacion from '@/components/dashboard/evaluacion/ResultadosEvaluacion';
@@ -32,6 +35,9 @@ export default function EvaluacionPage() {
     const [configsOpts, setConfigsOpts] = useState<any[]>([]);
     const [linkingId, setLinkingId] = useState<number | null>(null);
     const [uploadingId, setUploadingId] = useState<number | null>(null);
+    const [uploadingSubId, setUploadingSubId] = useState<number | null>(null);
+    const [triggeringSubId, setTriggeringSubId] = useState<number | null>(null);
+    const [uploadingResId, setUploadingResId] = useState<number | null>(null);
 
     // Active filters
     const [filters, setFilters] = useState<EvalFilters>({
@@ -172,6 +178,88 @@ export default function EvaluacionPage() {
             setMessageType('error');
         }
         setUploadingId(null);
+    };
+
+    // ── Subsanación handlers (independent from standard eval flow) ────
+    const handleUploadSubsanacion = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') {
+            setMessage('Solo se permiten archivos PDF.');
+            setMessageType('error');
+            return;
+        }
+        setUploadingSubId(proyectoId);
+        setMessage('');
+        const fd = new FormData();
+        fd.append('archivo', file);
+        try {
+            const result = await uploadSubsanacion(proyectoId, fd);
+            if (result.success) {
+                setProyectos(prev => prev.map(p =>
+                    p.id === proyectoId ? { ...p, url_subsanacion: result.url } : p
+                ));
+                setMessage('Documento de subsanación cargado.');
+                setMessageType('success');
+            } else {
+                setMessage(result.error || 'Error al subir subsanación.');
+                setMessageType('error');
+            }
+        } catch {
+            setMessage('Error al subir subsanación.');
+            setMessageType('error');
+        }
+        setUploadingSubId(null);
+    };
+
+    const handleEvaluarSubsanacion = async (proyecto: any) => {
+        if (!proyecto.url_subsanacion) return;
+        setTriggeringSubId(proyecto.id);
+        setMessage('');
+        try {
+            const result = await triggerSubsanacion(
+                proyecto.id,
+                proyecto.eval_pdf_url || null,
+                proyecto.url_subsanacion
+            );
+            if (result.success) {
+                setMessage('Evaluación de subsanación enviada a IA.');
+                setMessageType('success');
+            } else {
+                setMessage(result.error || 'Error al enviar subsanación.');
+                setMessageType('error');
+            }
+        } catch {
+            setMessage('Error al contactar el servicio de IA.');
+            setMessageType('error');
+        }
+        setTriggeringSubId(null);
+    };
+
+    const handleUploadResultado = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') {
+            setMessage('Solo se permiten archivos PDF.');
+            setMessageType('error');
+            return;
+        }
+        setUploadingResId(proyectoId);
+        setMessage('');
+        const fd = new FormData();
+        fd.append('archivo', file);
+        try {
+            const result = await uploadResultadoEvaluacion(proyectoId, fd);
+            if (result.success) {
+                // Fetch data para reflejar el estado Completado y refrescar BD
+                setMessage('Resultado de evaluación cargado y estado actualizado a Completado.');
+                setMessageType('success');
+                fetchData();
+            } else {
+                setMessage(result.error || 'Error al subir resultado.');
+                setMessageType('error');
+            }
+        } catch {
+            setMessage('Error al subir resultado.');
+            setMessageType('error');
+        }
+        setUploadingResId(null);
     };
 
     // Badge helpers
@@ -340,13 +428,14 @@ export default function EvaluacionPage() {
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
                                     <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '40px' }}>ID</th>
                                     <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '80px' }}>Código</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '180px' }}>Proyecto</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '180px' }}>Institución</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '220px' }}>Proyecto</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '160px' }}>Institución</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '60px' }}>Archivo</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '120px' }}>Vincular Eval.</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600">Estado</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600" style={{ width: '40px' }}>Pts.</th>
                                     <th className="text-center py-1.5 px-1 font-semibold text-gray-600">Acciones</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-amber-700 bg-amber-50/60" style={{ width: '160px' }}>Subsanación</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -354,8 +443,12 @@ export default function EvaluacionPage() {
                                     <tr key={p.id} className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f8f9fa]'}`}>
                                         <td className="py-1 px-2 text-gray-500 font-mono">{p.id}</td>
                                         <td className="py-1 px-2 text-gray-800 font-semibold">{p.codigo}</td>
-                                        <td className="py-1 px-2 text-gray-800 truncate overflow-hidden" title={p.nombre}>{p.nombre}</td>
-                                        <td className="py-1 px-2 text-gray-600 truncate overflow-hidden" title={p.institucion}>{p.institucion}</td>
+                                        <td className="py-1 px-2" title={p.nombre}>
+                                            <div className="whitespace-normal line-clamp-2 text-gray-800">{p.nombre}</div>
+                                        </td>
+                                        <td className="py-1 px-2" title={p.institucion}>
+                                            <div className="whitespace-normal line-clamp-2 text-gray-600 text-[11px]">{p.institucion}</div>
+                                        </td>
                                         <td className="py-1 px-1 text-center">
                                             {uploadingId === p.id ? (
                                                 <span className="inline-flex items-center text-xs text-indigo-600">
@@ -417,7 +510,7 @@ export default function EvaluacionPage() {
                                         </td>
                                         <td className="py-1 px-1 text-center">{getEvalBadge(p.eval_estado)}</td>
                                         <td className="py-1 px-1 text-center font-semibold text-gray-800">
-                                            {p.eval_puntaje != null ? p.eval_puntaje : '-'}
+                                            {p.evaluaciones_resultados?.[0]?.puntaje_total ?? '-'}
                                         </td>
                                         <td className="py-1 px-1 text-center">
                                             <div className="flex items-center justify-center space-x-1.5">
@@ -442,22 +535,127 @@ export default function EvaluacionPage() {
                                                 )}
                                                 {p.eval_estado === 'Completado' && (
                                                     p.eval_pdf_url ? (
+                                                        <div className="flex flex-col items-center space-y-1 ml-1">
+                                                            <a
+                                                                href={p.eval_pdf_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors uppercase"
+                                                            >
+                                                                <Eye className="w-3 h-3 mr-1" />
+                                                                VER
+                                                            </a>
+                                                            <label className="text-[9px] text-blue-500 hover:underline cursor-pointer">
+                                                                {uploadingResId === p.id ? 'Subiendo...' : 'Cambiar'}
+                                                                <input
+                                                                    type="file"
+                                                                    accept=".pdf"
+                                                                    className="hidden"
+                                                                    onChange={e => {
+                                                                        const f = e.target.files?.[0];
+                                                                        if (f) handleUploadResultado(p.id, f);
+                                                                        e.target.value = '';
+                                                                    }}
+                                                                    disabled={uploadingResId === p.id}
+                                                                />
+                                                            </label>
+                                                        </div>
+                                                    ) : (
+                                                        <label className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700 cursor-pointer hover:bg-green-200 transition-colors">
+                                                            <Upload className="w-3.5 h-3.5 mr-1" />
+                                                            {uploadingResId === p.id ? '...' : 'Subir Res.'}
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf"
+                                                                className="hidden"
+                                                                onChange={e => {
+                                                                    const f = e.target.files?.[0];
+                                                                    if (f) handleUploadResultado(p.id, f);
+                                                                    e.target.value = '';
+                                                                }}
+                                                                disabled={uploadingResId === p.id}
+                                                            />
+                                                        </label>
+                                                    )
+                                                )}
+                                            </div>
+                                        </td>
+
+                                        {/* ── SUBSANACIÓN (nueva columna) ── */}
+                                        <td className="py-1 px-1 bg-amber-50/20">
+                                            <div className="flex flex-col gap-1.5">
+                                                {/* Diseño Dual Subsanación / Subir */}
+                                                {p.url_subsanacion ? (
+                                                    <div className="flex flex-col items-center gap-1">
                                                         <a
-                                                            href={p.eval_pdf_url}
+                                                            href={p.url_subsanacion}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                                            className="w-full inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                                                         >
-                                                            <Eye className="w-3.5 h-3.5 mr-1" />
-                                                            Resultados
-                                                            <ExternalLink className="w-3 h-3 ml-1" />
+                                                            <Eye className="w-3 h-3 mr-1" />
+                                                            VER
                                                         </a>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700">
-                                                            <Eye className="w-3.5 h-3.5 mr-1" />
-                                                            Sin PDF
-                                                        </span>
-                                                    )
+                                                        <label className="text-[9px] text-blue-600 font-bold hover:underline cursor-pointer uppercase">
+                                                            {uploadingSubId === p.id ? 'Subiendo...' : 'Cambiar'}
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf"
+                                                                className="hidden"
+                                                                onChange={e => {
+                                                                    const f = e.target.files?.[0];
+                                                                    if (f) handleUploadSubsanacion(p.id, f);
+                                                                    e.target.value = '';
+                                                                }}
+                                                                disabled={uploadingSubId === p.id}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                ) : (
+                                                    <label className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 cursor-pointer transition-colors">
+                                                        {uploadingSubId === p.id
+                                                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                            : <Upload className="w-3 h-3" />
+                                                        }
+                                                        Subir Sub.
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf"
+                                                            className="hidden"
+                                                            onChange={e => {
+                                                                const f = e.target.files?.[0];
+                                                                if (f) handleUploadSubsanacion(p.id, f);
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
+
+                                                {/* EVALUAR SUB. - always enabled if file exists, except when processing this specific action */}
+                                                <button
+                                                    onClick={() => handleEvaluarSubsanacion(p)}
+                                                    disabled={!p.url_subsanacion || triggeringSubId === p.id}
+                                                    className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                    title={!p.url_subsanacion ? 'Primero suba el documento de subsanación' : 'Enviar subsanación a IA'}
+                                                >
+                                                    {triggeringSubId === p.id
+                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                        : <Play className="w-3 h-3" />
+                                                    }
+                                                    Evaluar Sub.
+                                                </button>
+
+                                                {/* VER RESULT. SUB. - only visible if result exists */}
+                                                {p.url_resultado_subsanacion && (
+                                                    <a
+                                                        href={p.url_resultado_subsanacion}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                                    >
+                                                        <Eye className="w-3 h-3" />
+                                                        Ver Res. Sub.
+                                                    </a>
                                                 )}
                                             </div>
                                         </td>
@@ -465,7 +663,7 @@ export default function EvaluacionPage() {
                                 ))}
                                 {proyectos.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="py-12 text-center text-gray-400">
+                                        <td colSpan={10} className="py-12 text-center text-gray-400">
                                             No se encontraron proyectos con los filtros seleccionados.
                                         </td>
                                     </tr>
