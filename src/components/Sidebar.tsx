@@ -31,10 +31,10 @@ export function Sidebar() {
     }, [supabase.auth]);
 
     const allMenuItems = [
+        { name: 'Inf. Gerencial', icon: LayoutDashboard, href: '/dashboard/inf-gerencial' },
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Servicios', icon: FolderOpen, href: '/dashboard/servicios' },
-        { name: 'Inf. Gerencial', icon: LayoutDashboard, href: '/dashboard/inf-gerencial' },
-        { name: 'Documentos', icon: FolderOpen, href: '/dashboard/corporativo/documentos' },
+        { name: 'Documentos', icon: FolderOpen, href: '/dashboard/documentos' },
         { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
         { name: 'Gestión de Servicios', icon: BookOpen, href: '/dashboard/gestion-servicios' },

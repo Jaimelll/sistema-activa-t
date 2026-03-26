@@ -75,7 +75,7 @@ export default function InfGerencialView({
     const historicalSaldos = useMemo(() => {
         return finanzasData
             .filter(d => d.rubro === 'Saldos en Bancos')
-            .sort((a, b) => b.año - a.año);
+            .sort((a, b) => a.año - b.año);
     }, [finanzasData]);
 
     const formatCurrency = (value: number) => {
@@ -196,17 +196,17 @@ export default function InfGerencialView({
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-[11px] font-black uppercase tracking-[0.2em] mb-3">Total Aportado ({yearRange})</span>
-                    <span className="text-3xl lg:text-4xl font-black tracking-tighter">{fmt(totalLast5)}</span>
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
+                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
                 </div>
-                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-teal-400/20">
-                    <span className="text-teal-100 text-[11px] font-black uppercase tracking-[0.2em] mb-3">Principal Aportante</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tight uppercase">{topCompanyName}</span>
+                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
+                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante</span>
+                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
                 </div>
-                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-8 rounded-[2rem] shadow-md flex flex-col justify-center text-white border border-violet-400/20">
-                    <span className="text-violet-100 text-[11px] font-black uppercase tracking-[0.2em] mb-3">Empresas Activas</span>
-                    <span className="text-3xl lg:text-4xl font-black tracking-tighter">{totalEmpresas}</span>
+                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
+                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
                 </div>
             </div>
 
@@ -324,7 +324,7 @@ export default function InfGerencialView({
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector</h3>
-                        <p className="text-slate-400 font-medium">Porcentaje por sección CIIU</p>
+                        <p className="text-slate-400 font-medium">Años 2021 - 2025</p>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -360,82 +360,69 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* NEW: Financial Evolution and Bank Balances Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            {/* NEW: Financial Evolution (Full Width) */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                <div className="mb-10 text-center md:text-left">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera</h3>
+                    <p className="text-slate-400 font-medium">Comparativa de rubros principales • 2021 - 2026</p>
+                </div>
+                <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={groupedFinanzas} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis
+                                dataKey="year"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }}
+                                dy={15}
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                tickFormatter={formatCompactCurrency}
+                            />
+                            <Tooltip
+                                formatter={(value: number) => formatCurrency(value)}
+                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
+                            />
+                            <Legend
+                                verticalAlign="top"
+                                align="center"
+                                iconType="circle"
+                                iconSize={12}
+                                wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '14px', fontWeight: 700, color: '#475569' }}
+                            />
+                            {activeRubros.map((rubro) => (
+                                <Bar
+                                    key={rubro}
+                                    dataKey={rubro}
+                                    fill={COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS]}
+                                    radius={[4, 4, 0, 0]}
+                                    barSize={20}
+                                />
+                            ))}
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
 
-                {/* 1. Grouped Bar Chart (Finance) */}
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 h-full">
-                    <div className="mb-10 text-center md:text-left">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera</h3>
-                        <p className="text-slate-400 font-medium">Comparativa de rubros principales • 2021 - 2026</p>
-                    </div>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={groupedFinanzas} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis
-                                    dataKey="year"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }}
-                                    dy={15}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                    tickFormatter={formatCompactCurrency}
-                                />
-                                <Tooltip
-                                    formatter={(value: number) => formatCurrency(value)}
-                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
-                                />
-                                <Legend
-                                    verticalAlign="top"
-                                    align="center"
-                                    iconType="circle"
-                                    wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '11px', fontWeight: 700 }}
-                                />
-                                {activeRubros.map((rubro) => (
-                                    <Bar
-                                        key={rubro}
-                                        dataKey={rubro}
-                                        fill={COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS]}
-                                        radius={[4, 4, 0, 0]}
-                                        barSize={12}
-                                    />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
+            {/* NEW: Bank Balances (Horizontal Table) */}
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
+                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Saldos Bancarios</h3>
+                        <p className="text-sm text-slate-400 font-medium">Liquidez anual histórica</p>
                     </div>
                 </div>
-
-                {/* 2. Bank Balances Table */}
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 h-full">
-                    <div className="mb-8">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Saldos Bancarios</h3>
-                        <p className="text-slate-400 font-medium line-clamp-1">Liquidez anual histórica</p>
-                    </div>
-                    <div className="overflow-hidden rounded-2xl border border-slate-50">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                                <tr>
-                                    <th className="px-4 py-4">Año</th>
-                                    <th className="px-4 py-4 text-right">Monto (S/)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {historicalSaldos.map((item) => (
-                                    <tr key={item.año} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-4 py-4 font-black text-slate-700">{item.año}</td>
-                                        <td className="px-4 py-4 text-right font-bold text-slate-900 text-sm">
-                                            {formatCurrencyWithCents(item.monto)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="flex flex-nowrap gap-4 min-w-max pb-2">
+                    {historicalSaldos.map((item) => (
+                        <div key={item.año} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{item.año}</span>
+                            <span className="text-lg font-bold text-slate-800 tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
 
