@@ -335,7 +335,7 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
     // Get latest evaluation result per project
     const { data: resultados, error: resError } = await supabase
         .from("evaluaciones_resultados")
-        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id")
+        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id, url_subsanacion, url_resultado_subsanacion")
         .order("fecha_evaluacion", { ascending: false });
 
     if (resError) {
@@ -352,21 +352,27 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
         }
     }
 
-    let mapped = (proyectos || []).map((p: any) => ({
-        id: p.id,
-        nombre: p.nombre || "Sin nombre",
-        codigo: p.codigo_proyecto || "-",
-        institucion: p.instituciones_ejecutoras?.nombre || "-",
-        etapa: p.etapas?.descripcion || "-",
-        eje: p.ejes?.descripcion || "-",
-        linea: p.lineas?.descripcion || "-",
-        evaluacion_config_id: p.evaluacion_config_id,
-        url_archivo_proyecto: p.url_archivo_proyecto || null,
-        eval_estado: resultadoMap.get(p.id)?.estado || null,
-        eval_puntaje: resultadoMap.get(p.id)?.puntaje_total || null,
-        eval_pdf_url: resultadoMap.get(p.id)?.url_pdf_final || null,
-        eval_id: resultadoMap.get(p.id)?.id || null,
-    }));
+    let mapped = (proyectos || []).map((p: any) => {
+        const latestRes = resultadoMap.get(p.id);
+        return {
+            id: p.id,
+            nombre: p.nombre || "Sin nombre",
+            codigo: p.codigo_proyecto || "-",
+            institucion: p.instituciones_ejecutoras?.nombre || "-",
+            etapa: p.etapas?.descripcion || "-",
+            eje: p.ejes?.descripcion || "-",
+            linea: p.lineas?.descripcion || "-",
+            evaluacion_config_id: p.evaluacion_config_id,
+            url_archivo_proyecto: p.url_archivo_proyecto || null,
+            eval_estado: latestRes?.estado || null,
+            eval_puntaje: latestRes?.puntaje_total || null,
+            eval_pdf_url: latestRes?.url_pdf_final || null,
+            eval_id: latestRes?.id || null,
+            url_subsanacion: latestRes?.url_subsanacion || null,
+            url_resultado_subsanacion: latestRes?.url_resultado_subsanacion || null,
+            evaluaciones_resultados: latestRes ? [latestRes] : []
+        };
+    });
 
     // Filter by eval_estado client-side (since it comes from a separate table)
     if (filters?.eval_estado && filters.eval_estado !== 'all') {
@@ -450,6 +456,53 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
     return { success: true, url: publicUrl };
 }
 
+// ──────────────────────── UPLOAD RESULTADO EVALUACION ────────────────────────
+export async function uploadResultadoEvaluacion(proyectoId: number, formData: FormData) {
+    try {
+        const supabase = getSupabase();
+        const file = formData.get("archivo") as File | null;
+
+        if (!file || file.size === 0) return { success: false, error: "No se seleccionó archivo." };
+        if (file.type !== "application/pdf") return { success: false, error: "Solo se permiten archivos PDF." };
+        if (file.size > 20 * 1024 * 1024) return { success: false, error: "El archivo excede 20 MB." };
+
+        const fileName = `evaluacion_${proyectoId}_${Date.now()}.pdf`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("documentos_evaluacion")
+            .upload(fileName, file, { contentType: "application/pdf", upsert: true });
+
+        if (uploadError) return { success: false, error: `Error al subir: ${uploadError.message}` };
+
+        const { data: urlData } = supabase.storage.from("documentos_evaluacion").getPublicUrl(uploadData.path);
+        const publicUrl = urlData.publicUrl;
+
+        // Save URL in the latest evaluation record (or create one)
+        const { data: existing } = await supabase
+            .from("evaluaciones_resultados")
+            .select("id")
+            .eq("proyecto_id", proyectoId)
+            .order("fecha_evaluacion", { ascending: false })
+            .limit(1)
+            .single();
+
+        if (existing) {
+            await supabase.from("evaluaciones_resultados")
+                .update({ url_pdf_final: publicUrl, estado: "Completado" })
+                .eq("id", existing.id);
+        } else {
+            await supabase.from("evaluaciones_resultados").insert({
+                proyecto_id: proyectoId,
+                url_pdf_final: publicUrl,
+                estado: "Completado",
+            });
+        }
+
+        return { success: true, url: publicUrl };
+    } catch (error: any) {
+        console.error("Unhandled error in uploadResultadoEvaluacion:", error);
+        return { success: false, error: error.message || "Error interno al procesar el archivo." };
+    }
+}
 // ──────────────────────── TRIGGER EVALUACIÓN ────────────────────────
 
 export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?: string | null) {
@@ -534,7 +587,84 @@ export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?:
     return { success: true };
 }
 
-// ──────────────────────── RESULTADO DETALLE ────────────────────────
+// ──────────────────────── UPLOAD SUBSANACIÓN ────────────────────────
+
+export async function uploadSubsanacion(proyectoId: number, formData: FormData) {
+    const supabase = getSupabase();
+    const file = formData.get("archivo") as File | null;
+
+    if (!file || file.size === 0) return { success: false, error: "No se seleccionó archivo." };
+    if (file.type !== "application/pdf") return { success: false, error: "Solo se permiten archivos PDF." };
+    if (file.size > 15 * 1024 * 1024) return { success: false, error: "El archivo excede 15 MB." };
+
+    const fileName = `subsanacion_${proyectoId}_${Date.now()}.pdf`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("proyectos_postulantes")
+        .upload(fileName, file, { contentType: "application/pdf", upsert: true });
+
+    if (uploadError) return { success: false, error: `Error al subir: ${uploadError.message}` };
+
+    const { data: urlData } = supabase.storage.from("proyectos_postulantes").getPublicUrl(uploadData.path);
+    const publicUrl = urlData.publicUrl;
+
+    // Save URL in the latest evaluation record (or create one)
+    const { data: existing } = await supabase
+        .from("evaluaciones_resultados")
+        .select("id")
+        .eq("proyecto_id", proyectoId)
+        .order("fecha_evaluacion", { ascending: false })
+        .limit(1)
+        .single();
+
+    if (existing) {
+        await supabase.from("evaluaciones_resultados")
+            .update({ url_subsanacion: publicUrl })
+            .eq("id", existing.id);
+    } else {
+        await supabase.from("evaluaciones_resultados").insert({
+            proyecto_id: proyectoId,
+            url_subsanacion: publicUrl,
+            estado: "Pendiente",
+        });
+    }
+
+    revalidatePath("/dashboard/evaluacion");
+    return { success: true, url: publicUrl };
+}
+
+// ──────────────────────── TRIGGER SUBSANACIÓN ────────────────────────
+
+export async function triggerSubsanacion(proyectoId: number, urlEvaluacionOriginal: string | null, urlDocumentoSubsanacion: string) {
+    const supabase = getSupabase();
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+
+    if (!webhookUrl) return { success: false, error: "N8N_WEBHOOK_URL no configurada." };
+
+    const payload = {
+        proyecto_id: proyectoId,
+        tipo: "subsanacion",
+        url_evaluacion_original: urlEvaluacionOriginal,
+        url_documento_subsanacion: urlDocumentoSubsanacion,
+    };
+
+    console.log("[Subsanacion] Sending payload to n8n:", payload);
+
+    try {
+        const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
+            body: JSON.stringify(payload),
+        });
+        const resText = await res.text();
+        console.log(`[Subsanacion] n8n response ${res.status}:`, resText);
+        return { success: true };
+    } catch (err: any) {
+        console.error("[Subsanacion] Error calling n8n:", err);
+        return { success: false, error: "Error al contactar el servicio de IA." };
+    }
+}
+
+
 
 export async function getResultadoEvaluacion(proyectoId: number) {
     const supabase = getSupabase();
