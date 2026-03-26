@@ -450,6 +450,53 @@ export async function uploadArchivoProyecto(proyectoId: number, formData: FormDa
     return { success: true, url: publicUrl };
 }
 
+// ──────────────────────── UPLOAD RESULTADO EVALUACION ────────────────────────
+export async function uploadResultadoEvaluacion(proyectoId: number, formData: FormData) {
+    try {
+        const supabase = getSupabase();
+        const file = formData.get("archivo") as File | null;
+
+        if (!file || file.size === 0) return { success: false, error: "No se seleccionó archivo." };
+        if (file.type !== "application/pdf") return { success: false, error: "Solo se permiten archivos PDF." };
+        if (file.size > 20 * 1024 * 1024) return { success: false, error: "El archivo excede 20 MB." };
+
+        const fileName = `evaluacion_${proyectoId}_${Date.now()}.pdf`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("documentos_evaluacion")
+            .upload(fileName, file, { contentType: "application/pdf", upsert: true });
+
+        if (uploadError) return { success: false, error: `Error al subir: ${uploadError.message}` };
+
+        const { data: urlData } = supabase.storage.from("documentos_evaluacion").getPublicUrl(uploadData.path);
+        const publicUrl = urlData.publicUrl;
+
+        // Save URL in the latest evaluation record (or create one)
+        const { data: existing } = await supabase
+            .from("evaluaciones_resultados")
+            .select("id")
+            .eq("proyecto_id", proyectoId)
+            .order("fecha_evaluacion", { ascending: false })
+            .limit(1)
+            .single();
+
+        if (existing) {
+            await supabase.from("evaluaciones_resultados")
+                .update({ url_pdf_final: publicUrl, estado: "Completado" })
+                .eq("id", existing.id);
+        } else {
+            await supabase.from("evaluaciones_resultados").insert({
+                proyecto_id: proyectoId,
+                url_pdf_final: publicUrl,
+                estado: "Completado",
+            });
+        }
+
+        return { success: true, url: publicUrl };
+    } catch (error: any) {
+        console.error("Unhandled error in uploadResultadoEvaluacion:", error);
+        return { success: false, error: error.message || "Error interno al procesar el archivo." };
+    }
+}
 // ──────────────────────── TRIGGER EVALUACIÓN ────────────────────────
 
 export async function triggerEvaluacion(proyectoId: number, urlArchivoProyecto?: string | null) {

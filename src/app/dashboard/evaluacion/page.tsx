@@ -14,6 +14,7 @@ import {
     uploadArchivoProyecto,
     uploadSubsanacion,
     triggerSubsanacion,
+    uploadResultadoEvaluacion,
     type EvalFilters,
 } from './actions';
 import ResultadosEvaluacion from '@/components/dashboard/evaluacion/ResultadosEvaluacion';
@@ -36,6 +37,7 @@ export default function EvaluacionPage() {
     const [uploadingId, setUploadingId] = useState<number | null>(null);
     const [uploadingSubId, setUploadingSubId] = useState<number | null>(null);
     const [triggeringSubId, setTriggeringSubId] = useState<number | null>(null);
+    const [uploadingResId, setUploadingResId] = useState<number | null>(null);
 
     // Active filters
     const [filters, setFilters] = useState<EvalFilters>({
@@ -230,6 +232,34 @@ export default function EvaluacionPage() {
             setMessageType('error');
         }
         setTriggeringSubId(null);
+    };
+
+    const handleUploadResultado = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') {
+            setMessage('Solo se permiten archivos PDF.');
+            setMessageType('error');
+            return;
+        }
+        setUploadingResId(proyectoId);
+        setMessage('');
+        const fd = new FormData();
+        fd.append('archivo', file);
+        try {
+            const result = await uploadResultadoEvaluacion(proyectoId, fd);
+            if (result.success) {
+                // Fetch data para reflejar el estado Completado y refrescar BD
+                setMessage('Resultado de evaluación cargado y estado actualizado a Completado.');
+                setMessageType('success');
+                fetchData();
+            } else {
+                setMessage(result.error || 'Error al subir resultado.');
+                setMessageType('error');
+            }
+        } catch {
+            setMessage('Error al subir resultado.');
+            setMessageType('error');
+        }
+        setUploadingResId(null);
     };
 
     // Badge helpers
@@ -505,21 +535,47 @@ export default function EvaluacionPage() {
                                                 )}
                                                 {p.eval_estado === 'Completado' && (
                                                     p.eval_pdf_url ? (
-                                                        <a
-                                                            href={p.eval_pdf_url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
-                                                        >
-                                                            <Eye className="w-3.5 h-3.5 mr-1" />
-                                                            Resultados
-                                                            <ExternalLink className="w-3 h-3 ml-1" />
-                                                        </a>
+                                                        <div className="flex flex-col items-center space-y-1 ml-1">
+                                                            <a
+                                                                href={p.eval_pdf_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors uppercase"
+                                                            >
+                                                                <Eye className="w-3 h-3 mr-1" />
+                                                                VER
+                                                            </a>
+                                                            <label className="text-[9px] text-blue-500 hover:underline cursor-pointer">
+                                                                {uploadingResId === p.id ? 'Subiendo...' : 'Cambiar'}
+                                                                <input
+                                                                    type="file"
+                                                                    accept=".pdf"
+                                                                    className="hidden"
+                                                                    onChange={e => {
+                                                                        const f = e.target.files?.[0];
+                                                                        if (f) handleUploadResultado(p.id, f);
+                                                                        e.target.value = '';
+                                                                    }}
+                                                                    disabled={uploadingResId === p.id}
+                                                                />
+                                                            </label>
+                                                        </div>
                                                     ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700">
-                                                            <Eye className="w-3.5 h-3.5 mr-1" />
-                                                            Sin PDF
-                                                        </span>
+                                                        <label className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700 cursor-pointer hover:bg-green-200 transition-colors">
+                                                            <Upload className="w-3.5 h-3.5 mr-1" />
+                                                            {uploadingResId === p.id ? '...' : 'Subir Res.'}
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf"
+                                                                className="hidden"
+                                                                onChange={e => {
+                                                                    const f = e.target.files?.[0];
+                                                                    if (f) handleUploadResultado(p.id, f);
+                                                                    e.target.value = '';
+                                                                }}
+                                                                disabled={uploadingResId === p.id}
+                                                            />
+                                                        </label>
                                                     )
                                                 )}
                                             </div>
