@@ -510,7 +510,7 @@ export default function EvaluacionPage() {
                                         </td>
                                         <td className="py-1 px-1 text-center">{getEvalBadge(p.eval_estado)}</td>
                                         <td className="py-1 px-1 text-center font-semibold text-gray-800">
-                                            {p.eval_puntaje != null ? p.eval_puntaje : '-'}
+                                            {p.evaluaciones_resultados?.[0]?.puntaje_total ?? '-'}
                                         </td>
                                         <td className="py-1 px-1 text-center">
                                             <div className="flex items-center justify-center space-x-1.5">
@@ -584,26 +584,54 @@ export default function EvaluacionPage() {
                                         {/* ── SUBSANACIÓN (nueva columna) ── */}
                                         <td className="py-1 px-1 bg-amber-50/20">
                                             <div className="flex flex-col gap-1.5">
-                                                {/* Upload / Cambiar */}
-                                                <label className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 cursor-pointer transition-colors">
-                                                    {uploadingSubId === p.id
-                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                                                        : <Upload className="w-3 h-3" />
-                                                    }
-                                                    {p.url_subsanacion ? 'Cambiar' : 'Subir Sub.'}
-                                                    <input
-                                                        type="file"
-                                                        accept=".pdf"
-                                                        className="hidden"
-                                                        onChange={e => {
-                                                            const f = e.target.files?.[0];
-                                                            if (f) handleUploadSubsanacion(p.id, f);
-                                                            e.target.value = '';
-                                                        }}
-                                                    />
-                                                </label>
+                                                {/* Diseño Dual Subsanación / Subir */}
+                                                {p.url_subsanacion ? (
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <a
+                                                            href={p.url_subsanacion}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="w-full inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                                                        >
+                                                            <Eye className="w-3 h-3 mr-1" />
+                                                            VER
+                                                        </a>
+                                                        <label className="text-[9px] text-blue-600 font-bold hover:underline cursor-pointer uppercase">
+                                                            {uploadingSubId === p.id ? 'Subiendo...' : 'Cambiar'}
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf"
+                                                                className="hidden"
+                                                                onChange={e => {
+                                                                    const f = e.target.files?.[0];
+                                                                    if (f) handleUploadSubsanacion(p.id, f);
+                                                                    e.target.value = '';
+                                                                }}
+                                                                disabled={uploadingSubId === p.id}
+                                                            />
+                                                        </label>
+                                                    </div>
+                                                ) : (
+                                                    <label className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[9px] font-bold uppercase rounded border border-amber-300 text-amber-700 bg-white hover:bg-amber-50 cursor-pointer transition-colors">
+                                                        {uploadingSubId === p.id
+                                                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                            : <Upload className="w-3 h-3" />
+                                                        }
+                                                        Subir Sub.
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf"
+                                                            className="hidden"
+                                                            onChange={e => {
+                                                                const f = e.target.files?.[0];
+                                                                if (f) handleUploadSubsanacion(p.id, f);
+                                                                e.target.value = '';
+                                                            }}
+                                                        />
+                                                    </label>
+                                                )}
 
-                                                {/* EVALUAR SUB. - only enabled if file uploaded */}
+                                                {/* EVALUAR SUB. - always enabled if file exists, except when processing this specific action */}
                                                 <button
                                                     onClick={() => handleEvaluarSubsanacion(p)}
                                                     disabled={!p.url_subsanacion || triggeringSubId === p.id}

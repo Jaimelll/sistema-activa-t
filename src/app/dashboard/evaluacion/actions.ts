@@ -335,7 +335,7 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
     // Get latest evaluation result per project
     const { data: resultados, error: resError } = await supabase
         .from("evaluaciones_resultados")
-        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id")
+        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id, url_subsanacion, url_resultado_subsanacion")
         .order("fecha_evaluacion", { ascending: false });
 
     if (resError) {
@@ -352,21 +352,27 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
         }
     }
 
-    let mapped = (proyectos || []).map((p: any) => ({
-        id: p.id,
-        nombre: p.nombre || "Sin nombre",
-        codigo: p.codigo_proyecto || "-",
-        institucion: p.instituciones_ejecutoras?.nombre || "-",
-        etapa: p.etapas?.descripcion || "-",
-        eje: p.ejes?.descripcion || "-",
-        linea: p.lineas?.descripcion || "-",
-        evaluacion_config_id: p.evaluacion_config_id,
-        url_archivo_proyecto: p.url_archivo_proyecto || null,
-        eval_estado: resultadoMap.get(p.id)?.estado || null,
-        eval_puntaje: resultadoMap.get(p.id)?.puntaje_total || null,
-        eval_pdf_url: resultadoMap.get(p.id)?.url_pdf_final || null,
-        eval_id: resultadoMap.get(p.id)?.id || null,
-    }));
+    let mapped = (proyectos || []).map((p: any) => {
+        const latestRes = resultadoMap.get(p.id);
+        return {
+            id: p.id,
+            nombre: p.nombre || "Sin nombre",
+            codigo: p.codigo_proyecto || "-",
+            institucion: p.instituciones_ejecutoras?.nombre || "-",
+            etapa: p.etapas?.descripcion || "-",
+            eje: p.ejes?.descripcion || "-",
+            linea: p.lineas?.descripcion || "-",
+            evaluacion_config_id: p.evaluacion_config_id,
+            url_archivo_proyecto: p.url_archivo_proyecto || null,
+            eval_estado: latestRes?.estado || null,
+            eval_puntaje: latestRes?.puntaje_total || null,
+            eval_pdf_url: latestRes?.url_pdf_final || null,
+            eval_id: latestRes?.id || null,
+            url_subsanacion: latestRes?.url_subsanacion || null,
+            url_resultado_subsanacion: latestRes?.url_resultado_subsanacion || null,
+            evaluaciones_resultados: latestRes ? [latestRes] : []
+        };
+    });
 
     // Filter by eval_estado client-side (since it comes from a separate table)
     if (filters?.eval_estado && filters.eval_estado !== 'all') {
