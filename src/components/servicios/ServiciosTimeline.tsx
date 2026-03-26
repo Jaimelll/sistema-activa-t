@@ -360,121 +360,123 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 </div>
             </div>
 
-            <div style={{ width: '100%', height: 500 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        key={forceRender}
-                        layout="vertical"
-                        data={chartData}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                        barSize={30}
-                        barCategoryGap="10%"
-                    >
-                        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
-                        <XAxis
-                            xAxisId="main"
-                            orientation="top"
-                            type="number"
-                            domain={[0, maxTimestamp - minTimestamp]}
-                            ticks={yearTicks}
-                            tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
-                            tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
-                            axisLine={{ stroke: '#cbd5e1' }}
-                            tickLine={{ stroke: '#cbd5e1' }}
-                        />
-                        <XAxis
-                            xAxisId="main"
-                            orientation="bottom"
-                            type="number"
-                            domain={[0, maxTimestamp - minTimestamp]}
-                            ticks={yearTicks}
-                            tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
-                            tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
-                            axisLine={{ stroke: '#cbd5e1' }}
-                            tickLine={{ stroke: '#cbd5e1' }}
-                        />
-                        <YAxis
-                            orientation="left"
-                            type="category"
-                            dataKey="name"
-                            width={280}
-                            interval={0}
-                            tick={{ fontSize: 11, fontWeight: 500, fill: '#374151' }}
-                            axisLine={{ stroke: '#e2e8f0' }}
-                            tickLine={false}
-                        />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
-                        <Legend
-                            verticalAlign="top"
-                            wrapperStyle={{ paddingBottom: '20px' }}
-                        />
-                        <Bar
-                            dataKey="inicioVacio"
-                            stackId="a"
-                            xAxisId="main"
-                            fill="transparent"
-                            isAnimationActive={false}
-                            hide={false}
-                            minPointSize={1}
-                        />
-                        {usedStageIds.map(sid => {
-                            const stage = STAGE_BY_ID[sid];
-                            return (
-                                <Bar
-                                    key={sid}
-                                    dataKey={sid}
-                                    stackId="a"
-                                    xAxisId="main"
-                                    name={stage?.name ?? `Etapa ${sid}`}
-                                    fill={stage?.color ?? '#94a3b8'}
-                                    fillOpacity={1}
-                                    isAnimationActive={false}
-                                    cursor="pointer"
-                                    minPointSize={1}
-                                    onClick={(eventData) => {
-                                        if (eventData?.payload?.ids) {
-                                            const clickedIds = eventData.payload.ids;
-                                            setSelectedGroupIds(
-                                                JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
-                                                    ? null
-                                                    : clickedIds
-                                            );
-                                        }
-                                    }}
-                                >
-                                    {chartData.map((entry: any, idx: number) => (
-                                        <Cell
-                                            key={`cell-${sid}-${idx}`}
-                                            style={{
-                                                filter: selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids)
-                                                    ? 'drop-shadow(0px 0px 8px rgba(59,130,246,0.5))'
-                                                    : 'none',
-                                                opacity: selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids) ? 0.2 : 1,
-                                                transition: 'all 0.3s ease',
-                                            }}
-                                        />
-                                    ))}
-                                </Bar>
-                            );
-                        })}
-                        {todayOffset !== null && (
-                            <ReferenceLine
+            <div className="w-full overflow-x-auto pb-4 custom-scrollbar-timeline">
+                <div style={{ width: '100%', minWidth: '800px', height: 500 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            key={forceRender}
+                            layout="vertical"
+                            data={chartData}
+                            margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                            barSize={30}
+                            barCategoryGap="10%"
+                        >
+                            <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
+                            <XAxis
                                 xAxisId="main"
-                                x={todayOffset}
-                                stroke="red"
-                                strokeDasharray="5 5"
-                                strokeWidth={2}
-                                label={{
-                                    value: "Hoy",
-                                    position: "top",
-                                    fill: "red",
-                                    fontSize: 10,
-                                    fontWeight: "bold",
-                                }}
+                                orientation="top"
+                                type="number"
+                                domain={[0, maxTimestamp - minTimestamp]}
+                                ticks={yearTicks}
+                                tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
+                                tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                                axisLine={{ stroke: '#cbd5e1' }}
+                                tickLine={{ stroke: '#cbd5e1' }}
                             />
-                        )}
-                    </BarChart>
-                </ResponsiveContainer>
+                            <XAxis
+                                xAxisId="main"
+                                orientation="bottom"
+                                type="number"
+                                domain={[0, maxTimestamp - minTimestamp]}
+                                ticks={yearTicks}
+                                tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
+                                tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                                axisLine={{ stroke: '#cbd5e1' }}
+                                tickLine={{ stroke: '#cbd5e1' }}
+                            />
+                            <YAxis
+                                orientation="left"
+                                type="category"
+                                dataKey="name"
+                                width={280}
+                                interval={0}
+                                tick={{ fontSize: 11, fontWeight: 500, fill: '#374151' }}
+                                axisLine={{ stroke: '#e2e8f0' }}
+                                tickLine={false}
+                            />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
+                            <Legend
+                                verticalAlign="top"
+                                wrapperStyle={{ paddingBottom: '20px' }}
+                            />
+                            <Bar
+                                dataKey="inicioVacio"
+                                stackId="a"
+                                xAxisId="main"
+                                fill="transparent"
+                                isAnimationActive={false}
+                                hide={false}
+                                minPointSize={1}
+                            />
+                            {usedStageIds.map(sid => {
+                                const stage = STAGE_BY_ID[sid];
+                                return (
+                                    <Bar
+                                        key={sid}
+                                        dataKey={sid}
+                                        stackId="a"
+                                        xAxisId="main"
+                                        name={stage?.name ?? `Etapa ${sid}`}
+                                        fill={stage?.color ?? '#94a3b8'}
+                                        fillOpacity={1}
+                                        isAnimationActive={false}
+                                        cursor="pointer"
+                                        minPointSize={1}
+                                        onClick={(eventData) => {
+                                            if (eventData?.payload?.ids) {
+                                                const clickedIds = eventData.payload.ids;
+                                                setSelectedGroupIds(
+                                                    JSON.stringify(selectedGroupIds) === JSON.stringify(clickedIds)
+                                                        ? null
+                                                        : clickedIds
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {chartData.map((entry: any, idx: number) => (
+                                            <Cell
+                                                key={`cell-${sid}-${idx}`}
+                                                style={{
+                                                    filter: selectedGroupIds && JSON.stringify(selectedGroupIds) === JSON.stringify(entry.ids)
+                                                        ? 'drop-shadow(0px 0px 8px rgba(59,130,246,0.5))'
+                                                        : 'none',
+                                                    opacity: selectedGroupIds && JSON.stringify(selectedGroupIds) !== JSON.stringify(entry.ids) ? 0.2 : 1,
+                                                    transition: 'all 0.3s ease',
+                                                }}
+                                            />
+                                        ))}
+                                    </Bar>
+                                );
+                            })}
+                            {todayOffset !== null && (
+                                <ReferenceLine
+                                    xAxisId="main"
+                                    x={todayOffset}
+                                    stroke="red"
+                                    strokeDasharray="5 5"
+                                    strokeWidth={2}
+                                    label={{
+                                        value: "Hoy",
+                                        position: "top",
+                                        fill: "red",
+                                        fontSize: 10,
+                                        fontWeight: "bold",
+                                    }}
+                                />
+                            )}
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
 
             {selectedGroupIds && selectedGroupIds.length > 0 && (
