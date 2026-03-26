@@ -101,6 +101,7 @@ export default function ProyectosServiciosTable({
       'Región': item.region || '',
       'Etapa': item.etapa || '',
       'Presupuestado': Number(item.monto_fondoempleo) || 0,
+      'Contrapartida': Number(item.contrapartida) || 0,
       'Avance': Number(item.avance) || 0,
       'Beneficiarios': Number(item.beneficiarios) || 0,
       'Gestora': item.gestora || ''
@@ -270,7 +271,8 @@ export default function ProyectosServiciosTable({
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[200px]">Institución Ejecutora</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[200px]">Región</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[150px]">Etapa</th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Presupuestado</th>
+                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Presupuestado</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Contrapartida</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Avance</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[110px]">Benef.</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[150px]">Gestora</th>
@@ -312,6 +314,9 @@ export default function ProyectosServiciosTable({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-gray-700">
                       S/ {row.monto_fondoempleo?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-blue-700">
+                      S/ {row.contrapartida?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-emerald-700">
                       S/ {row.avance?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}

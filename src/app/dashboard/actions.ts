@@ -103,10 +103,12 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
       avance: Number(p.avance) || 0,
+      contrapartida: Number(p.contrapartida) || 0,
       monto_total: Number(p.monto_total) || 0,
       beneficiarios: Number(p.beneficiarios) || 0,
       fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
-      fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null
+      fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
+      avances: p.avance_proyecto || []
     };
   });
 
@@ -452,5 +454,98 @@ export async function getRegiones() {
     value: item.id,
     label: item.descripcion
   }));
+}
+
+// --- AVANCE PROYECTO ACTIONS ---
+
+async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
+  // Get the latest etapa_id from the latest avance (by date and id)
+  const { data: latestAvance, error: latestError } = await supabase
+    .from('avance_proyecto')
+    .select('etapa_id')
+    .eq('proyecto_id', proyectoId)
+    .order('fecha', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (latestAvance) {
+    const { error: updateError } = await supabase
+      .from('proyectos')
+      .update({ etapa_id: latestAvance.etapa_id })
+      .eq('id', proyectoId);
+
+    if (updateError) {
+      console.error("Error updating proyecto after recalculation:", updateError);
+    }
+  }
+}
+
+export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  const { data, error: insertError } = await supabase
+    .from('avance_proyecto')
+    .insert([{ ...avanceData, proyecto_id: proyectoId }])
+    .select()
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting avance:", insertError);
+    throw new Error(insertError.message);
+  }
+
+  await recalculateProyectoAvance(proyectoId, supabase);
+
+  revalidatePath('/dashboard/gestion-proyectos');
+  return data;
+}
+
+export async function updateAvanceProyecto(id: any, avanceData: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  const { data, error: updateError } = await supabase
+    .from('avance_proyecto')
+    .update(avanceData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error("Error updating avance:", updateError);
+    throw new Error(updateError.message);
+  }
+
+  if (data?.proyecto_id) {
+    await recalculateProyectoAvance(data.proyecto_id, supabase);
+  }
+
+  revalidatePath('/dashboard/gestion-proyectos');
+  return data;
+}
+
+export async function deleteAvanceProyecto(id: any, proyectoId: any) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  
+  const { error: deleteError } = await supabase
+    .from('avance_proyecto')
+    .delete()
+    .eq('id', id);
+
+  if (deleteError) {
+    console.error("Error deleting avance:", deleteError);
+    throw new Error(deleteError.message);
+  }
+
+  await recalculateProyectoAvance(proyectoId, supabase);
+
+  revalidatePath('/dashboard/gestion-proyectos');
+  return { success: true };
 }
 

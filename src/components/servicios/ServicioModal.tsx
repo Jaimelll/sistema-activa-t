@@ -36,7 +36,6 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         condicion_id: "",
         presupuesto: 0,
         avance: 0,
-        contrapartida: 0,
         beneficiarios: 0
     });
 
@@ -64,7 +63,6 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 condicion_id: servicio.condicion_id || "",
                 presupuesto: servicio.presupuesto || 0,
                 avance: servicio.avance || 0,
-                contrapartida: servicio.contrapartida || 0,
                 beneficiarios: servicio.beneficiarios || 0
             });
             setShowAvances(false);
@@ -82,7 +80,6 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 condicion_id: "",
                 presupuesto: 0,
                 avance: 0,
-                contrapartida: 0,
                 beneficiarios: 0
             });
             setEditingAvance(null);
@@ -350,17 +347,6 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="presupuesto"
                                         step="0.01"
                                         value={formData.presupuesto}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contrapartida (S/)</label>
-                                    <input
-                                        type="number"
-                                        name="contrapartida"
-                                        step="0.01"
-                                        value={formData.contrapartida}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                     />

@@ -1,0 +1,3 @@
+[dotenv@17.2.4] injecting env (6) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+PROYECTOS_COLUMNS:["id","codigo_proyecto","nombre","linea_id","eje_id","region_id","etapa_id","modalidad_id","institucion_ejecutora_id","monto_fondoempleo","beneficiarios","año","gestora","created_at","evaluacion_config_id","url_archivo_proyecto","avance","contrapartida"]
+AVANCE_PROYECTO_COLUMNS:["id","proyecto_id","etapa_id","fecha","sustento","created_at"]
