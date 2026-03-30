@@ -36,6 +36,16 @@ const COLORS_FINANZAS = {
     'Becas': '#0ea5e9',         // Celeste
 };
 
+// Datos estáticos del Crecimiento del PBI del Perú (%)
+const PBI_DATA: Record<number, number> = {
+    1998: -0.5, 1999: -0.4, 2000: 3.0, 2001: 0.2, 2002: 5.0,
+    2003: 4.2, 2004: 5.0, 2005: 6.3, 2006: 7.5, 2007: 8.5,
+    2008: 9.1, 2009: 1.1, 2010: 8.5, 2011: 6.5, 2012: 6.3,
+    2013: 5.9, 2014: 2.4, 2015: 3.3, 2016: 4.0, 2017: 2.5,
+    2018: 4.0, 2019: 2.2, 2020: -11.0, 2021: 13.6, 2022: 2.7,
+    2023: -0.6, 2024: 2.5, 2025: 3.4
+};
+
 export default function InfGerencialView({
     initialData,
     sectores,
@@ -158,14 +168,19 @@ export default function InfGerencialView({
         return map;
     }, [top10Companies]);
 
-    // Line chart — historical total (all years, filtered by sector only)
+    // Line chart — historical total + PBI cruzado por año
     const lineData = useMemo(() => {
         const sectorFiltered = initialData.filter(d => selectedSector === 'all' || d.seccion_desc === selectedSector);
         const yearGroups = new Map<number, number>();
         sectorFiltered.forEach(d => yearGroups.set(d.anio, (yearGroups.get(d.anio) || 0) + d.monto));
         return Array.from(yearGroups.entries())
             .sort((a, b) => a[0] - b[0])
-            .map(([anio, total]) => ({ anio: String(anio), total }));
+            .map(([anio, total]) => ({
+                anio: String(anio),
+                total,
+                // Cruzamos con PBI_DATA usando el año como clave
+                pbi: PBI_DATA[anio] ?? null
+            }));
     }, [initialData, selectedSector]);
 
     // Sector pie data — from filtered set
@@ -247,22 +262,78 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* Main Historical Line Chart — Now at the top */}
+            {/* Main Historical Line Chart — Dual Axis: Aportes + PBI */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="mb-10 text-center">
+                <div className="mb-6 text-center">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de Aportes 1998-2026</h3>
+                </div>
+                {/* Leyenda manual entre título y gráfico */}
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Aportes Totales (S/)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 inline-block" style={{ borderTop: '2px dashed #f97316', marginTop: '1px' }} />
+                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%)</span>
+                    </div>
                 </div>
                 <div className="h-[500px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={lineData} margin={{ top: 10, right: 30, left: 20, bottom: 40 }}>
+                        <LineChart data={lineData} margin={{ top: 10, right: 50, left: 20, bottom: 40 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                             <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={fmtM} />
-                            <Tooltip
-                                formatter={(value: number) => fmt(value)}
-                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                            {/* Eje izquierdo: Aportes en S/ */}
+                            <YAxis
+                                yAxisId="left"
+                                orientation="left"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                tickFormatter={fmtM}
                             />
-                            <Line type="monotone" dataKey="total" name="Total Aportado" stroke="#2563eb" strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 8 }} />
+                            {/* Eje derecho: PBI % */}
+                            <YAxis
+                                yAxisId="right"
+                                orientation="right"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#f97316', fontSize: 11 }}
+                                tickFormatter={(v) => `${v}%`}
+                                domain={['auto', 'auto']}
+                            />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                formatter={(value: number, name: string) => {
+                                    if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI'];
+                                    return [fmt(value), 'Aportes Totales'];
+                                }}
+                            />
+                            {/* Línea principal de Aportes */}
+                            <Line
+                                yAxisId="left"
+                                type="monotone"
+                                dataKey="total"
+                                name="total"
+                                stroke="#2563eb"
+                                strokeWidth={4}
+                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                activeDot={{ r: 8 }}
+                                connectNulls
+                            />
+                            {/* Línea secundaria del PBI */}
+                            <Line
+                                yAxisId="right"
+                                type="monotone"
+                                dataKey="pbi"
+                                name="pbi"
+                                stroke="#f97316"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#f97316' }}
+                                activeDot={{ r: 6 }}
+                                connectNulls
+                            />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
