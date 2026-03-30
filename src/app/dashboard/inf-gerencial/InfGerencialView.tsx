@@ -56,6 +56,11 @@ const COBRE_DATA: Record<number, number> = {
     2023: 3.85, 2024: 4.15, 2025: 4.51
 };
 
+// Exportaciones del Perú (USD millones FOB) — fuente BCRP
+const EXPORTACIONES_DATA: { anio: number; exportaciones: number }[] = [
+  { anio: 1998, exportaciones: 5672 }, { anio: 1999, exportaciones: 6113 }, { anio: 2000, exportaciones: 6955 }, { anio: 2001, exportaciones: 7026 }, { anio: 2002, exportaciones: 7714 }, { anio: 2003, exportaciones: 9091 }, { anio: 2004, exportaciones: 12809 }, { anio: 2005, exportaciones: 17336 }, { anio: 2006, exportaciones: 23830 }, { anio: 2007, exportaciones: 27882 }, { anio: 2008, exportaciones: 31529 }, { anio: 2009, exportaciones: 26885 }, { anio: 2010, exportaciones: 35565 }, { anio: 2011, exportaciones: 46376 }, { anio: 2012, exportaciones: 46268 }, { anio: 2013, exportaciones: 42861 }, { anio: 2014, exportaciones: 39533 }, { anio: 2015, exportaciones: 34236 }, { anio: 2016, exportaciones: 36838 }, { anio: 2017, exportaciones: 44918 }, { anio: 2018, exportaciones: 47709 }, { anio: 2019, exportaciones: 47688 }, { anio: 2020, exportaciones: 39311 }, { anio: 2021, exportaciones: 56241 }, { anio: 2022, exportaciones: 63193 }, { anio: 2023, exportaciones: 64355 }, { anio: 2024, exportaciones: 76500 }, { anio: 2025, exportaciones: 84800 }
+];
+
 export default function InfGerencialView({
     initialData,
     sectores,
@@ -299,7 +304,7 @@ export default function InfGerencialView({
                                 orientation="left"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                tick={{ fill: '#2563eb', fontSize: 11 }}
                                 tickFormatter={fmtM}
                             />
                             {/* Eje derecho: PBI % */}
@@ -409,6 +414,90 @@ export default function InfGerencialView({
                                 type="monotone"
                                 dataKey="precio"
                                 name="precio"
+                                stroke="#2563eb"
+                                strokeWidth={4}
+                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                activeDot={{ r: 8 }}
+                                connectNulls
+                            />
+                            {/* Línea del PBI — roja, continua */}
+                            <Line
+                                yAxisId="right"
+                                type="monotone"
+                                dataKey="pbi"
+                                name="pbi"
+                                stroke="#dc2626"
+                                strokeWidth={2}
+                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
+                                activeDot={{ r: 6 }}
+                                connectNulls
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Gráfico Exportaciones vs PBI — Dual Axis */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                <div className="mb-6 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de las Exportaciones del Perú (USD millones) 1998-2025</h3>
+                </div>
+                {/* Leyenda Exportaciones vs PBI */}
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Exportaciones (USD millones - FOB) fuente BCRP</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
+                    </div>
+                </div>
+                <div className="h-[500px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                            data={EXPORTACIONES_DATA.map(({ anio, exportaciones }) => ({
+                                anio: String(anio),
+                                exportaciones,
+                                pbi: PBI_DATA[anio] ?? null
+                            }))}
+                            margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            {/* Eje izquierdo: Exportaciones USD millones */}
+                            <YAxis
+                                yAxisId="left"
+                                orientation="left"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#2563eb', fontSize: 11 }}
+                                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                                domain={['auto', 'auto']}
+                            />
+                            {/* Eje derecho: PBI % */}
+                            <YAxis
+                                yAxisId="right"
+                                orientation="right"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#dc2626', fontSize: 11 }}
+                                tickFormatter={(v) => `${v}%`}
+                                domain={['auto', 'auto']}
+                            />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                formatter={(value: number, name: string) => {
+                                    if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
+                                    return [`USD ${new Intl.NumberFormat('en-US').format(value)} M`, 'Exportaciones FOB'];
+                                }}
+                            />
+                            {/* Línea de Exportaciones — azul, continua */}
+                            <Line
+                                yAxisId="left"
+                                type="monotone"
+                                dataKey="exportaciones"
+                                name="exportaciones"
                                 stroke="#2563eb"
                                 strokeWidth={4}
                                 dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
