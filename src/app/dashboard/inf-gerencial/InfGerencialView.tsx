@@ -46,6 +46,16 @@ const PBI_DATA: Record<number, number> = {
     2023: -0.6, 2024: 2.5, 2025: 3.4
 };
 
+// Precio histórico del cobre (US$/lb) — Bolsa de Metales de Londres
+const COBRE_DATA: Record<number, number> = {
+    1998: 0.75, 1999: 0.71, 2000: 0.82, 2001: 0.72, 2002: 0.71,
+    2003: 0.81, 2004: 1.30, 2005: 1.67, 2006: 3.05, 2007: 3.23,
+    2008: 3.15, 2009: 2.34, 2010: 3.42, 2011: 3.99, 2012: 3.61,
+    2013: 3.32, 2014: 3.11, 2015: 2.49, 2016: 2.20, 2017: 2.80,
+    2018: 2.96, 2019: 2.72, 2020: 2.80, 2021: 4.23, 2022: 4.00,
+    2023: 3.85, 2024: 4.15, 2025: 4.51
+};
+
 export default function InfGerencialView({
     initialData,
     sectores,
@@ -274,7 +284,7 @@ export default function InfGerencialView({
                         <span className="text-sm font-bold text-slate-600">Aportes Totales (S/)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="w-8 inline-block" style={{ borderTop: '2px dashed #f97316', marginTop: '1px' }} />
+                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
                         <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%)</span>
                     </div>
                 </div>
@@ -298,7 +308,7 @@ export default function InfGerencialView({
                                 orientation="right"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: '#f97316', fontSize: 11 }}
+                                tick={{ fill: '#dc2626', fontSize: 11 }}
                                 tickFormatter={(v) => `${v}%`}
                                 domain={['auto', 'auto']}
                             />
@@ -321,16 +331,99 @@ export default function InfGerencialView({
                                 activeDot={{ r: 8 }}
                                 connectNulls
                             />
-                            {/* Línea secundaria del PBI */}
+                            {/* Línea secundaria del PBI — continua, roja */}
                             <Line
                                 yAxisId="right"
                                 type="monotone"
                                 dataKey="pbi"
                                 name="pbi"
-                                stroke="#f97316"
+                                stroke="#dc2626"
                                 strokeWidth={2}
-                                strokeDasharray="5 5"
-                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#f97316' }}
+                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
+                                activeDot={{ r: 6 }}
+                                connectNulls
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Gráfico Cobre vs PBI — Dual Axis */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                <div className="mb-6 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica del Precio del cobre (US$/lb) 1998-2025</h3>
+                </div>
+                {/* Leyenda Cobre vs PBI */}
+                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Precio del cobre (US$/lb) fuente Bolsa de Metales de Londres</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
+                    </div>
+                </div>
+                <div className="h-[500px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                            data={Object.keys(COBRE_DATA).map(Number).sort((a, b) => a - b).map(anio => ({
+                                anio: String(anio),
+                                precio: COBRE_DATA[anio],
+                                pbi: PBI_DATA[anio] ?? null
+                            }))}
+                            margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            {/* Eje izquierdo: Precio del cobre */}
+                            <YAxis
+                                yAxisId="left"
+                                orientation="left"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#2563eb', fontSize: 11 }}
+                                tickFormatter={(v) => `$${v.toFixed(2)}`}
+                                domain={['auto', 'auto']}
+                            />
+                            {/* Eje derecho: PBI % */}
+                            <YAxis
+                                yAxisId="right"
+                                orientation="right"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#dc2626', fontSize: 11 }}
+                                tickFormatter={(v) => `${v}%`}
+                                domain={['auto', 'auto']}
+                            />
+                            <Tooltip
+                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                formatter={(value: number, name: string) => {
+                                    if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
+                                    return [`US$ ${value.toFixed(2)}`, 'Precio del Cobre'];
+                                }}
+                            />
+                            {/* Línea del Precio del Cobre — azul, continua */}
+                            <Line
+                                yAxisId="left"
+                                type="monotone"
+                                dataKey="precio"
+                                name="precio"
+                                stroke="#2563eb"
+                                strokeWidth={4}
+                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                activeDot={{ r: 8 }}
+                                connectNulls
+                            />
+                            {/* Línea del PBI — roja, continua */}
+                            <Line
+                                yAxisId="right"
+                                type="monotone"
+                                dataKey="pbi"
+                                name="pbi"
+                                stroke="#dc2626"
+                                strokeWidth={2}
+                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
                                 activeDot={{ r: 6 }}
                                 connectNulls
                             />
