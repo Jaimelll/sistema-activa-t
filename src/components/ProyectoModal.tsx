@@ -376,9 +376,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
-                                        disabled={!!proyecto}
                                     />
-                                    {proyecto && <p className="text-[9px] text-blue-500 font-bold px-1 uppercase mt-1">Se actualiza vía Gestión de Avances</p>}
                                 </div>
 
                                 <div className="space-y-1">
