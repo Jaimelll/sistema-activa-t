@@ -470,7 +470,14 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                                 </div>
                                                 <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
                                                     <button 
-                                                        onClick={(e) => { e.preventDefault(); setEditingAvance(av); }}
+                                                        onClick={(e) => {
+                                                        e.preventDefault();
+                                                        setEditingAvance({
+                                                            ...av,
+                                                            // Normaliza a YYYY-MM-DD para que input[type=date] la reconozca
+                                                            fecha: av.fecha ? av.fecha.split('T')[0] : ''
+                                                        });
+                                                    }}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Editar"
                                                     >

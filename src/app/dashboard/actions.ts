@@ -27,8 +27,10 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       modalidades (descripcion),
       etapas (descripcion),
       avance_proyecto (
+        id,
         fecha,
-        etapa_id
+        etapa_id,
+        sustento
       )
     `);
 
@@ -277,8 +279,10 @@ export async function getTimelineData() {
       regiones (descripcion),
       etapas (descripcion),
       avance_proyecto (
+        id,
         fecha,
-        etapa_id
+        etapa_id,
+        sustento
       )
     `)
     .not('etapas.descripcion', 'ilike', 'no habilitada');
@@ -307,8 +311,10 @@ export async function getTimelineData() {
     fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
     fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
     avances: p.avance_proyecto.map((a: any) => ({
+      id: a.id,
       fecha: a.fecha,
-      etapa_id: a.etapa_id
+      etapa_id: a.etapa_id,
+      sustento: a.sustento || ''
     }))
   }));
 
@@ -516,8 +522,8 @@ export async function updateAvanceProyecto(id: any, avanceData: any) {
     .single();
 
   if (updateError) {
-    console.error("Error updating avance:", updateError);
-    throw new Error(updateError.message);
+    console.error("Error updating avance — id recibido:", id, "— payload:", avanceData, "— error Supabase:", updateError);
+    throw new Error(`[updateAvanceProyecto] ${updateError.message} (code: ${updateError.code})`);
   }
 
   if (data?.proyecto_id) {
