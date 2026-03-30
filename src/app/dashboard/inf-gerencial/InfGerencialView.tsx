@@ -101,10 +101,10 @@ export default function InfGerencialView({
     // --- End Finanzas Processing ---
 
 
-    // Compute the last 5 years from the data
+    // Compute years from 2021 to latest available in the data
     const last5Years = useMemo(() => {
-        const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => b - a);
-        return allYears.slice(0, 5).sort((a, b) => a - b);
+        const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
+        return allYears.filter(y => y >= 2021);
     }, [initialData]);
 
     const yearRange = last5Years.length > 0
@@ -194,21 +194,6 @@ export default function InfGerencialView({
                 <h1 className="text-3xl font-black text-slate-800 tracking-tight">Información Gerencial</h1>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
-                </div>
-                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
-                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante</span>
-                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
-                </div>
-                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
-                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
-                </div>
-            </div>
 
             {/* Filters Row */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-start md:items-end">
@@ -264,9 +249,8 @@ export default function InfGerencialView({
 
             {/* Main Historical Line Chart — Now at the top */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="mb-10 text-center md:text-left">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica</h3>
-                    <p className="text-slate-400 font-medium">Aportes totales por año • 1998 - 2025</p>
+                <div className="mb-10 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de Aportes 1998-2026</h3>
                 </div>
                 <div className="h-[500px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -288,9 +272,8 @@ export default function InfGerencialView({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Stacked Bar Chart */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Composición de Aportantes</h3>
-                        <p className="text-slate-400 font-medium">Distribución por empresa y año • {yearRange}</p>
+                    <div className="mb-8 text-center">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2021 – 2026</h3>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -322,9 +305,8 @@ export default function InfGerencialView({
 
                 {/* Sector Bar Chart (Formerly Pie) */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8">
+                    <div className="mb-8 text-center">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector</h3>
-                        <p className="text-slate-400 font-medium">Años 2021 - 2025</p>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -360,11 +342,35 @@ export default function InfGerencialView({
                 </div>
             </div>
 
+            {/* KPI Cards — ubicadas encima del gráfico financiero */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
+                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
+                </div>
+                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
+                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante (2021 - 2026)</span>
+                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
+                </div>
+                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
+                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas (2021 - 2026)</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
+                </div>
+            </div>
+
             {/* NEW: Financial Evolution (Full Width) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-10 text-center md:text-left">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera</h3>
-                    <p className="text-slate-400 font-medium">Comparativa de rubros principales • 2021 - 2026</p>
+                <div className="mb-6 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes, Intereses, G. Operativos, Proyectos y Becas del 2021 al 2026</h3>
+                </div>
+                {/* Leyenda manual entre título y gráfico */}
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+                    {activeRubros.map(rubro => (
+                        <div key={rubro} className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS] }} />
+                            <span className="text-sm font-bold text-slate-600">{rubro}</span>
+                        </div>
+                    ))}
                 </div>
                 <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -392,7 +398,7 @@ export default function InfGerencialView({
                                 align="center"
                                 iconType="circle"
                                 iconSize={12}
-                                wrapperStyle={{ paddingTop: '0px', paddingBottom: '40px', fontSize: '14px', fontWeight: 700, color: '#475569' }}
+                                wrapperStyle={{ display: 'none' }}
                             />
                             {activeRubros.map((rubro) => (
                                 <Bar
@@ -410,11 +416,8 @@ export default function InfGerencialView({
 
             {/* NEW: Bank Balances (Horizontal Table) */}
             <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
-                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Saldos Bancarios</h3>
-                        <p className="text-sm text-slate-400 font-medium">Liquidez anual histórica</p>
-                    </div>
+                <div className="mb-6 text-center">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">Saldos bancarios al cierre del ejercicio anual / 2026 a la fecha</h3>
                 </div>
                 <div className="flex flex-nowrap gap-4 min-w-max pb-2">
                     {historicalSaldos.map((item) => (

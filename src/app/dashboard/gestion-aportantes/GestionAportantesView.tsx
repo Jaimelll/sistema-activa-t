@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition, Fragment } from "react";
+import { useState, useEffect, useMemo, useTransition, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2, X, Save } from "lucide-react";
 import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte } from "./actions";
@@ -48,11 +48,37 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const ITEMS_PER_PAGE = 10;
+    const [currentPage, setCurrentPage] = useState(1);
+
     const filteredData = useMemo(() => {
-        if (!searchTerm.trim()) return initialData;
-        const term = searchTerm.toLowerCase();
-        return initialData.filter(e => e.ruc.toLowerCase().includes(term) || e.razon_social.toLowerCase().includes(term));
+        let result = [...initialData];
+
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(e =>
+                e.ruc.toLowerCase().includes(term) ||
+                e.razon_social.toLowerCase().includes(term)
+            );
+        }
+
+        // Ordena por total_aportes descendente (idéntico al campo usado en el <td> de la UI)
+        result.sort((a, b) => {
+            const totalA = parseFloat(String(a.total_aportes ?? 0)) || 0;
+            const totalB = parseFloat(String(b.total_aportes ?? 0)) || 0;
+            return totalB - totalA;
+        });
+
+        return result;
     }, [initialData, searchTerm]);
+
+    // Reset de página separado del useMemo para evitar anti-patrón de setState dentro de memo
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, initialData]);
+
+    const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+    const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     const refresh = () => startTransition(() => router.refresh());
 
@@ -158,7 +184,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredData.slice(0, 100).map(empresa => (
+                            {paginatedData.map(empresa => (
                                 <Fragment key={empresa.ruc}>
                                     <tr className="hover:bg-blue-50/40 transition-colors">
                                         <td className="px-4 py-4">
@@ -196,8 +222,8 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                                                     {empresa.aportes.length > 0 ? (
                                                         empresa.aportes.sort((a, b) => b.anio - a.anio).map(a => (
                                                             <div key={a.id} className="flex justify-between items-center text-[11px] border-b border-slate-50 last:border-0 pb-1.5 last:pb-0">
-                                                                <span className="font-bold text-slate-500">{a.anio}</span>
-                                                                <span className="font-black text-slate-900">{fmt(a.monto)}</span>
+                                                                <span className="font-bold text-slate-500">{a?.anio || '---'}</span>
+                                                                <span className="font-black text-slate-900">{fmt(Number(a?.monto) || 0)}</span>
                                                             </div>
                                                         ))
                                                     ) : (
@@ -254,7 +280,29 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                         </tbody>
                     </table>
                     {filteredData.length === 0 && <div className="p-12 text-center text-gray-500 text-sm">No se encontraron empresas para "{searchTerm}".</div>}
-                    {filteredData.length > 100 && <div className="p-4 text-center text-sm text-gray-400 bg-gray-50 border-t">Mostrando 100 de {filteredData.length}. Use el buscador para encontrar empresas específicas.</div>}
+                    {filteredData.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 gap-4">
+                            <span className="text-sm text-gray-500">
+                                Mostrando <span className="font-bold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a <span className="font-bold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)}</span> de <span className="font-bold">{filteredData.length}</span> empresas
+                            </span>
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Anterior
+                                </button>
+                                <button 
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -283,9 +331,17 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
             <AporteModal
                 isOpen={!!managingEmpresa}
                 onClose={() => setManagingEmpresa(null)}
-                empresa={managingEmpresa ? { ruc: managingEmpresa.ruc, razon_social: managingEmpresa.razon_social } : null}
+                empresa={managingEmpresa}
                 onSave={async (data) => {
                     await createAporte(data);
+                    refresh();
+                }}
+                onUpdate={async (id, data) => {
+                    await updateAporte(id, data);
+                    refresh();
+                }}
+                onDelete={async (id) => {
+                    await deleteAporte(id);
                     refresh();
                 }}
             />
