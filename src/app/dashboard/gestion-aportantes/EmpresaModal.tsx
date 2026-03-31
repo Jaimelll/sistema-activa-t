@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
 
 interface EmpresaModalProps {
@@ -8,15 +8,30 @@ interface EmpresaModalProps {
     onClose: () => void;
     onSave: (data: { ruc: string; razon_social: string; ciiu_id: number }) => Promise<void>;
     sectores: any[];
+    initialData?: { ruc: string; razon_social: string; ciiu_id: string | number };
 }
 
-export default function EmpresaModal({ isOpen, onClose, onSave, sectores }: EmpresaModalProps) {
+export default function EmpresaModal({ isOpen, onClose, onSave, sectores, initialData }: EmpresaModalProps) {
     const [formData, setFormData] = useState({
         ruc: "",
         razon_social: "",
         ciiu_id: ""
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setFormData({
+                    ruc: initialData.ruc,
+                    razon_social: initialData.razon_social,
+                    ciiu_id: String(initialData.ciiu_id)
+                });
+            } else {
+                setFormData({ ruc: "", razon_social: "", ciiu_id: "" });
+            }
+        }
+    }, [isOpen, initialData]);
 
     if (!isOpen) return null;
 
@@ -47,7 +62,7 @@ export default function EmpresaModal({ isOpen, onClose, onSave, sectores }: Empr
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">Añadir Nueva Empresa</h3>
+                    <h3 className="text-xl font-bold text-gray-900">{initialData ? "Editar Empresa" : "Añadir Nueva Empresa"}</h3>
                     <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
@@ -64,8 +79,9 @@ export default function EmpresaModal({ isOpen, onClose, onSave, sectores }: Empr
                             pattern="[0-9]{11}"
                             maxLength={11}
                             title="El RUC debe tener 11 dígitos numéricos"
-                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner"
+                            className={`w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-inner ${initialData ? 'opacity-70 cursor-not-allowed' : ''}`}
                             placeholder="Ej: 20123456789"
+                            disabled={!!initialData}
                         />
                     </div>
 
@@ -103,7 +119,7 @@ export default function EmpresaModal({ isOpen, onClose, onSave, sectores }: Empr
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                     <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors">Cancelar</button>
                     <button type="submit" form="empresa-form" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20">
-                        {isSubmitting ? 'Guardando...' : <><Save className="w-4 h-4" /> Guardar Empresa</>}
+                        {isSubmitting ? 'Guardando...' : <><Save className="w-4 h-4" /> {initialData ? 'Guardar Cambios' : 'Guardar Empresa'}</>}
                     </button>
                 </div>
             </div>
