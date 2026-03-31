@@ -146,7 +146,7 @@ export default function ResultadosEvaluacion({ proyectoId }: ResultadosEvaluacio
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">Resultados de Evaluación</h2>
                     <p className="text-xs text-gray-500">
-                        Evaluado el {new Date(resultado.fecha_evaluacion).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        Evaluado el {new Date(resultado.fecha_evaluacion).toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })}
                     </p>
                 </div>
                 {resultado.url_pdf_final && (

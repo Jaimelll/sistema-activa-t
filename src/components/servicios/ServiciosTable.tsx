@@ -75,9 +75,9 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate }: 
 
                                 // Si tenemos fecha de grupo, la usamos; si no, la individual
                                 const fechaInicio = groupStartDate ? fmtDate(groupStartDate) :
-                                    (item.fecha_inicio ? new Date(item.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-');
+                                    (item.fecha_inicio ? new Date(item.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-');
                                 const fechaFin = groupEndDate ? fmtDate(groupEndDate) :
-                                    (item.fecha_fin ? new Date(item.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-');
+                                    (item.fecha_fin ? new Date(item.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-');
 
                                 return (
                                     <tr
