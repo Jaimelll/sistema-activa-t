@@ -26,6 +26,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
       etapas (descripcion),
+      avance_tecnico,
       avance_proyecto (
         id,
         fecha,
@@ -108,6 +109,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       contrapartida: Number(p.contrapartida) || 0,
       monto_total: Number(p.monto_total) || 0,
       beneficiarios: Number(p.beneficiarios) || 0,
+      avance_tecnico: Number(p.avance_tecnico) || 0,
       fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
       avances: p.avance_proyecto || []
@@ -278,6 +280,7 @@ export async function getTimelineData() {
       instituciones_ejecutoras (nombre),
       regiones (descripcion),
       etapas (descripcion),
+      avance_tecnico,
       avance_proyecto (
         id,
         fecha,
@@ -308,6 +311,7 @@ export async function getTimelineData() {
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
     etapa: p.etapas?.descripcion || 'Sin Etapa',
+    avance_tecnico: Number(p.avance_tecnico) || 0,
     fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
     fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
     avances: p.avance_proyecto.map((a: any) => ({
