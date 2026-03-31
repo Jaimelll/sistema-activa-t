@@ -452,7 +452,13 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         [...servicio.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
                                             <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
                                                 <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-blue-600">{new Date(av.fecha).toLocaleDateString('es-PE')}</span>
+                                                    <span className="text-[10px] font-black text-blue-600">
+                                                        {(() => {
+                                                            if (!av.fecha) return '-';
+                                                            const parts = av.fecha.split('T')[0].split('-');
+                                                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                                        })()}
+                                                    </span>
                                                     <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
                                                     <p className="text-[9px] text-gray-400 italic mt-0.5">{av.descripcion || '-'}</p>
                                                 </div>

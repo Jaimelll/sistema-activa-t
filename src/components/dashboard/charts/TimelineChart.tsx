@@ -207,10 +207,10 @@ export function TimelineChart({ data }: TimelineChartProps) {
     }, [data]);
 
     const formatXAxis = (tickItem: number) => {
-        return new Date(tickItem).toLocaleDateString('es-PE', { year: '2-digit', month: 'short' });
+        return new Date(tickItem).toLocaleDateString('es-PE', { year: '2-digit', month: 'short', timeZone: 'UTC' });
     };
 
-    const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit' }) : '-';
+    const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' }) : '-';
 
     // Helper to clean Y Axis Label - Revert to short IDs as requested
     const formatYAxis = (key: string) => {
@@ -445,8 +445,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                                         const presupuestado = Number(p.monto) || 0;
                                         const avance = Number(p.avance) || 0;
                                         const porcentaje = presupuestado > 0 ? (avance / presupuestado) * 100 : 0;
-                                        const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
-                                        const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+                                        const fechaInicio = p.fecha_inicio ? new Date(p.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-';
+                                        const fechaFin = p.fecha_fin ? new Date(p.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-';
 
                                         return (
                                             <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>

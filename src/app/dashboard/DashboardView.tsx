@@ -452,10 +452,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                         {porcentaje.toFixed(1)}%
                                                     </td>
                                                     <td className="py-0.5 px-3 text-center text-gray-600">
-                                                        {proj.fecha_inicio ? new Date(proj.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                                                        {proj.fecha_inicio ? new Date(proj.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-'}
                                                     </td>
                                                     <td className="py-0.5 px-3 text-center text-gray-600">
-                                                        {proj.fecha_fin ? new Date(proj.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}
+                                                        {proj.fecha_fin ? new Date(proj.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-'}
                                                     </td>
                                                 </tr>
                                             );
