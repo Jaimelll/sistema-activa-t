@@ -3,7 +3,15 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function getEmpresasData() {
+export async function getAniosAportes() {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('aportes').select('anio');
+    if (error) return [];
+    const aniosSet = new Set(data.map((d: any) => d.anio));
+    return Array.from(aniosSet).sort((a: any, b: any) => b - a);
+}
+
+export async function getEmpresasData(anioFiltro: string | number = 'Todos') {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('empresas')
@@ -28,7 +36,19 @@ export async function getEmpresasData() {
         return [];
     }
 
-    return data.map((e: any) => ({
+    let processedData = data;
+
+    if (anioFiltro && anioFiltro !== 'Todos') {
+        const numAnio = Number(anioFiltro);
+        processedData = processedData
+            .map((e: any) => ({
+                ...e,
+                aportes: (e.aportes || []).filter((aporte: any) => Number(aporte.anio) === numAnio)
+            }))
+            .filter((e: any) => e.aportes.length > 0);
+    }
+
+    return processedData.map((e: any) => ({
         ruc: e.ruc,
         razon_social: e.razon_social,
         ciiu_id: e.ciiu_id,

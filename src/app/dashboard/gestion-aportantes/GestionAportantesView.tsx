@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useTransition, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2, X, Save } from "lucide-react";
-import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte } from "./actions";
+import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte, getEmpresasData, getAniosAportes } from "./actions";
 import EmpresaModal from "./EmpresaModal";
 import AporteModal from "./AporteModal";
 
@@ -27,9 +27,30 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
 
-    // Search & Expand
+    // Search & Filter
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedAnio, setSelectedAnio] = useState<string>('Todos');
+    const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
+    const [empresasData, setEmpresasData] = useState<EmpresaRow[]>(initialData);
     const [expandedRuc, setExpandedRuc] = useState<string | null>(null);
+
+    useEffect(() => {
+        getAniosAportes().then(setAniosDisponibles).catch(console.error);
+    }, []);
+
+    useEffect(() => {
+        if (selectedAnio === 'Todos') {
+            setEmpresasData(initialData);
+        } else {
+            let isMounted = true;
+            startTransition(() => {
+                getEmpresasData(selectedAnio).then(data => {
+                    if (isMounted) setEmpresasData(data);
+                });
+            });
+            return () => { isMounted = false; };
+        }
+    }, [selectedAnio, initialData]);
 
     // New Empresa modal
     const [showNuevaEmpresa, setShowNuevaEmpresa] = useState(false);
@@ -52,7 +73,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     const [currentPage, setCurrentPage] = useState(1);
 
     const filteredData = useMemo(() => {
-        let result = [...initialData];
+        let result = [...empresasData];
 
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
@@ -75,7 +96,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     // Reset de página separado del useMemo para evitar anti-patrón de setState dentro de memo
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, initialData]);
+    }, [searchTerm, empresasData]);
 
     const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
     const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -90,10 +111,9 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     };
 
     // CRUD handlers
-    const handleCreateEmpresa = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreateEmpresa = async (data: { ruc: string; razon_social: string; ciiu_id: number }) => {
         await withSubmit(async () => {
-            await createEmpresa({ ruc: nuevaEmpresa.ruc.trim(), razon_social: nuevaEmpresa.razon_social.trim(), ciiu_id: Number(nuevaEmpresa.ciiu_id) });
+            await createEmpresa(data);
             setShowNuevaEmpresa(false); setNuevaEmpresa({ ruc: "", razon_social: "", ciiu_id: "" });
         });
     };
@@ -156,17 +176,31 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
 
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                        <input
-                            type="text"
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="Buscar por RUC o Razón Social..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <div className="relative w-full sm:w-80">
+                            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                            <input
+                                type="text"
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Buscar por RUC o Razón Social..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="w-full sm:w-48">
+                            <select
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                value={selectedAnio}
+                                onChange={e => setSelectedAnio(e.target.value)}
+                            >
+                                <option value="Todos">Todos los años</option>
+                                {aniosDisponibles.map(anio => (
+                                    <option key={anio} value={anio}>Año {anio}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                    <button onClick={() => setShowNuevaEmpresa(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-md shadow-blue-500/20">
+                    <button onClick={() => setShowNuevaEmpresa(true)} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-md shadow-blue-500/20 w-full sm:w-auto mt-4 md:mt-0">
                         <Plus className="w-5 h-5" /> Nueva Empresa
                     </button>
                 </div>
@@ -311,7 +345,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                 isOpen={showNuevaEmpresa}
                 onClose={() => setShowNuevaEmpresa(false)}
                 onSave={async (data) => {
-                    await handleCreateEmpresa({ preventDefault: () => { }, target: { ruc: { value: data.ruc }, razon_social: { value: data.razon_social }, ciiu_id: { value: data.ciiu_id } } } as any);
+                    await handleCreateEmpresa(data);
                 }}
                 sectores={sectores}
             />
@@ -326,6 +360,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                     refresh();
                 }}
                 sectores={sectores}
+                initialData={editingEmpresa ? { ruc: editingEmpresa.ruc, razon_social: editingEmpresa.razon_social, ciiu_id: editingEmpresa.ciiu_id } : undefined}
             />
 
             <AporteModal
