@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition, Fragment } from "react";
+import { useState, useEffect, useMemo, useTransition, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2, X, Save } from "lucide-react";
 import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte, getEmpresasData, getAniosAportes } from "./actions";
@@ -39,18 +39,28 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     }, []);
 
     useEffect(() => {
-        if (selectedAnio === 'Todos') {
+        let isMounted = true;
+        // Solo recargar si cambia el selectedAnio (removido initialData para prevenir Next.js infinite route refresh loop)
+        startTransition(async () => {
+            if (selectedAnio === 'Todos') {
+                if (isMounted) setEmpresasData(initialData);
+            } else {
+                const data = await getEmpresasData(selectedAnio);
+                if (isMounted) setEmpresasData(data);
+            }
+        });
+        return () => { isMounted = false; };
+    }, [selectedAnio]); // <-- STABLE DEP ARRAY
+
+    // Sincronizar mutaciones locales (ej: crear empresa) cuando estamos en vista "Todos"
+    // previniendo loop infinito al guardar en Refs
+    const initialDataRef = useRef(initialData);
+    useEffect(() => {
+        if (selectedAnio === 'Todos' && initialData !== initialDataRef.current) {
+            initialDataRef.current = initialData;
             setEmpresasData(initialData);
-        } else {
-            let isMounted = true;
-            startTransition(() => {
-                getEmpresasData(selectedAnio).then(data => {
-                    if (isMounted) setEmpresasData(data);
-                });
-            });
-            return () => { isMounted = false; };
         }
-    }, [selectedAnio, initialData]);
+    }, [initialData, selectedAnio]);
 
     // New Empresa modal
     const [showNuevaEmpresa, setShowNuevaEmpresa] = useState(false);
@@ -217,7 +227,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                                 <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className={`bg-white divide-y divide-gray-200 transition-opacity duration-200 ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                             {paginatedData.map(empresa => (
                                 <Fragment key={empresa.ruc}>
                                     <tr className="hover:bg-blue-50/40 transition-colors">
