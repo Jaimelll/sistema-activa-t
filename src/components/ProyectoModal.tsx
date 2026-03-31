@@ -36,6 +36,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
         contrapartida: 0,
         beneficiarios: 0,
         gestora: "",
+        avance_tecnico: 0,
         institucion_ejecutora_id: "",
         modalidad_id: "",
         año: new Date().getFullYear()
@@ -64,6 +65,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 contrapartida: proyecto.contrapartida || 0,
                 beneficiarios: proyecto.beneficiarios || 0,
                 gestora: proyecto.gestora || "",
+                avance_tecnico: proyecto.avance_tecnico || 0,
                 institucion_ejecutora_id: proyecto.institucionId || "",
                 modalidad_id: proyecto.modalidadId || "",
                 año: proyecto.año || new Date().getFullYear()
@@ -83,6 +85,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 contrapartida: 0,
                 beneficiarios: 0,
                 gestora: "",
+                avance_tecnico: 0,
                 institucion_ejecutora_id: "",
                 modalidad_id: "",
                 año: new Date().getFullYear()
@@ -398,6 +401,19 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         placeholder="..."
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avance Tecnico (%)</label>
+                                    <input
+                                        type="number"
+                                        name="avance_tecnico"
+                                        min={0}
+                                        max={100}
+                                        value={formData.avance_tecnico}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                     />
                                 </div>
                             </div>
