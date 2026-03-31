@@ -6,6 +6,7 @@ import {
     LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import { Search, X } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 interface AporteFlat {
     id: string;
@@ -74,11 +75,20 @@ export default function InfGerencialView({
     const [selectedSector, setSelectedSector] = useState<string>('all');
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
+    const [user, setUser] = useState<any>(null);
+    const supabase = createClient();
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         handleResize();
         window.addEventListener('resize', handleResize);
+
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -280,7 +290,7 @@ export default function InfGerencialView({
             {/* Main Historical Line Chart — Dual Axis: Aportes + PBI */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de Aportes 1998-2026</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes vs PBI 1998-2026</h3>
                 </div>
                 {/* Leyenda manual entre título y gráfico */}
                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
@@ -356,176 +366,180 @@ export default function InfGerencialView({
             </div>
 
             {/* Gráfico Cobre vs PBI — Dual Axis */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="mb-6 text-center">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica del Precio del cobre (US$/lb) 1998-2025</h3>
-                </div>
-                {/* Leyenda Cobre vs PBI */}
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
-                        <span className="text-sm font-bold text-slate-600">Precio del cobre (US$/lb) fuente Bolsa de Metales de Londres</span>
+            {user?.email !== 'invitado@fondoempleo.com.pe' && (
+                <>
+                    <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <div className="mb-6 text-center">
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica del Precio del cobre (US$/lb) 1998-2025</h3>
+                        </div>
+                        {/* Leyenda Cobre vs PBI */}
+                        <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
+                                <span className="text-sm font-bold text-slate-600">Precio del cobre (US$/lb) fuente Bolsa de Metales de Londres</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
+                                <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
+                            </div>
+                        </div>
+                        <div className="w-full overflow-x-auto pb-4">
+                            <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                    data={Object.keys(COBRE_DATA).map(Number).sort((a, b) => a - b).map(anio => ({
+                                        anio: String(anio),
+                                        precio: COBRE_DATA[anio],
+                                        pbi: PBI_DATA[anio] ?? null
+                                    }))}
+                                    margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
+                                    {/* Eje izquierdo: Precio del cobre */}
+                                    <YAxis
+                                        yAxisId="left"
+                                        orientation="left"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#2563eb', fontSize: 11 }}
+                                        tickFormatter={(v) => `$${v.toFixed(2)}`}
+                                        domain={['auto', 'auto']}
+                                    />
+                                    {/* Eje derecho: PBI % */}
+                                    <YAxis
+                                        yAxisId="right"
+                                        orientation="right"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#dc2626', fontSize: 11 }}
+                                        tickFormatter={(v) => `${v}%`}
+                                        domain={['auto', 'auto']}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                        formatter={(value: number, name: string) => {
+                                            if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
+                                            return [`US$ ${value.toFixed(2)}`, 'Precio del Cobre'];
+                                        }}
+                                    />
+                                    {/* Línea del Precio del Cobre — azul, continua */}
+                                    <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="precio"
+                                        name="precio"
+                                        stroke="#2563eb"
+                                        strokeWidth={4}
+                                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                        activeDot={{ r: 8 }}
+                                        connectNulls
+                                    />
+                                    {/* Línea del PBI — roja, continua */}
+                                    <Line
+                                        yAxisId="right"
+                                        type="monotone"
+                                        dataKey="pbi"
+                                        name="pbi"
+                                        stroke="#dc2626"
+                                        strokeWidth={2}
+                                        dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
+                                        activeDot={{ r: 6 }}
+                                        connectNulls
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
-                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
-                    </div>
-                </div>
-                <div className="w-full overflow-x-auto pb-4">
-                    <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                            data={Object.keys(COBRE_DATA).map(Number).sort((a, b) => a - b).map(anio => ({
-                                anio: String(anio),
-                                precio: COBRE_DATA[anio],
-                                pbi: PBI_DATA[anio] ?? null
-                            }))}
-                            margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
-                            {/* Eje izquierdo: Precio del cobre */}
-                            <YAxis
-                                yAxisId="left"
-                                orientation="left"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#2563eb', fontSize: 11 }}
-                                tickFormatter={(v) => `$${v.toFixed(2)}`}
-                                domain={['auto', 'auto']}
-                            />
-                            {/* Eje derecho: PBI % */}
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#dc2626', fontSize: 11 }}
-                                tickFormatter={(v) => `${v}%`}
-                                domain={['auto', 'auto']}
-                            />
-                            <Tooltip
-                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
-                                formatter={(value: number, name: string) => {
-                                    if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
-                                    return [`US$ ${value.toFixed(2)}`, 'Precio del Cobre'];
-                                }}
-                            />
-                            {/* Línea del Precio del Cobre — azul, continua */}
-                            <Line
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="precio"
-                                name="precio"
-                                stroke="#2563eb"
-                                strokeWidth={4}
-                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                activeDot={{ r: 8 }}
-                                connectNulls
-                            />
-                            {/* Línea del PBI — roja, continua */}
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="pbi"
-                                name="pbi"
-                                stroke="#dc2626"
-                                strokeWidth={2}
-                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
-                                activeDot={{ r: 6 }}
-                                connectNulls
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
 
-            {/* Gráfico Exportaciones vs PBI — Dual Axis */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="mb-6 text-center">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de las Exportaciones del Perú (USD millones) 1998-2025</h3>
-                </div>
-                {/* Leyenda Exportaciones vs PBI */}
-                <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
-                        <span className="text-sm font-bold text-slate-600">Exportaciones (USD millones - FOB) fuente BCRP</span>
+                    {/* Gráfico Exportaciones vs PBI — Dual Axis */}
+                    <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                        <div className="mb-6 text-center">
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Histórica de las Exportaciones del Perú (USD millones) 1998-2025</h3>
+                        </div>
+                        {/* Leyenda Exportaciones vs PBI */}
+                        <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
+                                <span className="text-sm font-bold text-slate-600">Exportaciones (USD millones - FOB) fuente BCRP</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
+                                <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
+                            </div>
+                        </div>
+                        <div className="w-full overflow-x-auto pb-4">
+                            <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                    data={EXPORTACIONES_DATA.map(({ anio, exportaciones }) => ({
+                                        anio: String(anio),
+                                        exportaciones,
+                                        pbi: PBI_DATA[anio] ?? null
+                                    }))}
+                                    margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
+                                    {/* Eje izquierdo: Exportaciones USD millones */}
+                                    <YAxis
+                                        yAxisId="left"
+                                        orientation="left"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#2563eb', fontSize: 11 }}
+                                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                                        domain={['auto', 'auto']}
+                                    />
+                                    {/* Eje derecho: PBI % */}
+                                    <YAxis
+                                        yAxisId="right"
+                                        orientation="right"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#dc2626', fontSize: 11 }}
+                                        tickFormatter={(v) => `${v}%`}
+                                        domain={['auto', 'auto']}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
+                                        formatter={(value: number, name: string) => {
+                                            if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
+                                            return [`USD ${new Intl.NumberFormat('en-US').format(value)} M`, 'Exportaciones FOB'];
+                                        }}
+                                    />
+                                    {/* Línea de Exportaciones — azul, continua */}
+                                    <Line
+                                        yAxisId="left"
+                                        type="monotone"
+                                        dataKey="exportaciones"
+                                        name="exportaciones"
+                                        stroke="#2563eb"
+                                        strokeWidth={4}
+                                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                                        activeDot={{ r: 8 }}
+                                        connectNulls
+                                    />
+                                    {/* Línea del PBI — roja, continua */}
+                                    <Line
+                                        yAxisId="right"
+                                        type="monotone"
+                                        dataKey="pbi"
+                                        name="pbi"
+                                        stroke="#dc2626"
+                                        strokeWidth={2}
+                                        dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
+                                        activeDot={{ r: 6 }}
+                                        connectNulls
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
-                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
-                    </div>
-                </div>
-                <div className="w-full overflow-x-auto pb-4">
-                    <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                            data={EXPORTACIONES_DATA.map(({ anio, exportaciones }) => ({
-                                anio: String(anio),
-                                exportaciones,
-                                pbi: PBI_DATA[anio] ?? null
-                            }))}
-                            margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
-                            {/* Eje izquierdo: Exportaciones USD millones */}
-                            <YAxis
-                                yAxisId="left"
-                                orientation="left"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#2563eb', fontSize: 11 }}
-                                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                                domain={['auto', 'auto']}
-                            />
-                            {/* Eje derecho: PBI % */}
-                            <YAxis
-                                yAxisId="right"
-                                orientation="right"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#dc2626', fontSize: 11 }}
-                                tickFormatter={(v) => `${v}%`}
-                                domain={['auto', 'auto']}
-                            />
-                            <Tooltip
-                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
-                                formatter={(value: number, name: string) => {
-                                    if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI Perú'];
-                                    return [`USD ${new Intl.NumberFormat('en-US').format(value)} M`, 'Exportaciones FOB'];
-                                }}
-                            />
-                            {/* Línea de Exportaciones — azul, continua */}
-                            <Line
-                                yAxisId="left"
-                                type="monotone"
-                                dataKey="exportaciones"
-                                name="exportaciones"
-                                stroke="#2563eb"
-                                strokeWidth={4}
-                                dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                                activeDot={{ r: 8 }}
-                                connectNulls
-                            />
-                            {/* Línea del PBI — roja, continua */}
-                            <Line
-                                yAxisId="right"
-                                type="monotone"
-                                dataKey="pbi"
-                                name="pbi"
-                                stroke="#dc2626"
-                                strokeWidth={2}
-                                dot={{ r: 3, strokeWidth: 1.5, fill: '#fff', stroke: '#dc2626' }}
-                                activeDot={{ r: 6 }}
-                                connectNulls
-                            />
-                        </LineChart>
-                    </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
 
             {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
