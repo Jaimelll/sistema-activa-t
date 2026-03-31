@@ -417,13 +417,13 @@ export default function EvaluacionPage() {
 
             {/* Projects Table */}
             <div className="card !p-0">
-                <div className="w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto border-b border-gray-200 shadow sm:rounded-lg">
                     {loading ? (
                         <div className="flex justify-center py-12">
                             <Loader2 className="w-8 h-8 animate-spin text-accent" />
                         </div>
                     ) : (
-                        <table id="eval-table-v2" className="w-full text-xs min-w-[900px]" style={{ tableLayout: 'fixed' }}>
+                        <table id="eval-table-v2" className="w-full text-xs min-w-[1200px]" style={{ tableLayout: 'fixed' }}>
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
                                     <th className="text-left py-1.5 px-2 font-semibold text-gray-600" style={{ width: '40px' }}>ID</th>
