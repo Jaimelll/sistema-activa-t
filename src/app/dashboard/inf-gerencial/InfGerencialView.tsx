@@ -293,7 +293,8 @@ export default function InfGerencialView({
                         <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%)</span>
                     </div>
                 </div>
-                <div className="h-[500px] w-full">
+                <div className="w-full overflow-x-auto pb-4">
+                    <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={lineData} margin={{ top: 10, right: 50, left: 20, bottom: 40 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -350,6 +351,7 @@ export default function InfGerencialView({
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
@@ -369,7 +371,8 @@ export default function InfGerencialView({
                         <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
                     </div>
                 </div>
-                <div className="h-[500px] w-full">
+                <div className="w-full overflow-x-auto pb-4">
+                    <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                             data={Object.keys(COBRE_DATA).map(Number).sort((a, b) => a - b).map(anio => ({
@@ -434,6 +437,7 @@ export default function InfGerencialView({
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
@@ -453,7 +457,8 @@ export default function InfGerencialView({
                         <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%) fuente (INEI/BCRP)</span>
                     </div>
                 </div>
-                <div className="h-[500px] w-full">
+                <div className="w-full overflow-x-auto pb-4">
+                    <div className="min-w-[800px] sm:min-w-[1000px] h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                             data={EXPORTACIONES_DATA.map(({ anio, exportaciones }) => ({
@@ -518,6 +523,7 @@ export default function InfGerencialView({
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
 
