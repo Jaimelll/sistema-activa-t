@@ -297,7 +297,7 @@ export default function InfGerencialView({
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={lineData} margin={{ top: 10, right: 50, left: 20, bottom: 40 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
                             {/* Eje izquierdo: Aportes en S/ */}
                             <YAxis
                                 yAxisId="left"
@@ -380,7 +380,7 @@ export default function InfGerencialView({
                             margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
                             {/* Eje izquierdo: Precio del cobre */}
                             <YAxis
                                 yAxisId="left"
@@ -464,7 +464,7 @@ export default function InfGerencialView({
                             margin={{ top: 10, right: 50, left: 20, bottom: 40 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval={2} />
+                            <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} interval="preserveStartEnd" minTickGap={20} />
                             {/* Eje izquierdo: Exportaciones USD millones */}
                             <YAxis
                                 yAxisId="left"
