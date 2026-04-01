@@ -4,18 +4,13 @@ import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function getAniosAportes() {
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('aportes').select('anio');
-    if (error) return [];
-    const aniosSet = new Set(data.map((d: any) => d.anio));
-    return Array.from(aniosSet).sort((a: any, b: any) => b - a);
+    // Hardcodeado temporalmente para evitar el colapso del servidor
+    return [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
 }
 
 export async function getEmpresasData(anioFiltro: string | number = 'Todos') {
     const supabase = await createClient();
-    
     let result;
-    console.time('Supabase Query Timer');
 
     if (anioFiltro && anioFiltro !== 'Todos') {
         result = await supabase.from('empresas').select('ruc, razon_social, ciiu_id, sectores_ciiu(id, seccion_desc, ciiu_codigo), aportes!inner(id, anio, monto)').eq('aportes.anio', Number(anioFiltro));
@@ -23,23 +18,14 @@ export async function getEmpresasData(anioFiltro: string | number = 'Todos') {
         result = await supabase.from('empresas').select('ruc, razon_social, ciiu_id, sectores_ciiu(id, seccion_desc, ciiu_codigo), aportes(id, anio, monto)');
     }
 
-    console.timeEnd('Supabase Query Timer');
-    
     const { data, error } = result;
-
-    if (error) {
-        console.error('Error fetching empresas:', error);
-        return [];
-    }
-    
-    console.log(`Registros de empresas devueltos de BD: ${data?.length || 0}`);
+    if (error) return [];
 
     return data.map((e: any) => ({
         ruc: e.ruc,
         razon_social: e.razon_social,
         ciiu_id: e.ciiu_id,
         sector: e.sectores_ciiu?.seccion_desc || 'Desconocido',
-        ciiu_codigo: e.sectores_ciiu?.ciiu_codigo || '',
         total_aportes: e.aportes?.reduce((sum: number, a: any) => sum + Number(a.monto), 0) || 0,
         aportes_count: e.aportes?.length || 0,
         aportes: (e.aportes || []).sort((a: any, b: any) => b.anio - a.anio)
