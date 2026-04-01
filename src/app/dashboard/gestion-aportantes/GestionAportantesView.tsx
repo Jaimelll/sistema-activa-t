@@ -13,7 +13,7 @@ interface EmpresaRow {
     razon_social: string;
     ciiu_id: number;
     sector: string;
-    ciiu_codigo: string;
+    ciiu_codigo?: string;
     total_aportes: number;
     aportes_count: number;
     aportes: Aporte[];
@@ -25,7 +25,6 @@ const fmt = (v: number) => `S/ ${v.toLocaleString('es-PE', { minimumFractionDigi
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function GestionAportantesView({ initialData, sectores }: { initialData: EmpresaRow[]; sectores: any[]; }) {
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
 
     // Search & Filter
     const [searchTerm, setSearchTerm] = useState("");
@@ -33,34 +32,26 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
     const [empresasData, setEmpresasData] = useState<EmpresaRow[]>(initialData);
     const [expandedRuc, setExpandedRuc] = useState<string | null>(null);
+    const [isFiltering, setIsFiltering] = useState(false);
 
     useEffect(() => {
         getAniosAportes().then(setAniosDisponibles).catch(console.error);
     }, []);
 
-    useEffect(() => {
-        let isMounted = true;
-        // Solo recargar si cambia el selectedAnio (removido initialData para prevenir Next.js infinite route refresh loop)
-        startTransition(async () => {
-            if (selectedAnio === 'Todos') {
-                if (isMounted) setEmpresasData(initialData);
-            } else {
-                const data = await getEmpresasData(selectedAnio);
-                if (isMounted) setEmpresasData(data);
-            }
-        });
-        return () => { isMounted = false; };
-    }, [selectedAnio]); // <-- STABLE DEP ARRAY
-
-    // Sincronizar mutaciones locales (ej: crear empresa) cuando estamos en vista "Todos"
-    // previniendo loop infinito al guardar en Refs
-    const initialDataRef = useRef(initialData);
-    useEffect(() => {
-        if (selectedAnio === 'Todos' && initialData !== initialDataRef.current) {
-            initialDataRef.current = initialData;
-            setEmpresasData(initialData);
+    const handleFiltroChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const anio = e.target.value;
+        setSelectedAnio(anio);
+        setIsFiltering(true);
+        
+        try {
+            const dataFiltrada = await getEmpresasData(anio);
+            setEmpresasData(dataFiltrada as EmpresaRow[]);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsFiltering(false);
         }
-    }, [initialData, selectedAnio]);
+    };
 
     // New Empresa modal
     const [showNuevaEmpresa, setShowNuevaEmpresa] = useState(false);
@@ -101,7 +92,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
         });
 
         return result;
-    }, [initialData, searchTerm]);
+    }, [empresasData, searchTerm]);
 
     // Reset de página separado del useMemo para evitar anti-patrón de setState dentro de memo
     useEffect(() => {
@@ -111,11 +102,11 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
     const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
     const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-    const refresh = () => startTransition(() => router.refresh());
+    const refresh = () => console.log("Refresh logic pending - intentional avoidance of router.refresh()");
 
     const withSubmit = async (fn: () => Promise<void>) => {
         setSubmitting(true); setError(null);
-        try { await fn(); refresh(); }
+        try { await fn(); /* refresh(); removido para evitar bucle */ }
         catch (e: any) { setError(e.message || 'Error inesperado'); throw e; }
         finally { setSubmitting(false); }
     };
@@ -201,7 +192,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                             <select
                                 className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
                                 value={selectedAnio}
-                                onChange={e => setSelectedAnio(e.target.value)}
+                                onChange={handleFiltroChange}
                             >
                                 <option value="Todos">Todos los años</option>
                                 {aniosDisponibles.map(anio => (
@@ -227,7 +218,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                                 <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className={`bg-white divide-y divide-gray-200 transition-opacity duration-200 ${isPending ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+                        <tbody className={`bg-white divide-y divide-gray-200 transition-opacity duration-200 ${isFiltering ? "opacity-50" : ""}`}>
                             {paginatedData.map(empresa => (
                                 <Fragment key={empresa.ruc}>
                                     <tr className="hover:bg-blue-50/40 transition-colors">
@@ -367,7 +358,7 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                     if (!editingEmpresa) return;
                     await updateEmpresa(editingEmpresa.ruc, { razon_social: data.razon_social, ciiu_id: data.ciiu_id });
                     setEditingEmpresa(null);
-                    refresh();
+                    // refresh(); removido
                 }}
                 sectores={sectores}
                 initialData={editingEmpresa ? { ruc: editingEmpresa.ruc, razon_social: editingEmpresa.razon_social, ciiu_id: editingEmpresa.ciiu_id } : undefined}
@@ -379,15 +370,15 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                 empresa={managingEmpresa}
                 onSave={async (data) => {
                     await createAporte(data);
-                    refresh();
+                    // refresh(); removido
                 }}
                 onUpdate={async (id, data) => {
                     await updateAporte(id, data);
-                    refresh();
+                    // refresh(); removido
                 }}
                 onDelete={async (id) => {
                     await deleteAporte(id);
-                    refresh();
+                    // refresh(); removido
                 }}
             />
         </div>
