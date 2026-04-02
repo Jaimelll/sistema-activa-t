@@ -335,7 +335,7 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
     // Get latest evaluation result per project
     const { data: resultados, error: resError } = await supabase
         .from("evaluaciones_resultados")
-        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id, url_subsanacion, url_resultado_subsanacion")
+        .select("proyecto_id, estado, puntaje_total, url_pdf_final, id, url_subsanacion, url_resultado_subsanacion, url_supervision, url_resultado_supervision, estado_supervision")
         .order("fecha_evaluacion", { ascending: false });
 
     if (resError) {
@@ -370,6 +370,9 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
             eval_id: latestRes?.id || null,
             url_subsanacion: latestRes?.url_subsanacion || null,
             url_resultado_subsanacion: latestRes?.url_resultado_subsanacion || null,
+            url_supervision: latestRes?.url_supervision || null,
+            url_resultado_supervision: latestRes?.url_resultado_supervision || null,
+            estado_supervision: latestRes?.estado_supervision || null,
             evaluaciones_resultados: latestRes ? [latestRes] : []
         };
     });
@@ -683,4 +686,114 @@ export async function getResultadoEvaluacion(proyectoId: number) {
     }
 
     return data;
+}
+
+// ──────────────────────── UPLOAD SUPERVISIÓN ────────────────────────
+
+export async function uploadSupervision(proyectoId: number, formData: FormData) {
+    const supabase = getSupabase();
+    const file = formData.get("archivo") as File | null;
+
+    if (!file || file.size === 0) return { success: false, error: "No se seleccionó archivo." };
+    if (file.type !== "application/pdf") return { success: false, error: "Solo se permiten archivos PDF." };
+    if (file.size > 15 * 1024 * 1024) return { success: false, error: "El archivo excede 15 MB." };
+
+    const fileName = `supervision_${proyectoId}_${Date.now()}.pdf`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("proyectos_postulantes")
+        .upload(fileName, file, { contentType: "application/pdf", upsert: true });
+
+    if (uploadError) return { success: false, error: `Error al subir: ${uploadError.message}` };
+
+    const { data: urlData } = supabase.storage.from("proyectos_postulantes").getPublicUrl(uploadData.path);
+    const publicUrl = urlData.publicUrl;
+
+    // Save URL in the latest evaluation record (or create one)
+    const { data: existing } = await supabase
+        .from("evaluaciones_resultados")
+        .select("id")
+        .eq("proyecto_id", proyectoId)
+        .order("fecha_evaluacion", { ascending: false })
+        .limit(1)
+        .single();
+
+    if (existing) {
+        await supabase.from("evaluaciones_resultados")
+            .update({ url_supervision: publicUrl })
+            .eq("id", existing.id);
+    } else {
+        await supabase.from("evaluaciones_resultados").insert({
+            proyecto_id: proyectoId,
+            url_supervision: publicUrl,
+            estado: "Pendiente",
+        });
+    }
+
+    revalidatePath("/dashboard/evaluacion");
+    return { success: true, url: publicUrl };
+}
+
+// ──────────────────────── TRIGGER SUPERVISIÓN ────────────────────────
+
+export async function triggerSupervision(
+    proyectoId: number,
+    urlResultadoSubsanacion: string | null,
+    urlDocumentoSupervision: string
+) {
+    const supabase = getSupabase();
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+
+    if (!webhookUrl) return { success: false, error: "N8N_WEBHOOK_URL no configurada." };
+
+    // Mark estado_supervision = 'Procesando' before firing (mirrors triggerEvaluacion pattern)
+    const { data: existing } = await supabase
+        .from("evaluaciones_resultados")
+        .select("id")
+        .eq("proyecto_id", proyectoId)
+        .order("fecha_evaluacion", { ascending: false })
+        .limit(1)
+        .single();
+
+    if (existing) {
+        await supabase
+            .from("evaluaciones_resultados")
+            .update({ estado_supervision: "Procesando" })
+            .eq("id", existing.id);
+    } else {
+        await supabase.from("evaluaciones_resultados").insert({
+            proyecto_id: proyectoId,
+            url_supervision: urlDocumentoSupervision,
+            estado_supervision: "Procesando",
+        });
+    }
+
+    const payload = {
+        proyecto_id: proyectoId,
+        tipo: "supervision",
+        url_resultado_subsanacion: urlResultadoSubsanacion,
+        url_documento_supervision: urlDocumentoSupervision,
+    };
+
+    console.log("[Supervision] Sending payload to n8n:", payload);
+
+    try {
+        const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
+            body: JSON.stringify(payload),
+        });
+        const resText = await res.text();
+        console.log(`[Supervision] n8n response ${res.status}:`, resText);
+        return { success: true };
+    } catch (err: any) {
+        console.error("[Supervision] Error calling n8n:", err);
+        // Revert estado on error
+        if (existing) {
+            await supabase
+                .from("evaluaciones_resultados")
+                .update({ estado_supervision: "Error" })
+                .eq("id", existing.id);
+        }
+        return { success: false, error: "Error al contactar el servicio de IA." };
+    }
 }
