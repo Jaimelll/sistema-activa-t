@@ -19,6 +19,9 @@ import {
     triggerSubsanacion,
     uploadSupervision,
     triggerSupervision,
+    uploadResultadoEvaluacion,
+    uploadResultadoSubsanacion,
+    uploadResultadoSupervision,
     type EvalFilters,
 } from './actions';
 
@@ -42,25 +45,31 @@ type Proyecto = {
 
 // ─── Reusable PhaseCell ───────────────────────────────────────────────────────
 /**
- * Renders the three-step action column for any phase:
- *   Step A – no input doc  → SUBIR button
- *   Step B – has input, no result → VER/CAMBIAR + EVALUAR
- *   Step C – has result   → VER/CAMBIAR + EVALUAR (re-eval) + VER RES.
+ * Renders the three-step cumulative action column for any phase:
+ *
+ *   Estado 1 – sin archivo de entrada  → solo "SUBIR [FASE]"
+ *   Estado 2 – hay entrada, sin resultado:
+ *               fila VER + CAMBIAR (entrada)
+ *               botón "EVALUAR [FASE]"
+ *   Estado 3 – hay entrada Y resultado:
+ *               fila VER + CAMBIAR (entrada)
+ *               botón "EVALUAR [FASE]"  ← siempre accesible para re-evaluar
+ *               fila "VER RES." + CAMBIAR (resultado)
  */
 interface PhaseCellProps {
     phaseLabel: string;              // e.g. "EVAL.", "SUB.", "SUPERV."
     inputUrl: string | null;         // doc de entrada
     resultUrl: string | null;        // doc resultado generado por IA
-    isGenerating: boolean;           // this row is being processed RIGHT NOW (local click)
+    isGenerating: boolean;           // this row is processing RIGHT NOW (local click)
     uploadingThisRow: boolean;       // uploading input doc for this row
-    /** Extra persistent badge (e.g. 'Procesando' from DB) shown alongside the button */
+    /** Persistent processing badge (e.g. 'Procesando' from DB while webhook runs) */
     dbProcessing?: boolean;
     onUploadInput: (file: File) => void;
     onEvaluar: () => void;
-    onUploadResult?: (file: File) => void; // only for Evaluación (manual PDF result)
+    /** Called when the specialist replaces the result file directly */
+    onUploadResult?: (file: File) => void;
     accentColor: 'indigo' | 'amber' | 'teal';
-    resultLabel?: string;            // override "VER RES." label
-    showResultUpload?: boolean;      // show manual result upload (Evaluación phase)
+    resultLabel?: string;            // override "VER RES. [FASE]" label
 }
 
 const ACCENT_MAP = {
@@ -99,14 +108,13 @@ function PhaseCell({
     onUploadResult,
     accentColor,
     resultLabel,
-    showResultUpload = false,
 }: PhaseCellProps) {
     const c = ACCENT_MAP[accentColor];
 
-    // ── Step A: no input doc ─────────────────────────────────────────────
+    // ── Estado 1: sin archivo de entrada ────────────────────────────────────
     if (!inputUrl) {
         return (
-            <div className="flex flex-col items-stretch gap-1 min-w-[150px]">
+            <div className="flex flex-col items-stretch gap-2 min-w-[160px]">
                 {uploadingThisRow ? (
                     <span className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] text-indigo-600">
                         <Loader2 className="w-3 h-3 animate-spin" /> Subiendo...
@@ -133,11 +141,12 @@ function PhaseCell({
         );
     }
 
-    // ── Step B/C: has input doc ──────────────────────────────────────────
+    // ── Estados 2 y 3: hay archivo de entrada ───────────────────────────────
     return (
-        <div className="flex flex-col items-stretch gap-1 min-w-[150px]">
-            {/* VER / CAMBIAR row */}
-            <div className="flex items-center gap-1">
+        <div className="flex flex-col items-stretch gap-2 min-w-[160px]">
+
+            {/* — Fila VER / CAMBIAR (archivo de entrada) — */}
+            <div className="flex flex-row items-center gap-2">
                 <a
                     href={inputUrl}
                     target="_blank"
@@ -166,7 +175,7 @@ function PhaseCell({
                 )}
             </div>
 
-            {/* EVALUAR button */}
+            {/* — Botón EVALUAR (siempre visible cuando hay archivo de entrada) — */}
             <button
                 onClick={onEvaluar}
                 disabled={isGenerating || dbProcessing}
@@ -176,7 +185,7 @@ function PhaseCell({
                 {isGenerating ? (
                     <>
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Generando...
+                        Procesando...
                     </>
                 ) : (
                     <>
@@ -186,7 +195,7 @@ function PhaseCell({
                 )}
             </button>
 
-            {/* DB-level processing badge (webhook running in background) */}
+            {/* — Badge "Procesando…" desde BD (webhook corriendo en segundo plano) — */}
             {dbProcessing && !isGenerating && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-semibold rounded-full bg-blue-50 text-blue-600 border border-blue-200">
                     <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -194,35 +203,34 @@ function PhaseCell({
                 </span>
             )}
 
-            {/* VER RES. — Step C */}
+            {/* — Estado 3: resultado disponible — VER RES. + CAMBIAR resultado — */}
             {resultUrl && (
-                <a
-                    href={resultUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded ${c.resBg} text-white transition-colors`}
-                >
-                    <ExternalLink className="w-3 h-3" />
-                    {resultLabel ?? `VER RES. ${phaseLabel}`}
-                </a>
-            )}
-
-            {/* Manual result upload for Evaluación phase (Step C: no resultUrl yet) */}
-            {showResultUpload && !resultUrl && (
-                <label className={`inline-flex items-center justify-center gap-1 px-2 py-0.5 text-[10px] font-bold uppercase rounded border cursor-pointer transition-colors ${c.uploadBorder}`}>
-                    <Upload className="w-3 h-3" />
-                    SUBIR RES.
-                    <input
-                        type="file"
-                        accept=".pdf"
-                        className="hidden"
-                        onChange={e => {
-                            const f = e.target.files?.[0];
-                            if (f && onUploadResult) onUploadResult(f);
-                            e.target.value = '';
-                        }}
-                    />
-                </label>
+                <div className="flex flex-row items-center gap-2">
+                    <a
+                        href={resultUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded ${c.resBg} text-white transition-colors`}
+                    >
+                        <ExternalLink className="w-3 h-3" />
+                        {resultLabel ?? `VER RES. ${phaseLabel}`}
+                    </a>
+                    {onUploadResult && (
+                        <label className="text-[9px] text-blue-600 font-semibold hover:underline cursor-pointer uppercase">
+                            CAMBIAR
+                            <input
+                                type="file"
+                                accept=".pdf"
+                                className="hidden"
+                                onChange={e => {
+                                    const f = e.target.files?.[0];
+                                    if (f) onUploadResult(f);
+                                    e.target.value = '';
+                                }}
+                            />
+                        </label>
+                    )}
+                </div>
             )}
         </div>
     );
@@ -336,6 +344,50 @@ export default function EvaluacionPage() {
             } else { showMsg(result.error || 'Error al subir supervisión.', 'error'); }
         } catch { showMsg('Error al subir supervisión.', 'error'); }
         removeFromSet(setUploadingSuperv, proyectoId);
+    };
+
+    // ── Upload-Result helpers (replace result file per phase) ──────────────
+
+    const handleUploadResultEval = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') return showMsg('Solo se permiten archivos PDF.', 'error');
+        addToSet(setUploadingRes, proyectoId);
+        const fd = new FormData(); fd.append('archivo', file);
+        try {
+            const result = await uploadResultadoEvaluacion(proyectoId, fd);
+            if (result.success) {
+                setProyectos(prev => prev.map(p => p.id === proyectoId ? { ...p, eval_pdf_url: result.url ?? null } : p));
+                showMsg('Resultado de evaluación reemplazado.', 'success');
+            } else { showMsg(result.error || 'Error al subir resultado.', 'error'); }
+        } catch { showMsg('Error al subir resultado.', 'error'); }
+        removeFromSet(setUploadingRes, proyectoId);
+    };
+
+    const handleUploadResultSub = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') return showMsg('Solo se permiten archivos PDF.', 'error');
+        addToSet(setUploadingRes, proyectoId);
+        const fd = new FormData(); fd.append('archivo', file);
+        try {
+            const result = await uploadResultadoSubsanacion(proyectoId, fd);
+            if (result.success) {
+                setProyectos(prev => prev.map(p => p.id === proyectoId ? { ...p, url_resultado_subsanacion: result.url ?? null } : p));
+                showMsg('Resultado de subsanación reemplazado.', 'success');
+            } else { showMsg(result.error || 'Error al subir resultado de subsanación.', 'error'); }
+        } catch { showMsg('Error al subir resultado de subsanación.', 'error'); }
+        removeFromSet(setUploadingRes, proyectoId);
+    };
+
+    const handleUploadResultSuperv = async (proyectoId: number, file: File) => {
+        if (file.type !== 'application/pdf') return showMsg('Solo se permiten archivos PDF.', 'error');
+        addToSet(setUploadingRes, proyectoId);
+        const fd = new FormData(); fd.append('archivo', file);
+        try {
+            const result = await uploadResultadoSupervision(proyectoId, fd);
+            if (result.success) {
+                setProyectos(prev => prev.map(p => p.id === proyectoId ? { ...p, url_resultado_supervision: result.url ?? null } : p));
+                showMsg('Resultado de supervisión reemplazado.', 'success');
+            } else { showMsg(result.error || 'Error al subir resultado de supervisión.', 'error'); }
+        } catch { showMsg('Error al subir resultado de supervisión.', 'error'); }
+        removeFromSet(setUploadingRes, proyectoId);
     };
 
     // ── Trigger helpers ────────────────────────────────────────────────────
@@ -568,7 +620,7 @@ export default function EvaluacionPage() {
                                         </td>
 
                                         {/* ── EVALUACIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-indigo-50/10 align-top">
+                                        <td className="py-1.5 px-2 bg-indigo-50/10 align-top min-w-[160px]">
                                             <PhaseCell
                                                 phaseLabel="EVAL."
                                                 inputUrl={p.url_archivo_proyecto}
@@ -577,14 +629,14 @@ export default function EvaluacionPage() {
                                                 uploadingThisRow={uploadingInput.has(p.id)}
                                                 onUploadInput={f => handleUploadInput(p.id, f)}
                                                 onEvaluar={() => handleEvaluarEval(p)}
+                                                onUploadResult={f => handleUploadResultEval(p.id, f)}
                                                 accentColor="indigo"
                                                 resultLabel="VER RES. EVAL."
-                                                showResultUpload={false}
                                             />
                                         </td>
 
                                         {/* ── SUBSANACIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-amber-50/10 align-top">
+                                        <td className="py-1.5 px-2 bg-amber-50/10 align-top min-w-[160px]">
                                             <PhaseCell
                                                 phaseLabel="SUB."
                                                 inputUrl={p.url_subsanacion}
@@ -593,13 +645,14 @@ export default function EvaluacionPage() {
                                                 uploadingThisRow={uploadingSub.has(p.id)}
                                                 onUploadInput={f => handleUploadSub(p.id, f)}
                                                 onEvaluar={() => handleEvaluarSub(p)}
+                                                onUploadResult={f => handleUploadResultSub(p.id, f)}
                                                 accentColor="amber"
                                                 resultLabel="VER RES. SUB."
                                             />
                                         </td>
 
                                         {/* ── SUPERVISIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-teal-50/10 align-top">
+                                        <td className="py-1.5 px-2 bg-teal-50/10 align-top min-w-[160px]">
                                             <PhaseCell
                                                 phaseLabel="SUPERV."
                                                 inputUrl={p.url_supervision}
@@ -609,6 +662,7 @@ export default function EvaluacionPage() {
                                                 uploadingThisRow={uploadingSuperv.has(p.id)}
                                                 onUploadInput={f => handleUploadSuperv(p.id, f)}
                                                 onEvaluar={() => handleEvaluarSuperv(p)}
+                                                onUploadResult={f => handleUploadResultSuperv(p.id, f)}
                                                 accentColor="teal"
                                                 resultLabel="VER INF. SUPERV."
                                             />
