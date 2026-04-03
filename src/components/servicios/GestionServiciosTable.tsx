@@ -21,6 +21,7 @@ interface GestionServiciosTableProps {
   modalidades: any[];
   instituciones: any[];
   condiciones: any[];
+  grupos: any[];
 }
 
 export default function GestionServiciosTable({ 
@@ -30,7 +31,8 @@ export default function GestionServiciosTable({
   etapas, 
   modalidades,
   instituciones,
-  condiciones
+  condiciones,
+  grupos
 }: GestionServiciosTableProps) {
   // Filters State
   const [selectedEtapa, setSelectedEtapa] = useState('all');
@@ -329,7 +331,8 @@ export default function GestionServiciosTable({
             etapas: etapas,
             modalidades: modalidades,
             instituciones: instituciones,
-            condiciones: condiciones
+            condiciones: condiciones,
+            grupos: grupos
         }}
       />
     </div>

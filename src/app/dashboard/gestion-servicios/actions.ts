@@ -220,3 +220,20 @@ export async function getInstitucionesBeca() {
   return data.map(item => ({ value: item.id, label: item.descripcion }));
 }
 
+export async function getGrupos() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('grupo')
+    .select('id, descripcion, orden')
+    .eq('tipo', 1)
+    .order('orden', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching grupos:", error);
+    return [];
+  }
+  return data.map(item => ({ 
+    value: item.id, 
+    label: `${item.orden} - ${item.descripcion}` 
+  }));
+}

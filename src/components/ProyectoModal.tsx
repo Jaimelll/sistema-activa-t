@@ -20,6 +20,7 @@ interface ProyectoModalProps {
         etapas: any[];
         modalidades: any[];
         instituciones: any[];
+        grupos: any[];
     };
 }
 
@@ -39,6 +40,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
         avance_tecnico: 0,
         institucion_ejecutora_id: "",
         modalidad_id: "",
+        grupo_id: "",
         año: new Date().getFullYear()
     });
 
@@ -68,6 +70,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 avance_tecnico: proyecto.avance_tecnico || 0,
                 institucion_ejecutora_id: proyecto.institucionId || "",
                 modalidad_id: proyecto.modalidadId || "",
+                grupo_id: proyecto.grupo_id || "",
                 año: proyecto.año || new Date().getFullYear()
             });
             setShowAvances(false);
@@ -88,6 +91,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                 avance_tecnico: 0,
                 institucion_ejecutora_id: "",
                 modalidad_id: "",
+                grupo_id: "",
                 año: new Date().getFullYear()
             });
             setShowAvances(false);
@@ -110,7 +114,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
         try {
             setIsSubmitting(true);
             const cleanedData = { ...formData };
-            const fkFields = ['eje_id', 'linea_id', 'region_id', 'etapa_id', 'institucion_ejecutora_id', 'modalidad_id'];
+            const fkFields = ['eje_id', 'linea_id', 'region_id', 'etapa_id', 'institucion_ejecutora_id', 'modalidad_id', 'grupo_id'];
             fkFields.forEach(field => {
                 if (cleanedData[field] === "") cleanedData[field] = null;
             });
@@ -343,6 +347,19 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                     >
                                         <option value="">Seleccione Modalidad</option>
                                         {options.modalidades.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Grupo de Interés</label>
+                                    <select
+                                        name="grupo_id"
+                                        value={formData.grupo_id || ""}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                    >
+                                        <option value="">Seleccione Grupo</option>
+                                        {options.grupos.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </select>
                                 </div>
 
