@@ -96,7 +96,6 @@ export default function ServiciosPage() {
         loadInitialData();
     }, []);
 
-    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [processState, setProcessState] = useState<'Todos' | 'En proceso'>('Todos');
 
     // Dynamic Filter Options
@@ -135,7 +134,7 @@ export default function ServiciosPage() {
 
     // Filter Logic
     const filteredData = useMemo(() => {
-        let result = data.filter(item => {
+        return data.filter(item => {
             const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
             const matchEje = activeFilters.ejes.includes(item.eje_id);
             const matchLinea = activeFilters.lineas.includes(item.linea_id);
@@ -144,28 +143,12 @@ export default function ServiciosPage() {
                 item.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
                 item.documento?.toLowerCase().includes(filters.search.toLowerCase());
 
-            // New "Estado de Proceso" logic: En proceso if etapa_id in [6, 8]
             const matchProcess = processState === 'Todos' || [6, 8].includes(item.etapa_id);
 
             return matchEtapa && matchEje && matchLinea && matchCondicion && matchSearch && matchProcess;
         });
+    }, [data, activeFilters, filters.search, processState]);
 
-        if (selectedGroup) {
-            result = result.filter(item => {
-                const itemGroupKey = `${item.eje_id}-${item.linea_id}`;
-                return itemGroupKey === selectedGroup;
-            });
-        }
-
-        return result;
-    }, [data, activeFilters, filters.search, processState, selectedGroup]);
-
-    const selectedGroupLabel = useMemo(() => {
-        if (!selectedGroup) return '';
-        const item = data.find(item => `${item.eje_id}-${item.linea_id}` === selectedGroup);
-        if (!item) return '';
-        return `${item.eje?.descripcion || 'Sin Eje'} > ${item.linea?.descripcion || 'Sin Línea'}`;
-    }, [selectedGroup, data]);
 
     return (
         <div className="space-y-6 pb-12">
@@ -203,33 +186,9 @@ export default function ServiciosPage() {
                         const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
                         return matchEtapa && matchEje && matchLinea && matchCondicion;
                     })}
-                    onSelectGroup={setSelectedGroup}
-                    selectedGroup={selectedGroup}
                 />
             </div>
 
-            {/* ── Servicios en Detalle: visible ONLY after clicking a Gantt bar ── */}
-            {selectedGroup && (
-                <div className="w-full animate-in fade-in duration-300">
-                    <div className="flex justify-between items-center mb-3 px-2">
-                        <div className="flex flex-col">
-                            <h3 className="text-lg font-black text-gray-900 tracking-tight">
-                                Servicios en Detalle
-                            </h3>
-                            <p className="text-[10px] text-blue-600 font-extrabold uppercase tracking-widest mt-0.5">
-                                Filtrando por: {selectedGroupLabel}
-                            </p>
-                        </div>
-                        <button
-                            onClick={() => setSelectedGroup(null)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg transition-all shadow-md shadow-blue-100 flex items-center gap-2"
-                        >
-                            <span>✕ Cerrar</span>
-                        </button>
-                    </div>
-                    <ServiciosTable data={filteredData} loading={loading} />
-                </div>
-            )}
         </div>
     );
 }
