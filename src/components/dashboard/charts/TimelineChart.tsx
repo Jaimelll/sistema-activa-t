@@ -44,16 +44,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
             const ejeId = project.eje_id || '?';
             const lineaId = project.linea_id || '?';
-            // Use names from data if available, else fallbacks
-            const ejeName = project.eje || `Eje ${ejeId}`;
-            // Use literal "Línea" + ID as requested, separate from description
 
-            // New Key Format: [Date] | Eje [Número Eje] - [Nombre Eje] / Línea [Número Línea] - [Nombre Línea]
-            const key = `${dateStr} | Eje ${ejeId} - ${project.eje || 'Sin Eje'} / Línea ${lineaId} - ${project.linea || 'Sin Línea'}`;
+            // New Key Format: Group by grupo_id
+            const key = project.grupo_id || 'Sin Grupo';
 
             if (!groups.has(key)) {
                 groups.set(key, {
-                    name: key,
+                    name: project.grupo_descripcion || 'Sin Grupo',
+                    orden: project.grupo_orden || 999,
                     ejeId: Number(ejeId) || 999,
                     lineaId: Number(lineaId) || 999,
                     stage1Dates: [],
@@ -173,6 +171,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
             return {
                 name: g.name,
+                orden: g.orden,
                 ejeId: g.ejeId,
                 lineaId: g.lineaId,
                 count: g.projectCount,
@@ -193,14 +192,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             };
         })
             .filter(Boolean)
-            .sort((a: any, b: any) => {
-                // Priority 1: Eje ID (Asc)
-                if (a.ejeId !== b.ejeId) return a.ejeId - b.ejeId;
-                // Priority 2: Linea ID (Asc)
-                if (a.lineaId !== b.lineaId) return a.lineaId - b.lineaId;
-                // Priority 3: Start Date (Oldest to Newest)
-                return a.start - b.start;
-            });
+            .sort((a: any, b: any) => a.orden - b.orden);
 
         return chartData;
 
@@ -213,14 +205,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
     const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' }) : '-';
 
     // Helper to clean Y Axis Label - Revert to short IDs as requested
-    const formatYAxis = (key: string) => {
-        // key format: "[Date] | Eje [ID] - [Nombre] / Línea [ID] - [Nombre]"
-        // we want: "Eje [ID] - Línea [ID]"
-        const parts = key.split(' | ')[1]?.split(' / ') || [];
-        const ejeShort = parts[0]?.split(' - ')[0] || '';
-        const lineaShort = parts[1]?.split(' - ')[0] || '';
-        return `${ejeShort} - ${lineaShort}`;
-    };
+    const formatYAxis = (name: string) => name;
 
     const ONE_DAY = 86400000;
 
@@ -232,7 +217,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 <div className="bg-white p-3 rounded-lg shadow-xl border border-gray-200 text-xs shadow-blue-900/10">
                     <div className="mb-2 pb-2 border-b border-gray-100">
                         <p className="font-bold text-gray-800">
-                            {d.name.split(' | ')[1] || d.name} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
+                            {d.name} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
                         </p>
                     </div>
 
@@ -397,12 +382,12 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 >
                     <div className="mb-4 pb-2 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-2 text-gray-800">
                         <div className="flex-1 text-left">
-                            <span className="text-xs font-semibold uppercase text-gray-500 block">Eje</span>
-                            <span className="text-sm font-bold">{(selectedGroup.name.split(' | ')[1] || '').split(' / ')[0]}</span>
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Grupo</span>
+                            <span className="text-sm font-bold">{selectedGroup.name}</span>
                         </div>
                         <div className="flex-1 text-center border-l border-r border-gray-200 px-4">
-                            <span className="text-xs font-semibold uppercase text-gray-500 block">Línea</span>
-                            <span className="text-sm font-bold">{(selectedGroup.name.split(' | ')[1] || '').split(' / ')[1]}</span>
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Eje - Línea</span>
+                            <span className="text-sm font-bold">Eje {selectedGroup.ejeId} - Línea {selectedGroup.lineaId}</span>
                         </div>
                         <div className="flex-1 text-right">
                             <span className="text-xs font-semibold uppercase text-gray-500 block">Resumen</span>

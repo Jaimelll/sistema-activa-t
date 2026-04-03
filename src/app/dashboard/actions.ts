@@ -281,6 +281,8 @@ export async function getTimelineData() {
       instituciones_ejecutoras (nombre),
       regiones (descripcion),
       etapas (descripcion),
+      grupo_id,
+      grupo:grupo_id (descripcion, orden),
       avance_tecnico,
       avance_proyecto (
         id,
@@ -301,6 +303,9 @@ export async function getTimelineData() {
     id: p.id,
     nombre: p.nombre,
     estado: p.etapas?.descripcion || 'Activo',
+    grupo_id: p.grupo_id,
+    grupo_descripcion: p.grupo?.descripcion || 'Sin Grupo',
+    grupo_orden: p.grupo?.orden || 999,
     eje_id: p.eje_id,
     linea_id: p.linea_id,
     eje: p.ejes?.descripcion || `Eje ${p.eje_id}`,

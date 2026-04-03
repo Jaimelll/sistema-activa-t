@@ -57,21 +57,12 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             const grupoDescripcion = beca.grupo?.descripcion || '';
             const grupoOrden = beca.grupo?.orden || grupoId;
 
-            // Obtener la línea original (ej: "7 - Beca Trabajadores")
-            const lineaOriginal = `${beca.linea_id} - ${beca.linea?.descripcion || 'Sin Línea'}`;
-
-            // Combinar: "7 - Beca Trabajadores Hijos" (solo espacio, sin dos puntos)
-            const etiquetaCompleta = grupoDescripcion
-                ? `${lineaOriginal} ${grupoDescripcion}`
-                : lineaOriginal;
+            const etiquetaCompleta = grupoDescripcion || 'Sin Grupo';
 
             if (!groupMap.has(grupoId)) {
                 groupMap.set(grupoId, {
                     key: String(grupoId),
                     name: etiquetaCompleta,
-                    fullName: etiquetaCompleta,
-                    lineaOriginal: lineaOriginal,
-                    grupoDescripcion: grupoDescripcion,
                     grupoOrden: grupoOrden,
                     stageDates: {},
                     totalBudget: 0,
@@ -134,9 +125,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             const row: any = {
                 key: g.key,
                 name: g.name,
-                fullName: g.fullName,
-                lineaOriginal: g.lineaOriginal,
-                grupoDescripcion: g.grupoDescripcion,
                 totalBudget: g.totalBudget,
                 totalAvance: g.totalAvance,
                 count: g.count,
@@ -224,9 +212,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             const rowData: any = {
                 key: row.key,
                 name: row.name,
-                fullName: row.fullName,
-                lineaOriginal: row.lineaOriginal,
-                grupoDescripcion: row.grupoDescripcion,
                 totalBudget: row.totalBudget,
                 totalAvance: row.totalAvance,
                 count: row.count,
@@ -245,10 +230,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
         });
 
         // ORDEN: primero por grupoOrden, luego por fecha (firstStart)
-        const sortedRows = rows.sort((a, b) => {
-            if (a.grupoOrden !== b.grupoOrden) return a.grupoOrden - b.grupoOrden;
-            return a.firstStart - b.firstStart;
-        });
+        const sortedRows = rows.sort((a, b) => a.grupoOrden - b.grupoOrden);
 
         const finalUsedStageIds = Array.from(foundStageIds).sort((a, b) => a - b);
 
@@ -275,7 +257,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             return {
                 startDate: group.firstStart,
                 endDate: group.lastEnd,
-                fullName: group.fullName,
+                name: group.name,
             };
         }
         return null;
