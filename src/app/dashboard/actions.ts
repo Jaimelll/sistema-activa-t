@@ -112,7 +112,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       avance_tecnico: Number(p.avance_tecnico) || 0,
       fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
-      avances: p.avance_proyecto || []
+      avances: p.avance_proyecto || [],
+      grupo_id: p.grupo_id
     };
   });
 
@@ -559,3 +560,24 @@ export async function deleteAvanceProyecto(id: any, proyectoId: any) {
   return { success: true };
 }
 
+export async function getGruposProyectos() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('grupo')
+    .select('id, descripcion, orden')
+    .eq('tipo', 2)
+    .order('orden', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching grupos proyectos:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: `${item.orden} - ${item.descripcion}`
+  }));
+}

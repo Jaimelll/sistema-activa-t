@@ -20,6 +20,7 @@ interface ServicioModalProps {
         modalidades: any[];
         instituciones: any[];
         condiciones: any[];
+        grupos: any[];
     };
 }
 
@@ -34,6 +35,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         linea_id: "",
         etapa_id: "",
         condicion_id: "",
+        grupo_id: "",
         presupuesto: 0,
         avance: 0,
         beneficiarios: 0
@@ -61,6 +63,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 linea_id: servicio.linea_id || "",
                 etapa_id: servicio.etapa_id || "",
                 condicion_id: servicio.condicion_id || "",
+                grupo_id: servicio.grupo_id || "",
                 presupuesto: servicio.presupuesto || 0,
                 avance: servicio.avance || 0,
                 beneficiarios: servicio.beneficiarios || 0
@@ -78,6 +81,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 linea_id: "",
                 etapa_id: "",
                 condicion_id: "",
+                grupo_id: "",
                 presupuesto: 0,
                 avance: 0,
                 beneficiarios: 0
@@ -101,7 +105,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         try {
             setIsSubmitting(true);
             const cleanedData = { ...formData };
-            const fkFields = ['eje_id', 'linea_id', 'etapa_id', 'institucion_id', 'modalidad_id', 'condicion_id'];
+            const fkFields = ['eje_id', 'linea_id', 'etapa_id', 'institucion_id', 'modalidad_id', 'condicion_id', 'grupo_id'];
             fkFields.forEach(field => {
                 if (cleanedData[field] === "") cleanedData[field] = null;
             });
@@ -324,6 +328,19 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     >
                                         <option value="">Seleccione Condición</option>
                                         {options.condiciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Grupo de Interés</label>
+                                    <select
+                                        name="grupo_id"
+                                        value={formData.grupo_id || ""}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                    >
+                                        <option value="">Seleccione Grupo</option>
+                                        {options.grupos.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </select>
                                 </div>
 
