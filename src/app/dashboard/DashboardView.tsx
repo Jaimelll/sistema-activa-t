@@ -20,9 +20,13 @@ interface DashboardViewProps {
     ejesList?: any[];
     timelineData?: any[];
     modalidades?: any[];
+    instituciones?: any[];
+    regiones?: any[];
+    etapasList?: any[];
+    grupos?: any[];
 }
 
-export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [] }: DashboardViewProps) {
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
@@ -359,7 +363,18 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
             {/* Timeline Chart (Principal) */}
             <div className="w-full">
-                <TimelineChart data={filteredTimelineData} />
+                <TimelineChart 
+                    data={filteredTimelineData} 
+                    options={{
+                        lineas: lines,
+                        ejes: ejesList,
+                        regiones: regiones,
+                        etapas: etapasList,
+                        modalidades: modalidades,
+                        instituciones: instituciones,
+                        grupos: grupos
+                    }}
+                />
             </div>
 
             {/* Bottom Row: Bar Chart (100% width) */}
