@@ -25,6 +25,12 @@ interface ProyectoModalProps {
     };
 }
 
+const formatCurrency = (value: any) => {
+    const num = Number(value);
+    if (isNaN(num)) return value;
+    return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(num);
+};
+
 export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isReadOnly = false, options }: ProyectoModalProps) {
     const [formData, setFormData] = useState<any>({
         nombre: "",
@@ -392,10 +398,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presupuestado (S/)</label>
                                     <input
-                                        type="number"
+                                        type={isReadOnly ? "text" : "number"}
                                         name="monto_fondoempleo"
                                         step="0.01"
-                                        value={formData.monto_fondoempleo}
+                                        value={isReadOnly ? formatCurrency(formData.monto_fondoempleo) : formData.monto_fondoempleo}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         disabled={isReadOnly}
@@ -405,10 +411,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contrapartida (S/)</label>
                                     <input
-                                        type="number"
+                                        type={isReadOnly ? "text" : "number"}
                                         name="contrapartida"
                                         step="0.01"
-                                        value={formData.contrapartida}
+                                        value={isReadOnly ? formatCurrency(formData.contrapartida) : formData.contrapartida}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         disabled={isReadOnly}
@@ -418,10 +424,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avance Total (S/)</label>
                                     <input
-                                        type="number"
+                                        type={isReadOnly ? "text" : "number"}
                                         name="avance"
                                         step="0.01"
-                                        value={formData.avance}
+                                        value={isReadOnly ? formatCurrency(formData.avance) : formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         disabled={isReadOnly}
