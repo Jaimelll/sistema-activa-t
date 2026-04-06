@@ -51,6 +51,7 @@ export default function ProyectosServiciosTable({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProyecto, setSelectedProyecto] = useState<any>(null);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
   // Filtering Logic
   const filteredData = useMemo(() => {
@@ -127,11 +128,19 @@ export default function ProyectosServiciosTable({
 
   const handleAdd = () => {
     setSelectedProyecto(null);
+    setIsReadOnlyMode(false);
     setIsModalOpen(true);
   };
 
   const handleEdit = (proyecto: any) => {
     setSelectedProyecto(proyecto);
+    setIsReadOnlyMode(false);
+    setIsModalOpen(true);
+  };
+
+  const handleView = (proyecto: any) => {
+    setSelectedProyecto(proyecto);
+    setIsReadOnlyMode(true);
     setIsModalOpen(true);
   };
 
@@ -291,7 +300,12 @@ export default function ProyectosServiciosTable({
               ) : (
                 filteredData.map((row) => (
                   <tr key={row.id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="sticky left-0 bg-white/95 backdrop-blur px-6 py-4 whitespace-nowrap text-xs font-bold text-gray-400 border-r border-gray-50">{row.id}</td>
+                    <td 
+                      className="sticky left-0 bg-white/95 backdrop-blur px-6 py-4 whitespace-nowrap text-xs font-bold text-blue-600 hover:underline cursor-pointer border-r border-gray-50"
+                      onClick={() => handleView(row)}
+                    >
+                      {row.id}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-mono font-medium text-gray-600">{row.codigo || '-'}</td>
                     <td className="px-6 py-4">
                         <div className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
@@ -380,6 +394,7 @@ export default function ProyectosServiciosTable({
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         proyecto={selectedProyecto}
+        isReadOnly={isReadOnlyMode}
         options={{
             lineas: lines,
             ejes: ejes,
