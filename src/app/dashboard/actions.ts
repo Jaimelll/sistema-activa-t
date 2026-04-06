@@ -122,6 +122,78 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   return mappedData;
 }
 
+export async function getProyectoCompletoById(id: string) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data: p, error } = await supabase
+    .from('proyectos')
+    .select(`
+      *,
+      lineas (descripcion),
+      ejes (descripcion),
+      regiones (descripcion),
+      instituciones_ejecutoras (nombre),
+      modalidades (descripcion),
+      etapas (descripcion),
+      avance_proyecto (
+        id,
+        fecha,
+        etapa_id,
+        sustento,
+        etapa:etapas(descripcion)
+      )
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error || !p) {
+    console.error("Error fetching project by id:", error);
+    return null;
+  }
+
+  // Use the same robust mapping as getDashboardData to ensure compatibility with ProyectoModal
+  const yearMatch = p.codigo?.match(/^(\d{4})/);
+  const year = yearMatch ? parseInt(yearMatch[1], 10) : (Number(p.año) || new Date().getFullYear());
+
+  return {
+      id: p.id,
+      codigo: p.codigo,
+      nombre: p.nombre,
+      institucion: p.instituciones_ejecutoras?.nombre || 'Desconocido',
+      institucionId: p.institucion_ejecutora_id,
+      gestora: p.gestora,
+      linea: p.lineas?.descripcion || 'Desconocido',
+      lineaId: p.linea_id,
+      eje: p.ejes?.descripcion || 'Desconocido',
+      ejeId: p.eje_id,
+      etapa: p.etapas?.descripcion || 'Desconocido',
+      etapaId: p.etapa_id,
+      region: p.regiones?.descripcion || 'Multirregional',
+      regionId: p.region_id,
+      modalidad: p.modalidades?.descripcion || 'Desconocido',
+      modalidadId: p.modalidad_id,
+      estado: p.etapas?.descripcion || 'Activo',
+      year: year,
+      año: Number(p.año) || 0,
+      monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
+      avance: Number(p.avance) || 0,
+      contrapartida: Number(p.contrapartida) || 0,
+      monto_total: Number(p.monto_total) || 0,
+      beneficiarios: Number(p.beneficiarios) || 0,
+      avance_tecnico: Number(p.avance_tecnico) || 0,
+      fecha_inicio: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 1)?.fecha || null,
+      fecha_fin: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 6)?.fecha || null,
+      avances: p.avance_proyecto?.map((av: any) => ({
+          ...av,
+          etapa_nombre: av.etapa?.descripcion || `Etapa ${av.etapa_id}`
+      })) || [],
+      grupo_id: p.grupo_id,
+      ciudad: p.ciudad || ''
+  };
+}
+
 export async function getLineas() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;

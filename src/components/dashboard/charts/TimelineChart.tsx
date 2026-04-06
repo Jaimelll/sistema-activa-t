@@ -2,14 +2,20 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, Cell } from 'recharts';
+import ProyectoModal from '@/components/ProyectoModal';
+import { getProyectoCompletoById } from '@/app/dashboard/actions';
 
 interface TimelineChartProps {
     data: any[]; // Raw project data
+    options?: any;
 }
 
-export function TimelineChart({ data }: TimelineChartProps) {
+export function TimelineChart({ data, options = {} }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedModalProyecto, setSelectedModalProyecto] = useState<any>(null);
+    const [isLoadingModal, setIsLoadingModal] = useState<string | null>(null);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -236,16 +242,14 @@ export function TimelineChart({ data }: TimelineChartProps) {
         return null;
     };
 
-    const handleChartClick = (state: any) => {
+    const handleChartClick = (state: any, e: any) => {
+        if (e && e.stopPropagation) e.stopPropagation();
         if (state && state.activePayload && state.activePayload.length) {
             const d = state.activePayload[0].payload;
             setSelectedGroup(d);
         }
     };
 
-    const handleChartMouseLeave = () => {
-        // Removed clearing to keep detail table visible as requested
-    };
 
     const JAN_2024 = new Date('2024-01-01').getTime();
     const END_2026 = new Date('2026-12-31').getTime();
@@ -266,7 +270,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
     };
 
     return (
-        <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+        <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6" onClick={() => setSelectedGroup(null)}>
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Línea de Tiempo de Proyectos</h3>
                 <div className="flex items-center gap-4">
@@ -280,9 +284,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         data={processedData}
                         margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
                         barSize={18}
-                        onMouseMove={handleChartClick}
                         onClick={handleChartClick}
-                        onMouseLeave={handleChartMouseLeave}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                         <XAxis
@@ -441,7 +443,37 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
                                         return (
                                             <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
-                                                <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.id}</td>
+                                                <td 
+                                                    className="py-1 px-2 text-blue-600 font-bold whitespace-nowrap cursor-pointer hover:underline"
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        setIsLoadingModal(p.id);
+                                                        try {
+                                                            const dataCompleta = await getProyectoCompletoById(p.id);
+                                                            if (dataCompleta) {
+                                                                setSelectedModalProyecto(dataCompleta);
+                                                                setIsModalOpen(true);
+                                                            } else {
+                                                                alert("No se pudo cargar la información completa del proyecto.");
+                                                            }
+                                                        } catch (err) {
+                                                            console.error("Error al cargar data del proyecto", err);
+                                                            alert("Ocurrió un error al cargar la información.");
+                                                        } finally {
+                                                            setIsLoadingModal(null);
+                                                        }
+                                                    }}
+                                                >
+                                                    {isLoadingModal === p.id ? (
+                                                        <span className="flex items-center gap-1 text-orange-500">
+                                                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Cargando
+                                                        </span>
+                                                    ) : p.id}
+                                                </td>
                                                 <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
                                                 <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
                                                 <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
@@ -459,6 +491,26 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         </table>
                     </div>
                 </div>
+            )}
+
+            {/* Modal Integration */}
+            {isModalOpen && (
+                <ProyectoModal 
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    proyecto={selectedModalProyecto}
+                    isReadOnly={true}
+                    onSave={async () => {}} // No necesita hacer nada en modo lectura
+                    options={{
+                        lineas: options.lineas || [],
+                        ejes: options.ejes || [],
+                        regiones: options.regiones || [],
+                        etapas: options.etapas || [],
+                        modalidades: options.modalidades || [],
+                        instituciones: options.instituciones || [],
+                        grupos: options.grupos || []
+                    }}
+                />
             )}
         </div>
     );

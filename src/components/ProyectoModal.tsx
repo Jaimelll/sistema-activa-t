@@ -538,7 +538,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
                                                             })()}
                                                         </span>
-                                                        <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
+                                                        <span className="text-xs font-bold text-gray-800">{av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
                                                         <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
                                                     </div>
                                                     {!isReadOnly && (
