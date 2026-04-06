@@ -64,6 +64,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                     projectCount: 0,
                     start: null,
                     projects: [],
+                    ejeDesc: project.eje || '',
+                    lineaDesc: project.linea || '',
                     etapa: project.etapa || project.estado || 'Sin Etapa'
                 });
             }
@@ -71,6 +73,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
             const group = groups.get(key);
             group.projectCount++;
             group.projects.push({
+                id: project.id,
                 codigo: project.codigo || '-',
                 institucion: project.institucion || '-',
                 region: project.region || '-',
@@ -174,6 +177,8 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 orden: g.orden,
                 ejeId: g.ejeId,
                 lineaId: g.lineaId,
+                ejeDesc: g.ejeDesc,
+                lineaDesc: g.lineaDesc,
                 count: g.projectCount,
                 totalFondo: g.totalFondo,
                 projects: g.projects,
@@ -382,12 +387,12 @@ export function TimelineChart({ data }: TimelineChartProps) {
                 >
                     <div className="mb-4 pb-2 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-2 text-gray-800">
                         <div className="flex-1 text-left">
-                            <span className="text-xs font-semibold uppercase text-gray-500 block">Grupo</span>
-                            <span className="text-sm font-bold">{selectedGroup.name}</span>
+                            <span className="text-xs font-semibold uppercase text-gray-500 block">Etapa</span>
+                            <span className="text-sm font-bold">{selectedGroup.etapa}</span>
                         </div>
                         <div className="flex-1 text-center border-l border-r border-gray-200 px-4">
                             <span className="text-xs font-semibold uppercase text-gray-500 block">Eje - Línea</span>
-                            <span className="text-sm font-bold">Eje {selectedGroup.ejeId} - Línea {selectedGroup.lineaId}</span>
+                            <span className="text-sm font-bold">Eje {selectedGroup.ejeId} - {selectedGroup.ejeDesc} | Línea {selectedGroup.lineaId} - {selectedGroup.lineaDesc}</span>
                         </div>
                         <div className="flex-1 text-right">
                             <span className="text-xs font-semibold uppercase text-gray-500 block">Resumen</span>
@@ -398,6 +403,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
                         <table className="w-full border-collapse">
                             <thead>
                                 <tr className="border-b border-gray-300">
+                                    <th className="text-left py-1 px-2 font-bold text-gray-700">ID</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
                                     <th className="text-left py-1 px-2 font-bold text-gray-700">Región</th>
@@ -435,6 +441,7 @@ export function TimelineChart({ data }: TimelineChartProps) {
 
                                         return (
                                             <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
+                                                <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.id}</td>
                                                 <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
                                                 <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
                                                 <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
