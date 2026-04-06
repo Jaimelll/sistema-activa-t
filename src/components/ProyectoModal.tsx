@@ -13,6 +13,7 @@ interface ProyectoModalProps {
     onClose: () => void;
     onSave: (data: any) => Promise<void>;
     proyecto?: any;
+    isReadOnly?: boolean;
     options: {
         lineas: any[];
         ejes: any[];
@@ -24,10 +25,11 @@ interface ProyectoModalProps {
     };
 }
 
-export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, options }: ProyectoModalProps) {
+export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isReadOnly = false, options }: ProyectoModalProps) {
     const [formData, setFormData] = useState<any>({
         nombre: "",
         codigo_proyecto: "",
+        ciudad: "",
         eje_id: "",
         linea_id: "",
         region_id: "",
@@ -58,6 +60,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
             setFormData({
                 nombre: proyecto.nombre || "",
                 codigo_proyecto: proyecto.codigo || "",
+                ciudad: proyecto.ciudad || "",
                 eje_id: proyecto.ejeId || "",
                 linea_id: proyecto.lineaId || "",
                 region_id: proyecto.regionId || "",
@@ -79,6 +82,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
             setFormData({
                 nombre: "",
                 codigo_proyecto: "",
+                ciudad: "",
                 eje_id: "",
                 linea_id: "",
                 region_id: "",
@@ -201,7 +205,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                             <Save className="w-5 h-5" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900">
-                            {proyecto ? 'Editar Proyecto' : 'Añadir Nuevo Proyecto'}
+                            {isReadOnly ? 'Detalles del Proyecto' : (proyecto ? 'Editar Proyecto' : 'Añadir Nuevo Proyecto')}
                         </h3>
                     </div>
                     <button 
@@ -246,6 +250,19 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Nombre completo del proyecto"
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ciudad</label>
+                                    <input
+                                        name="ciudad"
+                                        value={formData.ciudad || ""}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        placeholder="Ingrese ciudad"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -258,6 +275,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="P-001"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -269,6 +287,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.año}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -279,6 +298,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.region_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Región</option>
                                         {options.regiones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -292,6 +312,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.institucion_ejecutora_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Institución</option>
                                         {options.instituciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -305,6 +326,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.eje_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Eje</option>
                                         {options.ejes.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -318,6 +340,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.linea_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Línea</option>
                                         {options.lineas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -331,6 +354,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.etapa_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Etapa</option>
                                         {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -344,6 +368,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.modalidad_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Modalidad</option>
                                         {options.modalidades.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -357,6 +382,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.grupo_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Grupo</option>
                                         {options.grupos.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -372,6 +398,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.monto_fondoempleo}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -384,6 +411,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.contrapartida}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -396,6 +424,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -407,6 +436,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.beneficiarios}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -418,6 +448,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         placeholder="..."
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -431,115 +462,119 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                                         value={formData.avance_tecnico}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                             </div>
                         </form>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                    <History className="w-4 h-4 text-blue-600" />
-                                    Registrar Nuevo Avance / Cambio de Etapa
-                                </h4>
-                                
-                                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
-                                            <select
-                                                value={newAvance.etapa_id}
-                                                onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                            >
-                                                <option value="">Seleccione Etapa</option>
-                                                {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
-                                            <input
-                                                type="date"
-                                                value={newAvance.fecha}
-                                                onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2 space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
-                                            <textarea
-                                                value={newAvance.sustento}
-                                                onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
-                                                placeholder="Ej: Informe trimestral entregado"
-                                            />
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleAddAvance}
-                                        disabled={isSubmitting}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
-                                    >
-                                        {isSubmitting ? 'Procesando...' : (
-                                            <>
-                                                <Plus className="w-4 h-4" />
-                                                Registrar Cambio / Avance
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
-                                <div className="space-y-2">
-                                    {proyecto.avances && proyecto.avances.length > 0 ? (
-                                        [...proyecto.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
-                                            <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
-                                                <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-blue-600">
-                                                        {(() => {
-                                                            if (!av.fecha) return '-';
-                                                            const parts = av.fecha.split('T')[0].split('-');
-                                                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                                        })()}
-                                                    </span>
-                                                    <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
-                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+                        ) : (
+                            <div className="space-y-6">
+                                {!isReadOnly && (
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                            <History className="w-4 h-4 text-blue-600" />
+                                            Registrar Nuevo Avance / Cambio de Etapa
+                                        </h4>
+                                        
+                                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
+                                                    <select
+                                                        value={newAvance.etapa_id}
+                                                        onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
+                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                    >
+                                                        <option value="">Seleccione Etapa</option>
+                                                        {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                    </select>
                                                 </div>
-                                                <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
-                                                    <button 
-                                                        onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setEditingAvance({
-                                                            ...av,
-                                                            // Normaliza a YYYY-MM-DD para que input[type=date] la reconozca
-                                                            fecha: av.fecha ? av.fecha.split('T')[0] : ''
-                                                        });
-                                                    }}
-                                                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
-                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                                    <input
+                                                        type="date"
+                                                        value={newAvance.fecha}
+                                                        onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
+                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2 space-y-1">
+                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
+                                                    <textarea
+                                                        value={newAvance.sustento}
+                                                        onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
+                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
+                                                        placeholder="Ej: Informe trimestral entregado"
+                                                    />
                                                 </div>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-xs text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
-                                    )}
+                                            <button
+                                                onClick={handleAddAvance}
+                                                disabled={isSubmitting}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                            >
+                                                {isSubmitting ? 'Procesando...' : (
+                                                    <>
+                                                        <Plus className="w-4 h-4" />
+                                                        Registrar Cambio / Avance
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
+                                    <div className="space-y-2">
+                                        {proyecto.avances && proyecto.avances.length > 0 ? (
+                                            [...proyecto.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
+                                                <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
+                                                    <div className="flex flex-col flex-1">
+                                                        <span className="text-[10px] font-black text-blue-600">
+                                                            {(() => {
+                                                                if (!av.fecha) return '-';
+                                                                const parts = av.fecha.split('T')[0].split('-');
+                                                                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                                            })()}
+                                                        </span>
+                                                        <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
+                                                        <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+                                                    </div>
+                                                    {!isReadOnly && (
+                                                        <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setEditingAvance({
+                                                                    ...av,
+                                                                    fecha: av.fecha ? av.fecha.split('T')[0] : ''
+                                                                });
+                                                            }}
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                title="Editar"
+                                                            >
+                                                                <Edit2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
+                                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Eliminar"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
                 {/* Sub-modal Overlay for Editing Advance */}
                 {editingAvance && (
@@ -602,21 +637,23 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, optio
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors"
                         >
-                            Cancelar
+                            {isReadOnly ? 'Cerrar' : 'Cancelar'}
                         </button>
-                        <button
-                            type="submit"
-                            form="proyecto-form"
-                            disabled={isSubmitting}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20"
-                        >
-                            {isSubmitting ? 'Guardando...' : (
-                                <>
-                                    <Save className="w-4 h-4" />
-                                    Guardar {proyecto ? 'Cambios' : 'Proyecto'}
-                                </>
-                            )}
-                        </button>
+                        {!isReadOnly && (
+                            <button
+                                type="submit"
+                                form="proyecto-form"
+                                disabled={isSubmitting}
+                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20"
+                            >
+                                {isSubmitting ? 'Guardando...' : (
+                                    <>
+                                        <Save className="w-4 h-4" />
+                                        Guardar {proyecto ? 'Cambios' : 'Proyecto'}
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
