@@ -27,6 +27,7 @@ interface ProyectosServiciosTableProps {
   regiones: any[];
   etapasList: any[];
   grupos: any[];
+  especialistas: any[];
 }
 
 export default function ProyectosServiciosTable({ 
@@ -38,7 +39,8 @@ export default function ProyectosServiciosTable({
   instituciones,
   regiones,
   etapasList,
-  grupos
+  grupos,
+  especialistas
 }: ProyectosServiciosTableProps) {
   // Filters State
   const [selectedExecution, setSelectedExecution] = useState('process'); // Default: En proceso
@@ -387,7 +389,8 @@ export default function ProyectosServiciosTable({
             etapas: etapasList,
             modalidades: modalidades,
             instituciones: instituciones,
-            grupos: grupos
+            grupos: grupos,
+            especialistas: especialistas
         }}
       />
     </div>

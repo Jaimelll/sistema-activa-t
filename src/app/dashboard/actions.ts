@@ -26,6 +26,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
       etapas (descripcion),
+      especialista:especialistas(nombre),
       avance_tecnico,
       avance_proyecto (
         id,
@@ -115,7 +116,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       avances: p.avance_proyecto || [],
       grupo_id: p.grupo_id,
       provincia: p.provincia || '',
-      especialista: p.especialista || ''
+      especialista_id: p.especialista_id,
+      especialista: p.especialista?.nombre || ''
     };
   });
 
@@ -138,6 +140,7 @@ export async function getProyectoCompletoById(id: string) {
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
       etapas (descripcion),
+      especialista:especialistas(nombre),
       avance_proyecto (
         id,
         fecha,
@@ -159,40 +162,41 @@ export async function getProyectoCompletoById(id: string) {
   const year = yearMatch ? parseInt(yearMatch[1], 10) : (Number(p.año) || new Date().getFullYear());
 
   return {
-      id: p.id,
-      codigo: p.codigo,
-      nombre: p.nombre,
-      institucion: p.instituciones_ejecutoras?.nombre || 'Desconocido',
-      institucionId: p.institucion_ejecutora_id,
-      gestora: p.gestora,
-      linea: p.lineas?.descripcion || 'Desconocido',
-      lineaId: p.linea_id,
-      eje: p.ejes?.descripcion || 'Desconocido',
-      ejeId: p.eje_id,
-      etapa: p.etapas?.descripcion || 'Desconocido',
-      etapaId: p.etapa_id,
-      region: p.regiones?.descripcion || 'Multirregional',
-      regionId: p.region_id,
-      modalidad: p.modalidades?.descripcion || 'Desconocido',
-      modalidadId: p.modalidad_id,
-      estado: p.etapas?.descripcion || 'Activo',
-      year: year,
-      año: Number(p.año) || 0,
-      monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
-      avance: Number(p.avance) || 0,
-      contrapartida: Number(p.contrapartida) || 0,
-      monto_total: Number(p.monto_total) || 0,
-      beneficiarios: Number(p.beneficiarios) || 0,
-      avance_tecnico: Number(p.avance_tecnico) || 0,
-      fecha_inicio: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 1)?.fecha || null,
-      fecha_fin: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 6)?.fecha || null,
-      avances: p.avance_proyecto?.map((av: any) => ({
-          ...av,
-          etapa_nombre: av.etapa?.descripcion || `Etapa ${av.etapa_id}`
-      })) || [],
-      grupo_id: p.grupo_id,
-      provincia: p.provincia || '',
-      especialista: p.especialista || ''
+    id: p.id,
+    codigo: p.codigo,
+    nombre: p.nombre,
+    institucion: p.instituciones_ejecutoras?.nombre || 'Desconocido',
+    institucionId: p.institucion_ejecutora_id,
+    gestora: p.gestora,
+    linea: p.lineas?.descripcion || 'Desconocido',
+    lineaId: p.linea_id,
+    eje: p.ejes?.descripcion || 'Desconocido',
+    ejeId: p.eje_id,
+    etapa: p.etapas?.descripcion || 'Desconocido',
+    etapaId: p.etapa_id,
+    region: p.regiones?.descripcion || 'Multirregional',
+    regionId: p.region_id,
+    modalidad: p.modalidades?.descripcion || 'Desconocido',
+    modalidadId: p.modalidad_id,
+    estado: p.etapas?.descripcion || 'Activo',
+    year: year,
+    año: Number(p.año) || 0,
+    monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
+    avance: Number(p.avance) || 0,
+    contrapartida: Number(p.contrapartida) || 0,
+    monto_total: Number(p.monto_total) || 0,
+    beneficiarios: Number(p.beneficiarios) || 0,
+    avance_tecnico: Number(p.avance_tecnico) || 0,
+    fecha_inicio: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 1)?.fecha || null,
+    fecha_fin: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 6)?.fecha || null,
+    avances: p.avance_proyecto?.map((av: any) => ({
+      ...av,
+      etapa_nombre: av.etapa?.descripcion || `Etapa ${av.etapa_id}`
+    })) || [],
+    grupo_id: p.grupo_id,
+    provincia: p.provincia || '',
+    especialista_id: p.especialista_id,
+    especialista: p.especialista?.nombre || ''
   };
 }
 
@@ -256,6 +260,27 @@ export async function getModalidades() {
   return data.map((item: any) => ({
     value: item.id,
     label: `${item.id} - ${item.descripcion}`
+  }));
+}
+
+export async function getEspecialistas() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('especialistas')
+    .select('id, nombre')
+    .order('nombre', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching especialistas:", error);
+    return [];
+  }
+
+  return data.map((item: any) => ({
+    value: item.id,
+    label: item.nombre
   }));
 }
 
@@ -360,7 +385,8 @@ export async function getTimelineData() {
       grupo:grupo_id (descripcion, orden),
       avance_tecnico,
       provincia,
-      especialista,
+      especialista_id,
+      especialista:especialistas(nombre),
       avance_proyecto (
         id,
         fecha,
@@ -404,7 +430,8 @@ export async function getTimelineData() {
       sustento: a.sustento || ''
     })),
     provincia: p.provincia || '',
-    especialista: p.especialista || ''
+    especialista_id: p.especialista_id,
+    especialista: p.especialista?.nombre || ''
   }));
 
   return mappedData;
@@ -580,7 +607,7 @@ export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
+
   const { data, error: insertError } = await supabase
     .from('avance_proyecto')
     .insert([{ ...avanceData, proyecto_id: proyectoId }])
@@ -602,7 +629,7 @@ export async function updateAvanceProyecto(id: any, avanceData: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
+
   const { data, error: updateError } = await supabase
     .from('avance_proyecto')
     .update(avanceData)
@@ -627,7 +654,7 @@ export async function deleteAvanceProyecto(id: any, proyectoId: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
+
   const { error: deleteError } = await supabase
     .from('avance_proyecto')
     .delete()

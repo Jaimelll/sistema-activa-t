@@ -1,12 +1,12 @@
 import DashboardView from './DashboardView';
-import { getDashboardData, fetchDynamicYears, getEtapas, getLineas, getEjes, getTimelineData, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos } from './actions';
+import { getDashboardData, fetchDynamicYears, getEtapas, getLineas, getEjes, getTimelineData, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos, getEspecialistas } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function DashboardPage(props: { searchParams: Promise<any> }) {
     const searchParams = await props.searchParams;
-    const [data, timelineData, years, stages, headers, ejesList, modalidades, instituciones, regiones, etapasList, grupos] = await Promise.all([
+    const [data, timelineData, years, stages, headers, ejesList, modalidades, instituciones, regiones, etapasList, grupos, especialistas] = await Promise.all([
         getDashboardData({}),
         getTimelineData(),
         fetchDynamicYears(),
@@ -17,7 +17,8 @@ export default async function DashboardPage(props: { searchParams: Promise<any> 
         getInstituciones(),
         getRegiones(),
         getEtapasList(),
-        getGruposProyectos()
+        getGruposProyectos(),
+        getEspecialistas()
     ]);
 
     // Inyectar opción "Todos"
@@ -36,6 +37,7 @@ export default async function DashboardPage(props: { searchParams: Promise<any> 
             regiones={regiones}
             etapasList={etapasList}
             grupos={grupos}
+            especialistas={especialistas}
         />
     );
 }

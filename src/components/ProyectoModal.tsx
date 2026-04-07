@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, Plus, History, Edit2, Trash2 } from "lucide-react";
-import { 
-    addAvanceProyecto, 
-    updateAvanceProyecto, 
-    deleteAvanceProyecto 
+import {
+    addAvanceProyecto,
+    updateAvanceProyecto,
+    deleteAvanceProyecto
 } from "@/app/dashboard/actions";
 
 interface ProyectoModalProps {
@@ -22,6 +22,7 @@ interface ProyectoModalProps {
         modalidades: any[];
         instituciones: any[];
         grupos: any[];
+        especialistas: any[];
     };
 }
 
@@ -36,7 +37,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
         nombre: "",
         codigo_proyecto: "",
         provincia: "",
-        especialista: "",
+        especialista_id: "",
         eje_id: "",
         linea_id: "",
         region_id: "",
@@ -68,7 +69,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 nombre: proyecto.nombre || "",
                 codigo_proyecto: proyecto.codigo || "",
                 provincia: proyecto.provincia || "",
-                especialista: proyecto.especialista || "",
+                especialista_id: proyecto.especialista_id || "",
                 eje_id: proyecto.ejeId || "",
                 linea_id: proyecto.lineaId || "",
                 region_id: proyecto.regionId || "",
@@ -91,7 +92,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 nombre: "",
                 codigo_proyecto: "",
                 provincia: "",
-                especialista: "",
+                especialista_id: "",
                 eje_id: "",
                 linea_id: "",
                 region_id: "",
@@ -127,7 +128,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
         try {
             setIsSubmitting(true);
             const cleanedData = { ...formData };
-            const fkFields = ['eje_id', 'linea_id', 'region_id', 'etapa_id', 'institucion_ejecutora_id', 'modalidad_id', 'grupo_id'];
+            const fkFields = ['eje_id', 'linea_id', 'region_id', 'etapa_id', 'institucion_ejecutora_id', 'modalidad_id', 'grupo_id', 'especialista_id'];
             fkFields.forEach(field => {
                 if (cleanedData[field] === "") cleanedData[field] = null;
             });
@@ -160,7 +161,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 sustento: ""
             });
             alert("Avance registrado correctamente");
-            onClose(); 
+            onClose();
         } catch (error) {
             console.error("Error adding avance:", error);
             alert("Error al registrar avance");
@@ -217,7 +218,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                             {isReadOnly ? 'Detalles del Proyecto' : (proyecto ? 'Editar Proyecto' : 'Añadir Nuevo Proyecto')}
                         </h3>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                     >
@@ -228,14 +229,14 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 {/* Tabs for Edit Mode */}
                 {proyecto && (
                     <div className="flex border-b border-gray-100 bg-gray-50/50">
-                        <button 
+                        <button
                             onClick={() => setShowAvances(false)}
                             className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${!showAvances ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             <Save className="w-4 h-4" />
                             Datos Generales
                         </button>
-                        <button 
+                        <button
                             onClick={() => setShowAvances(true)}
                             className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${showAvances ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
                         >
@@ -277,14 +278,18 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
 
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Especialista</label>
-                                    <input
-                                        name="especialista"
-                                        value={formData.especialista || ""}
+                                    <select
+                                        name="especialista_id"
+                                        value={formData.especialista_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        placeholder="Ingrese especialista"
                                         disabled={isReadOnly}
-                                    />
+                                    >
+                                        <option value="">Seleccione Especialista</option>
+                                        {options.especialistas?.map((e: any) => (
+                                            <option key={e.value} value={e.value}>{e.label}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="space-y-1">
@@ -488,114 +493,114 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
                             </div>
                         </form>
-                        ) : (
-                            <div className="space-y-6">
-                                {!isReadOnly && (
-                                    <div className="space-y-3">
-                                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                            <History className="w-4 h-4 text-blue-600" />
-                                            Registrar Nuevo Avance / Cambio de Etapa
-                                        </h4>
-                                        
-                                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
-                                                    <select
-                                                        value={newAvance.etapa_id}
-                                                        onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
-                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                                    >
-                                                        <option value="">Seleccione Etapa</option>
-                                                        {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
-                                                    <input
-                                                        type="date"
-                                                        value={newAvance.fecha}
-                                                        onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
-                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                                    />
-                                                </div>
-                                                <div className="md:col-span-2 space-y-1">
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
-                                                    <textarea
-                                                        value={newAvance.sustento}
-                                                        onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
-                                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
-                                                        placeholder="Ej: Informe trimestral entregado"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={handleAddAvance}
-                                                disabled={isSubmitting}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
-                                            >
-                                                {isSubmitting ? 'Procesando...' : (
-                                                    <>
-                                                        <Plus className="w-4 h-4" />
-                                                        Registrar Cambio / Avance
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
+                    ) : (
+                        <div className="space-y-6">
+                            {!isReadOnly && (
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
-                                    <div className="space-y-2">
-                                        {proyecto.avances && proyecto.avances.length > 0 ? (
-                                            [...proyecto.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
-                                                <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
-                                                    <div className="flex flex-col flex-1">
-                                                        <span className="text-[10px] font-black text-blue-600">
-                                                            {(() => {
-                                                                if (!av.fecha) return '-';
-                                                                const parts = av.fecha.split('T')[0].split('-');
-                                                                return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                                                            })()}
-                                                        </span>
-                                                        <span className="text-xs font-bold text-gray-800">{av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
-                                                        <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
-                                                    </div>
-                                                    {!isReadOnly && (
-                                                        <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
-                                                            <button 
-                                                                onClick={(e) => {
+                                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                        <History className="w-4 h-4 text-blue-600" />
+                                        Registrar Nuevo Avance / Cambio de Etapa
+                                    </h4>
+
+                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
+                                                <select
+                                                    value={newAvance.etapa_id}
+                                                    onChange={(e) => setNewAvance({ ...newAvance, etapa_id: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                >
+                                                    <option value="">Seleccione Etapa</option>
+                                                    {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                                <input
+                                                    type="date"
+                                                    value={newAvance.fecha}
+                                                    onChange={(e) => setNewAvance({ ...newAvance, fecha: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
+                                                <textarea
+                                                    value={newAvance.sustento}
+                                                    onChange={(e) => setNewAvance({ ...newAvance, sustento: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
+                                                    placeholder="Ej: Informe trimestral entregado"
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleAddAvance}
+                                            disabled={isSubmitting}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                        >
+                                            {isSubmitting ? 'Procesando...' : (
+                                                <>
+                                                    <Plus className="w-4 h-4" />
+                                                    Registrar Cambio / Avance
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
+                                <div className="space-y-2">
+                                    {proyecto.avances && proyecto.avances.length > 0 ? (
+                                        [...proyecto.avances].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
+                                            <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
+                                                <div className="flex flex-col flex-1">
+                                                    <span className="text-[10px] font-black text-blue-600">
+                                                        {(() => {
+                                                            if (!av.fecha) return '-';
+                                                            const parts = av.fecha.split('T')[0].split('-');
+                                                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                                        })()}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-gray-800">{av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
+                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+                                                </div>
+                                                {!isReadOnly && (
+                                                    <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
+                                                        <button
+                                                            onClick={(e) => {
                                                                 e.preventDefault();
                                                                 setEditingAvance({
                                                                     ...av,
                                                                     fecha: av.fecha ? av.fecha.split('T')[0] : ''
                                                                 });
                                                             }}
-                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="Editar"
-                                                            >
-                                                                <Edit2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
-                                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Eliminar"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-xs text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
-                                        )}
-                                    </div>
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
+                                    )}
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Sub-modal Overlay for Editing Advance */}
                 {editingAvance && (
@@ -610,7 +615,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     <label className="text-[10px] font-bold text-gray-400 uppercase">Etapa</label>
                                     <select
                                         value={editingAvance.etapa_id}
-                                        onChange={(e) => setEditingAvance({...editingAvance, etapa_id: e.target.value})}
+                                        onChange={(e) => setEditingAvance({ ...editingAvance, etapa_id: e.target.value })}
                                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
                                     >
                                         <option value="">Seleccione Etapa</option>
@@ -622,7 +627,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     <input
                                         type="date"
                                         value={editingAvance.fecha}
-                                        onChange={(e) => setEditingAvance({...editingAvance, fecha: e.target.value})}
+                                        onChange={(e) => setEditingAvance({ ...editingAvance, fecha: e.target.value })}
                                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
                                     />
                                 </div>
@@ -630,7 +635,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
                                     <textarea
                                         value={editingAvance.sustento || ""}
-                                        onChange={(e) => setEditingAvance({...editingAvance, sustento: e.target.value})}
+                                        onChange={(e) => setEditingAvance({ ...editingAvance, sustento: e.target.value })}
                                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
                                         placeholder="Ej: Informe trimestral entregado"
                                     />
