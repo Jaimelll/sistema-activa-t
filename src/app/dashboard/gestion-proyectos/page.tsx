@@ -1,11 +1,11 @@
-import { getDashboardData, getLineas, getEjes, getEtapas, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos } from "../actions";
+import { getDashboardData, getLineas, getEjes, getEtapas, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos, getEspecialistas } from "../actions";
 import ProyectosServiciosTable from "../../../components/ProyectosServiciosTable";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ProyectosPage() {
-    const [data, lines, ejes, etapas, modalidades, instituciones, regiones, etapasList, grupos] = await Promise.all([
+    const [data, lines, ejes, etapas, modalidades, instituciones, regiones, etapasList, grupos, especialistas] = await Promise.all([
         getDashboardData(),
         getLineas(),
         getEjes(),
@@ -14,7 +14,8 @@ export default async function ProyectosPage() {
         getInstituciones(),
         getRegiones(),
         getEtapasList(),
-        getGruposProyectos()
+        getGruposProyectos(),
+        getEspecialistas()
     ]);
 
 
@@ -34,6 +35,7 @@ export default async function ProyectosPage() {
                     regiones={regiones}
                     etapasList={etapasList}
                     grupos={grupos}
+                    especialistas={especialistas}
                 />
 
             </div>

@@ -508,7 +508,8 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                         etapas: options.etapas || [],
                         modalidades: options.modalidades || [],
                         instituciones: options.instituciones || [],
-                        grupos: options.grupos || []
+                        grupos: options.grupos || [],
+                        especialistas: options.especialistas || []
                     }}
                 />
             )}

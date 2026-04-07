@@ -24,9 +24,10 @@ interface DashboardViewProps {
     regiones?: any[];
     etapasList?: any[];
     grupos?: any[];
+    especialistas?: any[];
 }
 
-export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [] }: DashboardViewProps) {
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
@@ -372,7 +373,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                         etapas: etapasList,
                         modalidades: modalidades,
                         instituciones: instituciones,
-                        grupos: grupos
+                        grupos: grupos,
+                        especialistas: especialistas
                     }}
                 />
             </div>
