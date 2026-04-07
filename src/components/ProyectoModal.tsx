@@ -67,7 +67,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
         if (proyecto) {
             setFormData({
                 nombre: proyecto.nombre || "",
-                codigo_proyecto: proyecto.codigo || "",
+                codigo_proyecto: proyecto.codigo_proyecto || proyecto.codigo || "",
                 provincia: proyecto.provincia || "",
                 especialista_id: proyecto.especialista_id || "",
                 eje_id: proyecto.ejeId || "",
