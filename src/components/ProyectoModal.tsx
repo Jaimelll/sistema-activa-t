@@ -35,7 +35,8 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
     const [formData, setFormData] = useState<any>({
         nombre: "",
         codigo_proyecto: "",
-        ciudad: "",
+        provincia: "",
+        especialista: "",
         eje_id: "",
         linea_id: "",
         region_id: "",
@@ -66,7 +67,8 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
             setFormData({
                 nombre: proyecto.nombre || "",
                 codigo_proyecto: proyecto.codigo || "",
-                ciudad: proyecto.ciudad || "",
+                provincia: proyecto.provincia || "",
+                especialista: proyecto.especialista || "",
                 eje_id: proyecto.ejeId || "",
                 linea_id: proyecto.lineaId || "",
                 region_id: proyecto.regionId || "",
@@ -88,7 +90,8 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
             setFormData({
                 nombre: "",
                 codigo_proyecto: "",
-                ciudad: "",
+                provincia: "",
+                especialista: "",
                 eje_id: "",
                 linea_id: "",
                 region_id: "",
@@ -261,13 +264,25 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ciudad</label>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Provincia</label>
                                     <input
-                                        name="ciudad"
-                                        value={formData.ciudad || ""}
+                                        name="provincia"
+                                        value={formData.provincia || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        placeholder="Ingrese ciudad"
+                                        placeholder="Ingrese provincia"
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Especialista</label>
+                                    <input
+                                        name="especialista"
+                                        value={formData.especialista || ""}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        placeholder="Ingrese especialista"
                                         disabled={isReadOnly}
                                     />
                                 </div>
