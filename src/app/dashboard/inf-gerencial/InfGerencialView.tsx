@@ -58,6 +58,52 @@ const PBI_DATA: Record<number, number> = {
     2023: -0.6, 2024: 2.5, 2025: 3.4
 };
 
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value);
+};
+
+const formatCurrencyWithCents = (value: number) => {
+    return new Intl.NumberFormat('es-PE', {
+        style: 'currency',
+        currency: 'PEN',
+        minimumFractionDigits: 2,
+    }).format(value);
+};
+
+const formatCompactCurrency = (value: number) => {
+    return `${(value / 1000000).toFixed(1)}M`;
+};
+
+const CustomBudgetTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[200px]">
+                <p className="text-sm font-black text-slate-400 uppercase mb-2">{data.mes_nombre}</p>
+                <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(data.total)}</p>
+                <div className="space-y-1 pt-1">
+                    {Object.entries(data).map(([key, value]) => {
+                        if (['mes', 'mes_nombre', 'total'].includes(key)) return null;
+                        if (!value || value === 0) return null;
+                        return (
+                            <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
+                                <span className="uppercase text-slate-400">{key}:</span>
+                                <span className="text-slate-700">{formatCurrency(Number(value))}</span>
+                            </p>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 export default function InfGerencialView({
     initialData,
     annualTotals,
@@ -74,22 +120,13 @@ export default function InfGerencialView({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSector, setSelectedSector] = useState<string>('all');
     
-    // Robust initialization: ensure selectedUnidad is set as soon as units are available
-    const [selectedUnidad, setSelectedUnidad] = useState<number | string>(unidades?.[0]?.id || '');
-    
+    // Budgets are now global
     const [presupuestoMensual, setPresupuestoMensual] = useState<any[]>([]);
     const [presupuestoComparativo, setPresupuestoComparativo] = useState<any[]>([]);
     const [isLoadingBudget, setIsLoadingBudget] = useState(false);
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
     const supabase = createClient();
-
-    // Ensure selectedUnidad is synced with the first available unit on prop change
-    useEffect(() => {
-        if (unidades && unidades.length > 0 && !selectedUnidad) {
-            setSelectedUnidad(unidades[0].id);
-        }
-    }, [unidades]);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -100,14 +137,11 @@ export default function InfGerencialView({
 
     useEffect(() => {
         const fetchBudgetData = async () => {
-            const unidadId = Number(selectedUnidad);
-            if (!unidadId) return;
-
             setIsLoadingBudget(true);
             try {
                 const [mensual, comparativo] = await Promise.all([
-                    getPresupuestoMensual(unidadId),
-                    getPresupuestoComparativo(unidadId)
+                    getPresupuestoMensual(),
+                    getPresupuestoComparativo()
                 ]);
                 
                 // Map month number to short name
@@ -127,7 +161,7 @@ export default function InfGerencialView({
             }
         };
         fetchBudgetData();
-    }, [selectedUnidad]);
+    }, []); // Only fetch on mount since no more unit selector
 
     // --- Finanzas Processing ---
     const groupedFinanzas = useMemo(() => {
@@ -165,27 +199,6 @@ export default function InfGerencialView({
                 return (a.escenario === 'Proyectado' ? 1 : -1);
             });
     }, [finanzasData]);
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('es-PE', {
-            style: 'currency',
-            currency: 'PEN',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
-
-    const formatCurrencyWithCents = (value: number) => {
-        return new Intl.NumberFormat('es-PE', {
-            style: 'currency',
-            currency: 'PEN',
-            minimumFractionDigits: 2,
-        }).format(value);
-    };
-
-    const formatCompactCurrency = (value: number) => {
-        return `${(value / 1000000).toFixed(0)}M`;
-    };
 
     const last5Years = useMemo(() => {
         const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
@@ -237,7 +250,6 @@ export default function InfGerencialView({
         return map;
     }, [top10Companies]);
 
-    // Line data including PBI
     const lineData = useMemo(() => {
         const sectorFiltered = initialData.filter(d => selectedSector === 'all' || d.seccion_desc === selectedSector);
         const yearGroups = new Map<number, number>();
@@ -325,18 +337,6 @@ export default function InfGerencialView({
                         {sectores.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
-
-                {/* Unidad Operativa Filter */}
-                <div className="w-full md:w-48">
-                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Unidad Operativa</label>
-                    <select
-                        className="w-full border border-slate-200 rounded-xl py-2 px-3 text-sm font-bold text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-blue-50"
-                        value={selectedUnidad}
-                        onChange={e => setSelectedUnidad(e.target.value)}
-                    >
-                        {unidades?.map(u => <option key={u.id} value={u.id}>{u.siglas}</option>)}
-                    </select>
-                </div>
             </div>
 
             {/* Evolución de Aportes vs PBI Line Chart */}
@@ -374,6 +374,22 @@ export default function InfGerencialView({
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
+                </div>
+            </div>
+
+            {/* KPI Cards (Moved here, below Aportes vs PBI chart) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
+                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
+                </div>
+                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
+                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante (2021 - 2026)</span>
+                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
+                </div>
+                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
+                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas (2021 - 2026)</span>
+                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
                 </div>
             </div>
 
@@ -488,22 +504,6 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* KPI Cards (Moved here, below Bank Balances) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
-                </div>
-                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
-                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante (2021 - 2026)</span>
-                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
-                </div>
-                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
-                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas (2021 - 2026)</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
-                </div>
-            </div>
-
             {/* Monthly Budget Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                 <div className="mb-6 text-center">
@@ -520,8 +520,8 @@ export default function InfGerencialView({
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={formatCompactCurrency} />
-                                <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
-                                <Line type="monotone" dataKey="monto" stroke="#2563eb" strokeWidth={4} dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} />
+                                <Tooltip content={<CustomBudgetTooltip />} />
+                                <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} />
                             </LineChart>
                         </ResponsiveContainer>
                     )}
