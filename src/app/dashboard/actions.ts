@@ -114,7 +114,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
       avances: p.avance_proyecto || [],
       grupo_id: p.grupo_id,
-      ciudad: p.ciudad || ''
+      provincia: p.provincia || '',
+      especialista: p.especialista || ''
     };
   });
 
@@ -190,7 +191,8 @@ export async function getProyectoCompletoById(id: string) {
           etapa_nombre: av.etapa?.descripcion || `Etapa ${av.etapa_id}`
       })) || [],
       grupo_id: p.grupo_id,
-      ciudad: p.ciudad || ''
+      provincia: p.provincia || '',
+      especialista: p.especialista || ''
   };
 }
 
@@ -357,7 +359,8 @@ export async function getTimelineData() {
       grupo_id,
       grupo:grupo_id (descripcion, orden),
       avance_tecnico,
-      ciudad,
+      provincia,
+      especialista,
       avance_proyecto (
         id,
         fecha,
@@ -400,7 +403,8 @@ export async function getTimelineData() {
       etapa_id: a.etapa_id,
       sustento: a.sustento || ''
     })),
-    ciudad: p.ciudad || ''
+    provincia: p.provincia || '',
+    especialista: p.especialista || ''
   }));
 
   return mappedData;
