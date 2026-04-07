@@ -75,32 +75,59 @@ export async function getUnidadesOperativas() {
     return data;
 }
 
-export async function getPresupuestoMensual(unidadId: number) {
+export async function getPresupuestoMensual() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('presupuesto_mensual')
-        .select('*')
-        .eq('unidad_operativa_id', unidadId)
-        .order('mes', { ascending: true });
+        .select(`
+            mes,
+            monto,
+            unidades_operativas:unidad_operativa_id (siglas)
+        `);
 
     if (error) {
-        console.error('Error fetching presupuesto mensual:', error);
+        console.error('Error fetching presupuesto mensual consolidado:', error);
         return [];
     }
-    return data;
+
+    // Initialize 12 months
+    const result = Array.from({ length: 12 }, (_, i) => ({
+        mes: i + 1,
+        total: 0
+    } as any));
+
+    data.forEach((row: any) => {
+        const idx = (row.mes || 1) - 1;
+        const siglas = (row.unidades_operativas as any)?.siglas;
+        const monto = Number(row.monto) || 0;
+        
+        if (siglas) {
+            result[idx][siglas] = (result[idx][siglas] || 0) + monto;
+        }
+        result[idx].total += monto;
+    });
+
+    return result;
 }
 
-export async function getPresupuestoComparativo(unidadId: number) {
+export async function getPresupuestoComparativo() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('presupuesto_anual_comparativo')
-        .select('*')
-        .eq('unidad_operativa_id', unidadId)
-        .order('año', { ascending: true });
+        .select('año, poi, ejecutado');
 
     if (error) {
-        console.error('Error fetching presupuesto comparativo:', error);
+        console.error('Error fetching presupuesto comparativo consolidado:', error);
         return [];
     }
-    return data;
+
+    const consolidated = data.reduce((acc: any, curr: any) => {
+        const year = curr.año;
+        if (!acc[year]) acc[year] = { año: year, poi: 0, ejecutado: 0 };
+        acc[year].poi += Number(curr.poi) || 0;
+        acc[year].ejecutado += Number(curr.ejecutado) || 0;
+        return acc;
+    }, {});
+
+    return Object.values(consolidated).sort((a: any, b: any) => (a as any).año - (b as any).año);
 }
