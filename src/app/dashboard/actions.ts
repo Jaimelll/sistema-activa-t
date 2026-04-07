@@ -88,6 +88,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       id: p.id,
       nombre: p.nombre || 'Sin Nombre',
       codigo: p.codigo_proyecto,
+      codigo_proyecto: p.codigo_proyecto,
       region: p.regiones?.descripcion || p.region || 'Desconocido', // Fallback if still using text column? No, using FK join
       linea: p.lineas?.descripcion || 'Sin Linea',
       lineaId: p.linea_id, // Correct column: linea_id
@@ -158,12 +159,13 @@ export async function getProyectoCompletoById(id: string) {
   }
 
   // Use the same robust mapping as getDashboardData to ensure compatibility with ProyectoModal
-  const yearMatch = p.codigo?.match(/^(\d{4})/);
+  const yearMatch = p.codigo_proyecto?.match(/^(\d{4})/);
   const year = yearMatch ? parseInt(yearMatch[1], 10) : (Number(p.año) || new Date().getFullYear());
 
   return {
     id: p.id,
-    codigo: p.codigo,
+    codigo: p.codigo_proyecto,
+    codigo_proyecto: p.codigo_proyecto,
     nombre: p.nombre,
     institucion: p.instituciones_ejecutoras?.nombre || 'Desconocido',
     institucionId: p.institucion_ejecutora_id,
@@ -414,6 +416,7 @@ export async function getTimelineData() {
     eje: p.ejes?.descripcion || `Eje ${p.eje_id}`,
     linea: p.lineas?.descripcion || `Línea ${p.linea_id}`,
     codigo: p.codigo_proyecto || '-',
+    codigo_proyecto: p.codigo_proyecto || '-',
     gestora: p.gestora || '-',
     monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
     avance: Number(p.avance) || 0,
