@@ -7,7 +7,7 @@ import { getDashboardStats, getTimelineData, getRegionData, getInstitucionData }
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
 import { StatusChart } from '@/components/dashboard/charts/StatusChart';
 import { EjeChart } from '@/components/dashboard/charts/EjeChart';
-import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users } from 'lucide-react';
+import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users, LucideIcon } from 'lucide-react';
 import Image from 'next/image';
 import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
@@ -149,13 +149,18 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         const totalBen = filteredData.reduce((acc, curr) => acc + (Number(curr.beneficiarios) || 0), 0);
         const totalProjects = filteredData.length;
 
-        console.log('SUMA FORZADA:', { totalFondo, totalContra });
+        const promProj = totalProjects > 0 ? (totalFondo / totalProjects) : 0;
+        const promBen = totalBen > 0 ? (totalFondo / totalBen) : 0;
+        const percAvance = totalFondo > 0 ? (totalContra / totalFondo) * 100 : 0;
 
         return {
-            totalFondo: totalFondo,
-            totalContra: totalContra,
-            totalProjects: totalProjects,
-            totalBeneficiaries: totalBen
+            totalFondo,
+            totalContra,
+            totalProjects,
+            totalBeneficiaries: totalBen,
+            promProj,
+            promBen,
+            percAvance
         };
     }, [filteredData]);
 
@@ -379,18 +384,39 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     icon={DollarSign}
                 />
                 <KPICard
-                    title="Proyectos Activos"
-                    value={metrics.totalProjects}
+                    title="Proyectos"
+                    value={
+                        <div className="flex flex-col">
+                            <span>{metrics.totalProjects}</span>
+                            <span className="text-[11px] font-medium text-gray-500 leading-tight">
+                                (prom. S/ {metrics.promProj.toLocaleString('es-PE', { maximumFractionDigits: 0 })})
+                            </span>
+                        </div>
+                    }
                     icon={FileText}
                 />
                 <KPICard
                     title="Beneficiarios"
-                    value={metrics.totalBeneficiaries.toLocaleString('es-PE')}
+                    value={
+                        <div className="flex flex-col">
+                            <span>{metrics.totalBeneficiaries.toLocaleString('es-PE')}</span>
+                            <span className="text-[11px] font-medium text-gray-500 leading-tight">
+                                (prom. S/ {metrics.promBen.toLocaleString('es-PE', { maximumFractionDigits: 0 })})
+                            </span>
+                        </div>
+                    }
                     icon={Users}
                 />
                 <KPICard
                     title="Avance"
-                    value={`S/ ${(metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}`}
+                    value={
+                        <div className="flex flex-col">
+                            <span>S/ {(metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</span>
+                            <span className="text-blue-600 font-bold">
+                                ({metrics.percAvance.toFixed(1)} %)
+                            </span>
+                        </div>
+                    }
                     icon={TrendingUp}
                 />
             </div>
