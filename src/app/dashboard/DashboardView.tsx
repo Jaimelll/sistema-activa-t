@@ -388,7 +388,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     value={
                         <div className="flex flex-col">
                             <span>{metrics.totalProjects}</span>
-                            <span className="text-[11px] font-medium text-gray-500 leading-tight">
+                            <span className="text-sm font-medium text-gray-400 leading-tight">
                                 (prom. S/ {metrics.promProj.toLocaleString('es-PE', { maximumFractionDigits: 0 })})
                             </span>
                         </div>
@@ -400,7 +400,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     value={
                         <div className="flex flex-col">
                             <span>{metrics.totalBeneficiaries.toLocaleString('es-PE')}</span>
-                            <span className="text-[11px] font-medium text-gray-500 leading-tight">
+                            <span className="text-sm font-medium text-gray-400 leading-tight">
                                 (prom. S/ {metrics.promBen.toLocaleString('es-PE', { maximumFractionDigits: 0 })})
                             </span>
                         </div>
@@ -412,7 +412,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     value={
                         <div className="flex flex-col">
                             <span>S/ {(metrics.totalContra).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</span>
-                            <span className="text-blue-600 font-bold">
+                            <span className="text-sm font-medium text-gray-400">
                                 ({metrics.percAvance.toFixed(1)} %)
                             </span>
                         </div>
