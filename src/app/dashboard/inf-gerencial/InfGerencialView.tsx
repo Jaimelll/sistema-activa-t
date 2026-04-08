@@ -88,15 +88,43 @@ const CustomBudgetTooltip = ({ active, payload, label }: any) => {
                 <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(data.total)}</p>
                 <div className="space-y-1 pt-1">
                     {Object.entries(data).map(([key, value]) => {
-                        if (['mes', 'mes_nombre', 'total'].includes(key)) return null;
-                        if (!value || value === 0) return null;
+                        const skipKeys = ['mes', 'mes_nombre', 'total', 'año', 'poi', 'ejecutado', 'poiBreakdown', 'ejecutadoBreakdown'];
+                        if (skipKeys.includes(key)) return null;
+                        if (typeof value !== 'number' || value === 0) return null;
                         return (
                             <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
                                 <span className="uppercase text-slate-400">{key}:</span>
-                                <span className="text-slate-700">{formatCurrency(Number(value))}</span>
+                                <span className="text-slate-700">{formatCurrency(value)}</span>
                             </p>
                         );
                     })}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
+const CustomComparativeTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        const entry = payload[0];
+        const data = entry.payload;
+        const isPoi = entry.dataKey === 'poi';
+        const title = isPoi ? `Presupuesto` : `Ejecutado`;
+        const total = isPoi ? (data.poi || 0) : (data.ejecutado || 0);
+        const breakdown = isPoi ? (data.poiBreakdown || {}) : (data.ejecutadoBreakdown || {});
+
+        return (
+            <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[220px]">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{title} {label}</p>
+                <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(total)}</p>
+                <div className="space-y-1 pt-1">
+                    {Object.entries(breakdown).sort((a: any, b: any) => (b[1] as number) - (a[1] as number)).map(([key, value]) => (
+                        <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
+                            <span className="uppercase text-slate-400">{key}:</span>
+                            <span className="text-slate-700">{formatCurrency(value as number)}</span>
+                        </p>
+                    ))}
                 </div>
             </div>
         );
@@ -379,17 +407,17 @@ export default function InfGerencialView({
 
             {/* KPI Cards (Moved here, below Aportes vs PBI chart) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Aportado ({yearRange})</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{fmt(totalLast5)}</span>
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
+                    <span className="text-blue-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Total Aportado ({yearRange})</span>
+                    <span className="text-lg lg:text-xl font-black tracking-tighter">{fmt(totalLast5)}</span>
                 </div>
-                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
-                    <span className="text-teal-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Principal Aportante (2021 - 2026)</span>
-                    <span className="text-xl lg:text-2xl font-black tracking-tight uppercase">{topCompanyName}</span>
+                <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
+                    <span className="text-teal-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Principal Aportante (2021 - 2026)</span>
+                    <span className="text-md lg:text-lg font-black tracking-tight uppercase truncate">{topCompanyName}</span>
                 </div>
-                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-6 rounded-3xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
-                    <span className="text-violet-100 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Empresas Activas (2021 - 2026)</span>
-                    <span className="text-2xl lg:text-3xl font-black tracking-tighter">{totalEmpresas}</span>
+                <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
+                    <span className="text-violet-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Empresas Activas (2021 - 2026)</span>
+                    <span className="text-lg lg:text-xl font-black tracking-tighter">{totalEmpresas}</span>
                 </div>
             </div>
 
@@ -522,34 +550,11 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* Monthly Budget Chart */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-6 text-center">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Presupuesto Mensual Proyectado 2026</h3>
-                </div>
-                <div className="h-[350px] w-full flex flex-col items-center justify-center">
-                    {isLoadingBudget ? (
-                        <p className="text-center text-slate-400 py-20 font-bold animate-pulse">Cargando datos del presupuesto...</p>
-                    ) : presupuestoMensual.length === 0 ? (
-                        <p className="text-center text-slate-400 py-20">No hay datos disponibles para el periodo seleccionado.</p>
-                    ) : (
-                        <ResponsiveContainer width="100%" height={350}>
-                            <LineChart data={presupuestoMensual} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
-                                <Tooltip content={<CustomBudgetTooltip />} />
-                                <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    )}
-                </div>
-            </div>
-
             {/* Comparative Budget Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
                 <div className="mb-8">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Presupuesto 2024-2026 (POI vs Ejecutado)</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">POI 2024-2026</h3>
+                    <p className="text-sm font-medium text-slate-400">(Presupuesto vs Ejecutado)</p>
                 </div>
                 <div className="h-[350px] w-full flex flex-col items-center justify-center">
                     {isLoadingBudget ? (
@@ -562,10 +567,34 @@ export default function InfGerencialView({
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="año" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
-                                <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
+                                <Tooltip shared={false} content={<CustomComparativeTooltip />} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                                <Bar dataKey="poi" name="POI" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="poi" name="POI" fill="#dc2626" radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    )}
+                </div>
+            </div>
+
+            {/* Monthly Budget Chart */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                <div className="mb-6 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Presupuesto Mensual Proyectado 2026</h3>
+                </div>
+                <div className="h-[350px] w-full flex flex-col items-center justify-center">
+                    {isLoadingBudget ? (
+                        <p className="text-center text-slate-400 py-20 font-bold animate-pulse">Cargando datos del presupuesto...</p>
+                    ) : presupuestoMensual.length === 0 ? (
+                        <p className="text-center text-slate-400 py-20">No hay datos disponibles para el periodo seleccionado.</p>
+                    ) : (
+                        <ResponsiveContainer width="100%" height={350}>
+                            <BarChart data={presupuestoMensual} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
+                                <Tooltip content={<CustomBudgetTooltip />} />
+                                <Bar dataKey="total" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={30} />
                             </BarChart>
                         </ResponsiveContainer>
                     )}
