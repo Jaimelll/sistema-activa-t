@@ -417,9 +417,27 @@ export default function InfGerencialView({
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="year" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 12 }} />
                                 <Tooltip 
-                                    labelFormatter={(label) => `Total Aportes ${label}: ${formatCurrency(annualTotals[Number(label)] || 0)}`}
-                                    formatter={(value: number) => fmt(value)} 
-                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} 
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            const yearTotal = annualTotals[Number(label)] || 0;
+                                            return (
+                                                <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-50 min-w-[300px]">
+                                                    <p className="text-lg font-bold text-slate-900 mb-2 border-b pb-2">
+                                                        Total Aportes {label}: {formatCurrency(yearTotal)}
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {payload.map((entry: any, index: number) => (
+                                                            <div key={index} className="flex justify-between items-center gap-4">
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{entry.name}</span>
+                                                                <span className="text-sm font-bold text-slate-700">{formatCurrency(entry.value)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
                                 />
                                 {highlightedEmpresa
                                     ? <Bar key={highlightedEmpresa} dataKey={highlightedEmpresa as string} stackId="a" fill={companyColorMap.get(highlightedEmpresa) || '#2563eb'} barSize={24} radius={[0, 4, 4, 0]} />
@@ -519,7 +537,7 @@ export default function InfGerencialView({
                             <LineChart data={presupuestoMensual} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={formatCompactCurrency} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
                                 <Tooltip content={<CustomBudgetTooltip />} />
                                 <Line type="monotone" dataKey="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 6, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} />
                             </LineChart>
@@ -543,7 +561,7 @@ export default function InfGerencialView({
                             <BarChart data={presupuestoComparativo} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="año" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={formatCompactCurrency} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
                                 <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
                                 <Bar dataKey="poi" name="POI" fill="#94a3b8" radius={[4, 4, 0, 0]} />
