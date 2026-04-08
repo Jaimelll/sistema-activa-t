@@ -114,7 +114,12 @@ export async function getPresupuestoComparativo() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('presupuesto_anual_comparativo')
-        .select('año, poi, ejecutado');
+        .select(`
+            año, 
+            poi, 
+            ejecutado,
+            unidades_operativas:unidad_operativa_id (siglas)
+        `);
 
     if (error) {
         console.error('Error fetching presupuesto comparativo consolidado:', error);
@@ -123,9 +128,26 @@ export async function getPresupuestoComparativo() {
 
     const consolidated = data.reduce((acc: any, curr: any) => {
         const year = curr.año;
-        if (!acc[year]) acc[year] = { año: year, poi: 0, ejecutado: 0 };
-        acc[year].poi += Number(curr.poi) || 0;
-        acc[year].ejecutado += Number(curr.ejecutado) || 0;
+        if (!acc[year]) acc[year] = { 
+            año: year, 
+            poi: 0, 
+            ejecutado: 0,
+            poiBreakdown: {},
+            ejecutadoBreakdown: {}
+        };
+        
+        const siglas = (curr.unidades_operativas as any)?.siglas || 'OTR';
+        const poiMonto = Number(curr.poi) || 0;
+        const ejecMonto = Number(curr.ejecutado) || 0;
+
+        acc[year].poi += poiMonto;
+        acc[year].ejecutado += ejecMonto;
+
+        if (siglas) {
+            acc[year].poiBreakdown[siglas] = (acc[year].poiBreakdown[siglas] || 0) + poiMonto;
+            acc[year].ejecutadoBreakdown[siglas] = (acc[year].ejecutadoBreakdown[siglas] || 0) + ejecMonto;
+        }
+
         return acc;
     }, {});
 
