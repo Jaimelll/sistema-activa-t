@@ -25,16 +25,18 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       regiones (descripcion),
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
-      etapas (descripcion),
+      etapas (descripcion, fase),
       especialista:especialistas(nombre),
       avance_tecnico,
+      check_inicio:avance_proyecto!inner(etapa_id),
       avance_proyecto (
         id,
         fecha,
         etapa_id,
         sustento
       )
-    `);
+    `)
+    .eq('check_inicio.etapa_id', 1);
 
   // --- 1. Filter by Year (Periodo) ---
   if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
@@ -111,6 +113,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
       estado: p.etapas?.descripcion || 'Activo',
       year: year,
       año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
+      fase: p.etapas?.fase || '',
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
       avance: Number(p.avance) || 0,
       contrapartida: Number(p.contrapartida) || 0,
@@ -162,7 +165,7 @@ export async function getProyectoCompletoById(id: string) {
       regiones (descripcion),
       instituciones_ejecutoras (nombre),
       modalidades (descripcion),
-      etapas (descripcion),
+      etapas (descripcion, fase),
       especialista:especialistas(nombre),
       avance_proyecto (
         id,
@@ -379,6 +382,27 @@ export async function getEtapasList() {
   }));
 }
 
+export async function getFasesOptions() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const { data, error } = await supabase
+    .from('etapas')
+    .select('id, fase')
+    .order('id', { ascending: true });
+
+  if (error) {
+    console.error("Error fetching fases list unique:", error);
+    return [];
+  }
+
+  const uniqueFases = [...new Set(data.map((item: any) => item.fase))].filter(Boolean) as string[];
+
+  console.log("Fases Únicas Backend (Ordenadas por ID):", uniqueFases);
+  return uniqueFases;
+}
+
 
 // --- TIMELINE ACTIONS ---
 
@@ -404,20 +428,22 @@ export async function getTimelineData(especialistaId?: number) {
       lineas (descripcion),
       instituciones_ejecutoras (nombre),
       regiones (descripcion),
-      etapas (descripcion),
+      etapas (descripcion, fase),
       grupo_id,
       grupo (id, descripcion, orden),
       avance_tecnico,
       provincia,
       especialista_id,
       especialista:especialistas(nombre),
+      check_inicio:avance_proyecto!inner(etapa_id),
       avance_proyecto (
         id,
         fecha,
         etapa_id,
         sustento
       )
-    `);
+    `)
+    .eq('check_inicio.etapa_id', 1);
 
   if (especialistaId && especialistaId !== 0) {
     query = query.eq('especialista_id', especialistaId);
@@ -452,6 +478,7 @@ export async function getTimelineData(especialistaId?: number) {
     institucion: p.instituciones_ejecutoras?.nombre || '-',
     region: p.regiones?.descripcion || '-',
     etapa: p.etapas?.descripcion || 'Sin Etapa',
+    fase: p.etapas?.fase || '',
     avance_tecnico: Number(p.avance_tecnico) || 0,
     fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
     fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
