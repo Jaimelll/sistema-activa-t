@@ -1,8 +1,9 @@
 "use client";
 // Force Update: 2026-03-02 09:55 - Sorting Fix 
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
+import { getDashboardStats, getTimelineData, getRegionData, getInstitucionData } from './actions';
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
 import { StatusChart } from '@/components/dashboard/charts/StatusChart';
 import { EjeChart } from '@/components/dashboard/charts/EjeChart';
@@ -41,6 +42,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
     const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+    const [selectedEspecialista, setSelectedEspecialista] = useState<string>('all');
+    const [dashboardData, setDashboardData] = useState(initialData);
+    const [timelineDataState, setTimelineDataState] = useState(timelineData);
+    const [isInitialMount, setIsInitialMount] = useState(true);
 
     const handleFundingBarClick = (region: string) => {
         setSelectedRegion(region === selectedRegion ? null : region);
@@ -53,13 +58,61 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]); // DEPRECATED: Using props
     // stages passed from props now
 
-    // Filter Logic for Options (Dynamic Lists)
-    const availableFilters = useMemo(() => {
-        // 1. Filter by Year first (Master Filter) & Execution
-        const dataForOptions = initialData.filter(item => {
+    // Main Filter Logic (Applied to Data)
+    const filteredData = useMemo(() => {
+        return dashboardData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
 
-            // Execution Logic for Options
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+
+            const eid = Number(item.etapaId || item.etapa_id || 0);
+            const status = (item.estado || '').toLowerCase().trim();
+            const isExecuted = eid === 6 || eid === 7 || status === 'ejecutado' || status === 'resuelto';
+
+            let matchExec = true;
+            if (selectedExecution === 'process') matchExec = !isExecuted;
+            if (selectedExecution === 'executed') matchExec = isExecuted;
+
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+
+            return matchYear && matchLinea && matchEje && matchEtapa && matchExec && matchModalidad;
+        });
+    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution, selectedModalidad]);
+
+    // REACTIVE GLOBAL FILTER EFFECT
+    useEffect(() => {
+        if (isInitialMount) {
+            setIsInitialMount(false);
+            return;
+        }
+
+        async function refreshDashboardData() {
+            const id = selectedEspecialista === 'all' ? undefined : Number(selectedEspecialista);
+            
+            // As requested, calling specific functions reactively
+            const [statsRes, timelineRes, regionRes, institucionRes] = await Promise.all([
+                getDashboardStats(id),
+                getTimelineData(id),
+                getRegionData(id),
+                getInstitucionData(id)
+            ]);
+
+            // Note: In this architecture, statsRes, regionRes, and institucionRes 
+            // all provide the raw projects for client-side filtering.
+            setDashboardData(statsRes);
+            setTimelineDataState(timelineRes);
+        }
+
+        refreshDashboardData();
+    }, [selectedEspecialista]);
+
+    // Filter Logic for Options (Dynamic Lists)
+    const availableFilters = useMemo(() => {
+        const dataForOptions = dashboardData.filter(item => {
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+
             const eid = Number(item.etapaId || item.etapa_id || 0);
             let matchExec = true;
             if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
@@ -68,15 +121,13 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             return matchYear && matchExec;
         });
 
-        // 2. Extract uniques present in this year's data
         const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
-        const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje)))); // Handle variations
+        const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje))));
         const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: d.etapaId, label: d.etapa })));
         const uniqueEtapas = Array.from(uniqueEtapasSet)
             .map(e => JSON.parse(e))
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
-        // 3. Map back to full objects with labels using original props
         const dynamicLineas = lines
             .filter((l: any) => uniqueLineas.includes(String(l.value)))
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
@@ -86,37 +137,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas };
-    }, [initialData, selectedYear, selectedExecution, lines, ejesList, selectedModalidad]); // Added selectedModalidad dependency if it affects others, mostly no but strict dep.
-
-    // Main Filter Logic (Applied to Data)
-    const filteredData = useMemo(() => {
-        console.log('Filtrando por año:', selectedYear, 'Ejecución:', selectedExecution);
-        return initialData.filter(item => {
-            // Numeric normalization
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-
-            // Strict ID check
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-
-            // Etapa Filter (Dropdown by ID)
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
-
-            // Execution Filter
-            const eid = Number(item.etapaId || item.etapa_id || 0);
-            const status = (item.estado || '').toLowerCase().trim();
-            const isExecuted = eid === 6 || eid === 7 || status === 'ejecutado' || status === 'resuelto';
-
-            let matchExec = true;
-            if (selectedExecution === 'process') matchExec = !isExecuted;
-            if (selectedExecution === 'executed') matchExec = isExecuted;
-
-            // Modalidad Filter
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
-
-            return matchYear && matchLinea && matchEje && matchEtapa && matchExec && matchModalidad;
-        });
-    }, [initialData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution, selectedModalidad]);
+    }, [dashboardData, selectedYear, selectedExecution, lines, ejesList, selectedModalidad]);
 
     // Debug logging requested by user - REMOVED
 
@@ -250,8 +271,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // Linkage Fix: Filter timelineData based on filteredData IDs
     const filteredTimelineData = useMemo(() => {
         const activeIds = new Set(filteredData.map(d => d.id));
-        return timelineData.filter(t => activeIds.has(t.id));
-    }, [filteredData, timelineData]);
+        return timelineDataState.filter(t => activeIds.has(t.id));
+    }, [filteredData, timelineDataState]);
 
     return (
         <div className="space-y-6">
@@ -326,6 +347,20 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                         >
                             <option value="all">Todas las Modalidades</option>
                             {modalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                        </select>
+
+                        {/* 7. Especialista (Global) */}
+                        <select
+                            className="input h-10 py-2 px-3 text-sm border-blue-200 w-full rounded shadow-sm bg-blue-50/30 font-semibold text-blue-800"
+                            value={selectedEspecialista}
+                            onChange={(e) => setSelectedEspecialista(e.target.value)}
+                        >
+                            <option value="all">Todos los especialistas</option>
+                            {especialistas.map((e: any) => (
+                                <option key={String(e.value)} value={String(e.value)}>
+                                    {String(e.label)}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -431,12 +466,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                 <tbody>
                                     {filteredData
                                         .filter(d => d.region === selectedRegion)
-                                        .sort((a, b) => {
-                                            const dateA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
-                                            const dateB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
-                                            if (dateA !== dateB) return dateA - dateB;
-                                            return (a.codigo || '').localeCompare(b.codigo || '');
-                                        })
+                                        .sort((a, b) => a.id - b.id)
                                         .map((proj, idx) => {
                                             const presupuestado = Number(proj.monto_fondoempleo) || 0;
                                             const avance = Number(proj.avance) || 0;

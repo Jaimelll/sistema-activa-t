@@ -56,8 +56,8 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
 
             if (!groups.has(key)) {
                 groups.set(key, {
-                    name: project.grupo_descripcion || 'Sin Grupo',
-                    orden: project.grupo_orden || 999,
+                    name: project.grupo_descripcion || project.grupo?.descripcion || 'Sin Grupo',
+                    orden: project.grupo_orden || project.grupo?.orden || 999,
                     ejeId: Number(ejeId) || 999,
                     lineaId: Number(lineaId) || 999,
                     stage1Dates: [],
@@ -421,21 +421,7 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                             <tbody>
                                 {selectedGroup.projects
                                     .slice()
-                                    .sort((a: any, b: any) => {
-                                        // Logging for first comparison only to avoid flood
-                                        if (!(window as any).__debug_sort_done) {
-                                            console.log('[DEBUG SORT] Project A:', { codigo: a.codigo, fin: a.fecha_fin, type: typeof a.fecha_fin });
-                                            console.log('[DEBUG SORT] Project B:', { codigo: b.codigo, fin: b.fecha_fin, type: typeof b.fecha_fin });
-                                            const tA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
-                                            const tB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
-                                            console.log('[DEBUG SORT] Parsed Times:', { tA, tB });
-                                            (window as any).__debug_sort_done = true;
-                                        }
-                                        const dateA = a.fecha_fin ? new Date(a.fecha_fin).getTime() : Infinity;
-                                        const dateB = b.fecha_fin ? new Date(b.fecha_fin).getTime() : Infinity;
-                                        if (dateA !== dateB) return dateA - dateB;
-                                        return (a.codigo || '').localeCompare(b.codigo || '');
-                                    })
+                                    .sort((a: any, b: any) => a.id - b.id)
                                     .map((p: any, i: number) => {
                                         const presupuestado = Number(p.monto) || 0;
                                         const avance = Number(p.avance) || 0;
