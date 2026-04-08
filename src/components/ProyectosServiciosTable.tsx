@@ -48,6 +48,7 @@ export default function ProyectosServiciosTable({
   const [selectedEje, setSelectedEje] = useState('all');
   const [selectedLinea, setSelectedLinea] = useState('all');
   const [selectedModalidad, setSelectedModalidad] = useState('all');
+  const [selectedEspecialista, setSelectedEspecialista] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
@@ -81,9 +82,12 @@ export default function ProyectosServiciosTable({
       // 6. Modalidad filter
       const matchesModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
 
-      return matchesSearch && matchesExec && matchesEtapa && matchesEje && matchesLinea && matchesModalidad;
+      // 7. Especialista filter
+      const matchesEspecialista = selectedEspecialista === 'all' || String(item.especialista_id) === String(selectedEspecialista);
+
+      return matchesSearch && matchesExec && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesEspecialista;
     });
-  }, [initialData, searchTerm, selectedExecution, selectedEtapa, selectedEje, selectedLinea, selectedModalidad]);
+  }, [initialData, searchTerm, selectedExecution, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedEspecialista]);
 
   // Excel Export
   const downloadExcel = () => {
@@ -258,6 +262,19 @@ export default function ProyectosServiciosTable({
             >
               <option value="all">Todas las Modalidades</option>
               {modalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+          </div>
+
+          {/* Especialista Filter */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Especialista</label>
+            <select
+              className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none"
+              value={selectedEspecialista}
+              onChange={(e) => setSelectedEspecialista(e.target.value)}
+            >
+              <option value="all">Todos los especialistas</option>
+              {especialistas.map((e: any) => <option key={e.value} value={e.value}>{e.label}</option>)}
             </select>
           </div>
         </div>
