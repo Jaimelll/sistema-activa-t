@@ -26,9 +26,10 @@ interface DashboardViewProps {
     etapasList?: any[];
     grupos?: any[];
     especialistas?: any[];
+    fases?: string[];
 }
 
-export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [], fases = [] }: DashboardViewProps) {
     if (initialData && initialData.length > 0) {
         console.log('PRIMER REGISTRO:', initialData[0]);
     }
@@ -40,7 +41,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedEje, setSelectedEje] = useState<string>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
     const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
-    const [selectedExecution, setSelectedExecution] = useState<string>('process'); // Default: En proceso
+    const [selectedFase, setSelectedFase] = useState<string>("Ejecución del Proyecto");
     const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
     const [selectedEspecialista, setSelectedEspecialista] = useState<string>('all');
     const [dashboardData, setDashboardData] = useState(initialData);
@@ -67,19 +68,12 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
 
-            const eid = Number(item.etapaId || item.etapa_id || 0);
-            const status = (item.estado || '').toLowerCase().trim();
-            const isExecuted = eid === 6 || eid === 7 || status === 'ejecutado' || status === 'resuelto';
-
-            let matchExec = true;
-            if (selectedExecution === 'process') matchExec = !isExecuted;
-            if (selectedExecution === 'executed') matchExec = isExecuted;
-
             const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
 
-            return matchYear && matchLinea && matchEje && matchEtapa && matchExec && matchModalidad;
+            return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad;
         });
-    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedExecution, selectedModalidad]);
+    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad]);
 
     // REACTIVE GLOBAL FILTER EFFECT
     useEffect(() => {
@@ -113,12 +107,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         const dataForOptions = dashboardData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
 
-            const eid = Number(item.etapaId || item.etapa_id || 0);
-            let matchExec = true;
-            if (selectedExecution === 'process') matchExec = eid !== 6 && eid !== 7;
-            if (selectedExecution === 'executed') matchExec = eid === 6 || eid === 7;
+            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
 
-            return matchYear && matchExec;
+            return matchYear && matchFase;
         });
 
         const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
@@ -137,7 +128,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas };
-    }, [dashboardData, selectedYear, selectedExecution, lines, ejesList, selectedModalidad]);
+    }, [dashboardData, selectedYear, selectedFase, lines, ejesList, selectedModalidad]);
 
     // Debug logging requested by user - REMOVED
 
@@ -279,11 +270,24 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         return timelineDataState.filter(t => activeIds.has(t.id));
     }, [filteredData, timelineDataState]);
 
+    const selectedFaseLabel = useMemo(() => {
+        if (selectedEtapa !== 'all') {
+            const etapa = availableFilters.uniqueEtapas.find((e: any) => String(e.value) === String(selectedEtapa));
+            return etapa ? etapa.label : 'Etapa Seleccionada';
+        }
+        return selectedFase || 'Todas las Fases';
+    }, [selectedEtapa, selectedFase, availableFilters.uniqueEtapas]);
+
     return (
         <div className="space-y-6">
             {/* Header & Filters */}
             {/* Header & Filters */}
             <div className="flex flex-col space-y-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-200 animate-pulse">
+                        Fase Activa: {selectedFaseLabel}
+                    </div>
+                </div>
 
                 {/* Fila Superior: Branding + Filtros (Responsive) */}
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
@@ -303,15 +307,18 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     {/* 2. Contenedor de Filtros (Grid Responsive) */}
                     <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-                        {/* 1. Estado (Execution) */}
+                        {/* 1. Fase */}
                         <select
-                            className="input h-10 py-2 px-3 text-sm border-gray-300 w-full font-medium text-blue-900 bg-blue-50 rounded shadow-sm"
-                            value={selectedExecution}
-                            onChange={(e) => setSelectedExecution(e.target.value)}
+                            className="input h-10 py-2 px-3 text-sm border-2 border-blue-600 w-full font-bold text-white bg-blue-600 rounded shadow-md transition-all hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={selectedFase}
+                            onChange={(e) => setSelectedFase(e.target.value)}
                         >
-                            <option value="all">Todas</option>
-                            <option value="process">En proceso</option>
-                            <option value="executed">Ejecutados</option>
+                            <option value="all" className="bg-white text-gray-900">Todas las Fases</option>
+                            {fases.map(fase => (
+                                <option key={fase} value={fase} className="bg-white text-gray-900">
+                                    {fase}
+                                </option>
+                            ))}
                         </select>
 
                         {/* 2. Etapa */}
