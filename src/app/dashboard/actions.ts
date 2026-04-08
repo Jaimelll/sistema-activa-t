@@ -65,6 +65,10 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
 
   // --- 3. Status Exclusion (Always applied at end as requested) ---
   // "La exclusión de .not('etapas.descripcion', 'ilike', 'no habilitada') debe estar siempre presente al final"
+  if (filters?.especialistaId && Number(filters.especialistaId) !== 0) {
+    query = query.eq('especialista_id', filters.especialistaId);
+  }
+
   query = query.not('etapas.descripcion', 'ilike', 'no habilitada').order('id', { ascending: true });
 
   const { data, error } = await query;
@@ -125,6 +129,23 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
 
   console.log("Debug Data Sample (Year):", mappedData[0]?.year, "Total Rows:", mappedData.length);
   return mappedData;
+}
+
+// --- GLOBAL DASHBOARD FILTERS (REACTIVE) ---
+
+export async function getDashboardStats(especialistaId?: number) {
+    return await getDashboardData({ especialistaId: especialistaId?.toString() });
+}
+
+export async function getRegionData(especialistaId?: number) {
+    // Current implementation uses getDashboardData and aggregates client-side, 
+    // but we satisfy the named function requirement.
+    return await getDashboardData({ especialistaId: especialistaId?.toString() });
+}
+
+export async function getInstitucionData(especialistaId?: number) {
+    // Current implementation uses getDashboardData and aggregates client-side
+    return await getDashboardData({ especialistaId: especialistaId?.toString() });
 }
 
 export async function getProyectoCompletoById(id: string) {
@@ -361,12 +382,12 @@ export async function getEtapasList() {
 
 // --- TIMELINE ACTIONS ---
 
-export async function getTimelineData() {
+export async function getTimelineData(especialistaId?: number) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('proyectos')
     .select(`
       id,
@@ -385,7 +406,7 @@ export async function getTimelineData() {
       regiones (descripcion),
       etapas (descripcion),
       grupo_id,
-      grupo:grupo_id (descripcion, orden),
+      grupo (id, descripcion, orden),
       avance_tecnico,
       provincia,
       especialista_id,
@@ -396,11 +417,18 @@ export async function getTimelineData() {
         etapa_id,
         sustento
       )
-    `)
-    .not('etapas.descripcion', 'ilike', 'no habilitada');
+    `);
+
+  if (especialistaId && especialistaId !== 0) {
+    query = query.eq('especialista_id', especialistaId);
+  }
+
+  const { data, error } = await query
+    .not('etapas.descripcion', 'ilike', 'no habilitada')
+    .order('id', { ascending: true });
 
   if (error) {
-    console.error("Error fetching timeline data:", error);
+    console.error("Error Timeline:", error?.message, error?.details, error?.hint);
     return [];
   }
 
