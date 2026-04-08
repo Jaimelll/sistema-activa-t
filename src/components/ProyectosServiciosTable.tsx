@@ -277,7 +277,9 @@ export default function ProyectosServiciosTable({
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[150px]">Etapa</th>
                  <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Presupuestado</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Contrapartida</th>
-                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[140px]">Avance</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[120px]">Avance</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[70px]">%</th>
+                <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[90px]">% Ejec.</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-right min-w-[110px]">Benef.</th>
                 <th className="px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 min-w-[150px]">Gestora</th>
                 <th className="sticky right-0 bg-gray-50 px-6 py-4 text-[10px] uppercase tracking-wider font-extrabold text-gray-500 text-center z-10 border-l border-gray-100">Acciones</th>
@@ -324,6 +326,12 @@ export default function ProyectosServiciosTable({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-emerald-700">
                       S/ {row.avance?.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-gray-600">
+                      {(row.monto_fondoempleo > 0 ? (row.avance / row.monto_fondoempleo) * 100 : 0).toFixed(1)}%
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-blue-600">
+                      {row.avance_tecnico ?? 0}%
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-gray-500">
                       {row.beneficiarios?.toLocaleString('es-PE')}

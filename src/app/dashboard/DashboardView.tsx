@@ -423,6 +423,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Presupuesto</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[110px] text-right">Avance</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[50px] text-right">%</th>
+                                        <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[70px] text-right">% Ejec.</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Inicio</th>
                                         <th className="py-0.5 px-3 text-[10px] uppercase tracking-wider font-extrabold text-gray-700 w-[100px] text-center">Fin</th>
                                     </tr>
@@ -467,6 +468,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                     </td>
                                                     <td className="py-0.5 px-3 text-right font-bold text-gray-700">
                                                         {porcentaje.toFixed(1)}%
+                                                    </td>
+                                                    <td className="py-0.5 px-3 text-right font-bold text-blue-600">
+                                                        {proj.avance_tecnico ?? 0}%
                                                     </td>
                                                     <td className="py-0.5 px-3 text-center text-gray-600">
                                                         {proj.fecha_inicio ? new Date(proj.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-'}
