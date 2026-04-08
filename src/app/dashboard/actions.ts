@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
 
-export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string }) {
+export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -57,6 +57,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   applyFilter('eje_id', filters?.eje); // Correct column name from schema check: eje_id
   applyFilter('linea_id', filters?.linea); // Correct column name from schema check: linea_id
   applyFilter('modalidad_id', filters?.modalidad);
+  applyFilter('especialista_id', filters?.especialistaId);
 
   if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
     query = query.eq('etapa_id', filters.etapa);
