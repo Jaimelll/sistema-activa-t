@@ -81,7 +81,8 @@ export async function getPresupuestoMensual() {
         .from('presupuesto_mensual')
         .select(`
             mes,
-            monto,
+            presupuesto,
+            ejecutado,
             unidades_operativas:unidad_operativa_id (siglas)
         `);
 
@@ -93,22 +94,32 @@ export async function getPresupuestoMensual() {
     // Initialize 12 months
     const result = Array.from({ length: 12 }, (_, i) => ({
         mes: i + 1,
-        total: 0
+        presupuesto: 0,
+        ejecutado: 0,
+        presupuestoBreakdown: {},
+        ejecutadoBreakdown: {}
     } as any));
 
     data.forEach((row: any) => {
         const idx = (row.mes || 1) - 1;
-        const siglas = (row.unidades_operativas as any)?.siglas;
-        const monto = Number(row.monto) || 0;
+        if (idx < 0 || idx > 11) return;
+
+        const siglas = (row.unidades_operativas as any)?.siglas || 'OTR';
+        const presuMonto = Number(row.presupuesto) || 0;
+        const ejecMonto = Number(row.ejecutado) || 0;
         
+        result[idx].presupuesto += presuMonto;
+        result[idx].ejecutado += ejecMonto;
+
         if (siglas) {
-            result[idx][siglas] = (result[idx][siglas] || 0) + monto;
+            result[idx].presupuestoBreakdown[siglas] = (result[idx].presupuestoBreakdown[siglas] || 0) + presuMonto;
+            result[idx].ejecutadoBreakdown[siglas] = (result[idx].ejecutadoBreakdown[siglas] || 0) + ejecMonto;
         }
-        result[idx].total += monto;
     });
 
     return result;
 }
+
 
 export async function getPresupuestoComparativo() {
     const supabase = await createClient();

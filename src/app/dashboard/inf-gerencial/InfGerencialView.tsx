@@ -81,29 +81,32 @@ const formatCompactCurrency = (value: number) => {
 
 const CustomBudgetTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-        const data = payload[0].payload;
+        const entry = payload[0];
+        const data = entry.payload;
+        // Se comporta igual que el comparativo anual
+        const isPresu = entry.dataKey === 'presupuesto';
+        const title = isPresu ? `Presupuesto` : `Ejecutado`;
+        const total = isPresu ? (data.presupuesto || 0) : (data.ejecutado || 0);
+        const breakdown = isPresu ? (data.presupuestoBreakdown || {}) : (data.ejecutadoBreakdown || {});
+
         return (
-            <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[200px]">
-                <p className="text-sm font-black text-slate-400 uppercase mb-2">{data.mes_nombre}</p>
-                <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(data.total)}</p>
+            <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[220px]">
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{title} {data.mes_nombre}</p>
+                <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(total)}</p>
                 <div className="space-y-1 pt-1">
-                    {Object.entries(data).map(([key, value]) => {
-                        const skipKeys = ['mes', 'mes_nombre', 'total', 'año', 'poi', 'ejecutado', 'poiBreakdown', 'ejecutadoBreakdown'];
-                        if (skipKeys.includes(key)) return null;
-                        if (typeof value !== 'number' || value === 0) return null;
-                        return (
-                            <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
-                                <span className="uppercase text-slate-400">{key}:</span>
-                                <span className="text-slate-700">{formatCurrency(value)}</span>
-                            </p>
-                        );
-                    })}
+                    {Object.entries(breakdown).sort((a: any, b: any) => (b[1] as number) - (a[1] as number)).map(([key, value]) => (
+                        <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
+                            <span className="uppercase text-slate-400">{key}:</span>
+                            <span className="text-slate-700">{formatCurrency(value as number)}</span>
+                        </p>
+                    ))}
                 </div>
             </div>
         );
     }
     return null;
 };
+
 
 const CustomComparativeTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -569,7 +572,8 @@ export default function InfGerencialView({
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
                                 <Tooltip shared={false} content={<CustomComparativeTooltip />} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                                <Bar dataKey="poi" name="POI" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="poi" name="Presupuesto" fill="#dc2626" radius={[4, 4, 0, 0]} />
+
                                 <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -593,10 +597,13 @@ export default function InfGerencialView({
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
-                                <Tooltip content={<CustomBudgetTooltip />} />
-                                <Bar dataKey="total" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={30} />
+                                <Tooltip shared={false} content={<CustomBudgetTooltip />} />
+                                <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
+                                <Bar dataKey="presupuesto" name="Presupuesto" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
+
                     )}
                 </div>
             </div>
