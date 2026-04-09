@@ -51,8 +51,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
         institucion_ejecutora_id: "",
         modalidad_id: "",
         grupo_id: "",
+        sustento: "",
         año: new Date().getFullYear()
     });
+
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAvances, setShowAvances] = useState(false);
@@ -86,8 +88,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 institucion_ejecutora_id: proyecto.institucionId || "",
                 modalidad_id: proyecto.modalidadId || "",
                 grupo_id: proyecto.grupo_id || "",
+                sustento: proyecto.sustento || "",
                 año: proyecto.año || new Date().getFullYear()
             });
+
             setNewAvance({
                 etapa_id: proyecto.etapaId || "",
                 fecha: new Date().toISOString().split('T')[0],
@@ -116,8 +120,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 institucion_ejecutora_id: "",
                 modalidad_id: "",
                 grupo_id: "",
+                sustento: "",
                 año: new Date().getFullYear()
             });
+
             setShowAvances(false);
             setEditingAvance(null);
         }
@@ -434,6 +440,22 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                         {options.modalidades.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                     </select>
                                 </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sustento Actual (Sincronizado)</label>
+                                    <textarea
+                                        name="sustento"
+                                        value={formData.sustento || ""}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none min-h-[80px] text-xs resize-none"
+                                        placeholder="El sustento se sincroniza automáticamente con el último avance real..."
+                                        disabled={isReadOnly}
+                                    />
+                                    {proyecto && !isReadOnly && (
+                                        <p className="text-[9px] text-gray-400 italic">Este valor se sobrescribirá al registrar un nuevo avance real.</p>
+                                    )}
+                                </div>
+
 
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Grupo de Interés</label>
