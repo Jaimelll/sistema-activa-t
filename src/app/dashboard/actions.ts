@@ -640,15 +640,18 @@ export async function getRegiones() {
 // --- AVANCE PROYECTO ACTIONS ---
 
 async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
-  // Get the latest etapa_id from the latest avance (by date and id)
+  const today = new Date().toISOString().split('T')[0];
+  // Get the latest etapa_id from the latest avance (fecha <= today)
   const { data: latestAvance, error: latestError } = await supabase
     .from('avance_proyecto')
     .select('etapa_id')
     .eq('proyecto_id', proyectoId)
+    .lte('fecha', today)
     .order('fecha', { ascending: false })
     .order('id', { ascending: false })
     .limit(1)
     .single();
+
 
   if (latestAvance) {
     const { error: updateError } = await supabase
@@ -669,7 +672,11 @@ export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
 
   const { data, error: insertError } = await supabase
     .from('avance_proyecto')
-    .insert([{ ...avanceData, proyecto_id: proyectoId }])
+    .insert([{ 
+      ...avanceData, 
+      proyecto_id: proyectoId,
+      monto: Number(avanceData.monto) || 0
+    }])
     .select()
     .single();
 
@@ -691,14 +698,17 @@ export async function updateAvanceProyecto(id: any, avanceData: any) {
 
   const { data, error: updateError } = await supabase
     .from('avance_proyecto')
-    .update(avanceData)
+    .update({
+      ...avanceData,
+      monto: Number(avanceData.monto) || 0
+    })
     .eq('id', id)
     .select()
     .single();
 
   if (updateError) {
-    console.error("Error updating avance — id recibido:", id, "— payload:", avanceData, "— error Supabase:", updateError);
-    throw new Error(`[updateAvanceProyecto] ${updateError.message} (code: ${updateError.code})`);
+    console.error("Error updating avance:", updateError);
+    throw new Error(updateError.message);
   }
 
   if (data?.proyecto_id) {
@@ -708,6 +718,7 @@ export async function updateAvanceProyecto(id: any, avanceData: any) {
   revalidatePath('/dashboard/gestion-proyectos');
   return data;
 }
+
 
 export async function deleteAvanceProyecto(id: any, proyectoId: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

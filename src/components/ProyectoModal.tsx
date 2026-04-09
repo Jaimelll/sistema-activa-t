@@ -60,8 +60,11 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
     const [newAvance, setNewAvance] = useState({
         etapa_id: "",
         fecha: new Date().toISOString().split('T')[0],
-        sustento: ""
+        sustento: "",
+        monto: 0
     });
+    const [actionFeedback, setActionFeedback] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+
 
     useEffect(() => {
         if (proyecto) {
@@ -85,8 +88,15 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 grupo_id: proyecto.grupo_id || "",
                 año: proyecto.año || new Date().getFullYear()
             });
+            setNewAvance({
+                etapa_id: proyecto.etapaId || "",
+                fecha: new Date().toISOString().split('T')[0],
+                sustento: "",
+                monto: 0
+            });
             setShowAvances(false);
             setEditingAvance(null);
+            setActionFeedback(null);
         } else {
             setFormData({
                 nombre: "",
@@ -111,6 +121,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
             setShowAvances(false);
             setEditingAvance(null);
         }
+
     }, [proyecto, isOpen]);
 
     if (!isOpen) return null;
@@ -149,22 +160,43 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
             alert("Seleccione una etapa para el avance");
             return;
         }
+
+        const today = new Date().toISOString().split('T')[0];
+        const isProjection = newAvance.fecha > today;
+
         try {
             setIsSubmitting(true);
+            if (!isProjection) {
+                setActionFeedback({ message: "Actualizando etapa del proyecto...", type: 'info' });
+            }
+
             await addAvanceProyecto(proyecto.id, {
                 ...newAvance,
-                etapa_id: Number(newAvance.etapa_id)
+                etapa_id: Number(newAvance.etapa_id),
+                monto: Number(newAvance.monto) || 0
             });
+
+            if (isProjection) {
+                setActionFeedback({ message: "Proyección registrada con éxito", type: 'success' });
+            } else {
+                setActionFeedback({ message: "Avance y etapa actualizados correctamente", type: 'success' });
+            }
+
             setNewAvance({
-                etapa_id: "",
+                etapa_id: proyecto.etapaId || "",
                 fecha: new Date().toISOString().split('T')[0],
-                sustento: ""
+                sustento: "",
+                monto: 0
             });
-            alert("Avance registrado correctamente");
-            onClose();
+
+            // Auto-refresh/close after a short delay for feedback
+            setTimeout(() => {
+                onClose();
+            }, 1500);
+
         } catch (error) {
             console.error("Error adding avance:", error);
-            alert("Error al registrar avance");
+            setActionFeedback({ message: "Error al registrar avance", type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
@@ -177,18 +209,20 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
             await updateAvanceProyecto(editingAvance.id, {
                 etapa_id: Number(editingAvance.etapa_id),
                 fecha: editingAvance.fecha,
-                sustento: editingAvance.sustento
+                sustento: editingAvance.sustento,
+                monto: Number(editingAvance.monto) || 0
             });
-            alert("Avance actualizado correctamente");
+            setActionFeedback({ message: "Avance actualizado correctamente", type: 'success' });
             setEditingAvance(null);
-            onClose();
+            setTimeout(() => onClose(), 1000);
         } catch (error) {
             console.error("Error updating avance:", error);
-            alert("Error al actualizar avance");
+            setActionFeedback({ message: "Error al actualizar avance", type: 'error' });
         } finally {
             setIsSubmitting(false);
         }
     };
+
 
     const handleDeleteAvance = async (avanceId: any) => {
         if (!window.confirm("¿Está seguro de eliminar este avance? La etapa del proyecto se recalculará.")) return;
@@ -524,6 +558,18 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                 />
                                             </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={newAvance.monto}
+                                                    onChange={(e) => setNewAvance({ ...newAvance, monto: Number(e.target.value) })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+
                                             <div className="md:col-span-2 space-y-1">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
                                                 <textarea
@@ -534,6 +580,17 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                 />
                                             </div>
                                         </div>
+
+                                        {actionFeedback && (
+                                            <div className={`p-3 rounded-xl text-[11px] font-bold text-center animate-in fade-in slide-in-from-top-2 duration-300 ${
+                                                actionFeedback.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                                actionFeedback.type === 'info' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                                'bg-red-100 text-red-700 border border-red-200'
+                                            }`}>
+                                                {actionFeedback.message}
+                                            </div>
+                                        )}
+
                                         <button
                                             onClick={handleAddAvance}
                                             disabled={isSubmitting}
@@ -548,6 +605,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                         </button>
                                     </div>
                                 </div>
+
                             )}
 
                             <div className="space-y-3">
@@ -564,8 +622,13 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                             return `${parts[2]}/${parts[1]}/${parts[0]}`;
                                                         })()}
                                                     </span>
-                                                    <span className="text-xs font-bold text-gray-800">{av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
+
+                                                    <span className="text-xs font-bold text-gray-800">
+                                                        {av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}
+                                                        {av.monto > 0 && <span className="ml-2 text-blue-600">({formatCurrency(av.monto)})</span>}
+                                                    </span>
                                                     <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+
                                                 </div>
                                                 {!isReadOnly && (
                                                     <div className="flex items-center gap-2 border-l pl-3 border-gray-100">
@@ -631,6 +694,17 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                         className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
                                     />
                                 </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={editingAvance.monto || 0}
+                                        onChange={(e) => setEditingAvance({ ...editingAvance, monto: Number(e.target.value) })}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                    />
+                                </div>
+
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
                                     <textarea
