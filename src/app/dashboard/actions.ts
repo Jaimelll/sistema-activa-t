@@ -33,8 +33,10 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         id,
         fecha,
         etapa_id,
-        sustento
+        sustento,
+        monto
       )
+
     `)
     .eq('check_inicio.etapa_id', 1);
 
@@ -111,7 +113,9 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
 
       modalidadId: p.modalidad_id, // Added: Modality ID for filtering
       estado: p.etapas?.descripcion || 'Activo',
+      sustento: p.sustento || '',
       year: year,
+
       año: Number(p.año) || 0, // Added to satisfy frontend filter requirement
       fase: p.etapas?.fase || '',
       monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
@@ -172,8 +176,10 @@ export async function getProyectoCompletoById(id: string) {
         fecha,
         etapa_id,
         sustento,
+        monto,
         etapa:etapas(descripcion)
       )
+
     `)
     .eq('id', id)
     .single();
@@ -206,7 +212,9 @@ export async function getProyectoCompletoById(id: string) {
     modalidad: p.modalidades?.descripcion || 'Desconocido',
     modalidadId: p.modalidad_id,
     estado: p.etapas?.descripcion || 'Activo',
+    sustento: p.sustento || '',
     year: year,
+
     año: Number(p.año) || 0,
     monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
     avance: Number(p.avance) || 0,
@@ -641,10 +649,10 @@ export async function getRegiones() {
 
 async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
   const today = new Date().toISOString().split('T')[0];
-  // Get the latest etapa_id from the latest avance (fecha <= today)
+  // Get the latest etapa_id and sustento from the latest avance (fecha <= today)
   const { data: latestAvance, error: latestError } = await supabase
     .from('avance_proyecto')
-    .select('etapa_id')
+    .select('etapa_id, sustento')
     .eq('proyecto_id', proyectoId)
     .lte('fecha', today)
     .order('fecha', { ascending: false })
@@ -653,16 +661,30 @@ async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
     .single();
 
 
+
   if (latestAvance) {
+    // Also calculate the SUM of all montos for this project
+    const { data: totalMonto, error: sumError } = await supabase
+      .from('avance_proyecto')
+      .select('monto')
+      .eq('proyecto_id', proyectoId);
+
+    const totalAvance = totalMonto?.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0) || 0;
+
     const { error: updateError } = await supabase
       .from('proyectos')
-      .update({ etapa_id: latestAvance.etapa_id })
+      .update({ 
+        etapa_id: latestAvance.etapa_id,
+        sustento: latestAvance.sustento,
+        avance: totalAvance
+      })
       .eq('id', proyectoId);
 
     if (updateError) {
       console.error("Error updating proyecto after recalculation:", updateError);
     }
   }
+
 }
 
 export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
