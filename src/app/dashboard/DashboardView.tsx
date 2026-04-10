@@ -36,14 +36,14 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     console.log('Verificación de Despliegue - Timestamp:', new Date().toISOString());
 
     // State for filters
-    const [selectedYear, setSelectedYear] = useState<string>(''); // Default empty for 'All'
-    const [selectedLinea, setSelectedLinea] = useState<string>('all');
-    const [selectedEje, setSelectedEje] = useState<string>('all');
-    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
-    const [selectedModalidad, setSelectedModalidad] = useState<string>('all');
-    const [selectedFase, setSelectedFase] = useState<string>("Ejecución del Proyecto");
-    const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-    const [selectedEspecialista, setSelectedEspecialista] = useState<string>('all');
+    const [selectedYear, setSelectedYear] = useState<any>(''); // Default empty for 'All'
+    const [selectedLinea, setSelectedLinea] = useState<any>('all');
+    const [selectedEje, setSelectedEje] = useState<any>('all');
+    const [selectedEtapa, setSelectedEtapa] = useState<any>('all');
+    const [selectedModalidad, setSelectedModalidad] = useState<any>('all');
+    const [selectedFase, setSelectedFase] = useState<any>("Ejecución del Proyecto");
+    const [selectedRegion, setSelectedRegion] = useState<any>(null);
+    const [selectedEspecialista, setSelectedEspecialista] = useState<any>('all');
     const [dashboardData, setDashboardData] = useState(initialData);
     const [timelineDataState, setTimelineDataState] = useState(timelineData);
     const [isInitialMount, setIsInitialMount] = useState(true);
@@ -114,7 +114,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
         const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
         const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje))));
-        const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: d.etapaId, label: d.etapa })));
+        // Store both value and label to avoid rendering objects as children
+        const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
         const uniqueEtapas = Array.from(uniqueEtapasSet)
             .map(e => JSON.parse(e))
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
@@ -391,7 +392,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                     icon={DollarSign}
                 />
                 <KPICard
-                    title="Proyectos"
+                    title={`Proyectos ${typeof selectedYear === 'object' ? (selectedYear as any).label : (selectedYear || 'Total')}`}
                     value={
                         <div className="flex flex-col">
                             <span>{metrics.totalProjects}</span>
@@ -520,7 +521,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                                                     </td>
                                                     <td className="py-0.5 px-3 text-center">
                                                         <span className="px-1 py-0 bg-blue-50 text-blue-700 rounded-full text-[8px] font-bold border border-blue-100 whitespace-nowrap">
-                                                            {proj.etapa || proj.estado || '-'}
+                                                            {proj.etapa_id || proj.etapa || proj.estado || '-'}
                                                         </span>
                                                     </td>
                                                     <td className="py-0.5 px-3 text-right font-bold text-blue-700">
