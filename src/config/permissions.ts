@@ -18,6 +18,17 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
     'invitado@fondoempleo.com.pe': {
         modulosPermitidos: ['Proyectos', 'Servicios', 'Inf. Gerencial'],
         rutasPermitidas: ['/dashboard', '/dashboard/servicios', '/dashboard/inf-gerencial', '/auth/signout', '/auth/callback'],
+    },
+    'pricra@fondoempleo.com.pe': {
+        modulosPermitidos: ['Proyectos', 'Servicios', 'Inf. Gerencial', 'Gestión de Aportantes'],
+        rutasPermitidas: [
+            '/dashboard', 
+            '/dashboard/servicios', 
+            '/dashboard/inf-gerencial', 
+            '/dashboard/gestion-aportantes', 
+            '/auth/signout', 
+            '/auth/callback'
+        ],
     }
 };
 
