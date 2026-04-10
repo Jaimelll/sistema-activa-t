@@ -424,6 +424,23 @@ export default function InfGerencialView({
                 </div>
             </div>
 
+            {/* Bank Balances Cards (Correctly positioned below KPI cards) */}
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
+                <div className="mb-6 text-center">
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
+                </div>
+                <div className="flex flex-nowrap gap-4 min-w-max pb-2">
+                    {historicalSaldos.map((item) => (
+                        <div key={`${item.año}-${item.escenario}`} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
+                                {item.año === 2026 && item.escenario === 'Proyectado' ? '2026 Proyectado' : item.año}
+                            </span>
+                            <span className="text-lg font-bold text-slate-800 tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Stacked Bar Chart */}
@@ -459,7 +476,7 @@ export default function InfGerencialView({
                                                     <div className="space-y-2">
                                                         {payload.map((entry: any, index: number) => (
                                                             <div key={index} className="flex justify-between items-center gap-4">
-                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{entry.name}</span>
+                                                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{entry.name}</span>
                                                                 <span className="text-sm font-bold text-slate-700">{formatCurrency(entry.value)}</span>
                                                             </div>
                                                         ))}
@@ -536,24 +553,7 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* Bank Balances Cards */}
-            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
-                <div className="mb-6 text-center">
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
-                </div>
-                <div className="flex flex-nowrap gap-4 min-w-max pb-2">
-                    {historicalSaldos.map((item) => (
-                        <div key={`${item.año}-${item.escenario}`} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
-                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
-                                {item.año === 2026 && item.escenario === 'Proyectado' ? '2026 Proyectado' : item.año}
-                            </span>
-                            <span className="text-lg font-bold text-slate-800 tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Comparative Budget Chart */}
+            {/* Comparative Budget Chart (Moved to bottom) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
                 <div className="mb-8">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">POI 2024-2026</h3>
@@ -581,7 +581,7 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* Monthly Budget Chart */}
+            {/* Monthly Budget Chart (Moved to bottom) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                 <div className="mb-6 text-center">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Presupuesto Mensual Proyectado 2026</h3>
