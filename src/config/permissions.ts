@@ -29,6 +29,24 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
             '/auth/signout', 
             '/auth/callback'
         ],
+    },
+    'arojas@fondoempleo.com.pe': {
+        modulosPermitidos: [
+            'Inf. Gerencial', 
+            'Proyectos', 
+            'Servicios', 
+            'Gestión de Proyectos', 
+            'Gestión de Servicios'
+        ],
+        rutasPermitidas: [
+            '/dashboard', 
+            '/dashboard/inf-gerencial', 
+            '/dashboard/servicios', 
+            '/dashboard/gestion-proyectos', 
+            '/dashboard/gestion-servicios', 
+            '/auth/signout', 
+            '/auth/callback'
+        ],
     }
 };
 
