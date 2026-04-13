@@ -647,7 +647,7 @@ export async function getRegiones() {
 
 // --- AVANCE PROYECTO ACTIONS ---
 
-async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
+async function recalculateProyectoAvance(proyectoId: any, supabase: any, currentMonto?: number) {
   const today = new Date().toISOString().split('T')[0];
   // Get the latest etapa_id and sustento from the latest avance (fecha <= today)
   const { data: latestAvance, error: latestError } = await supabase
@@ -660,31 +660,47 @@ async function recalculateProyectoAvance(proyectoId: any, supabase: any) {
     .limit(1)
     .single();
 
-
-
   if (latestAvance) {
-    // Also calculate the SUM of all montos for this project
-    const { data: totalMonto, error: sumError } = await supabase
-      .from('avance_proyecto')
-      .select('monto')
-      .eq('proyecto_id', proyectoId);
+    // Regla de negocio: solo actualizar el avance financiero en 'proyectos'
+    // si el monto del avance procesado es mayor a cero.
+    // Los avances con monto === 0 se guardan como historial cualitativo
+    // pero NO alteran el avance financiero del proyecto principal.
+    if (currentMonto !== undefined && currentMonto > 0) {
+      // Calculate the SUM of all montos for this project
+      const { data: totalMonto, error: sumError } = await supabase
+        .from('avance_proyecto')
+        .select('monto')
+        .eq('proyecto_id', proyectoId);
 
-    const totalAvance = totalMonto?.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0) || 0;
+      const totalAvance = totalMonto?.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0) || 0;
 
-    const { error: updateError } = await supabase
-      .from('proyectos')
-      .update({ 
-        etapa_id: latestAvance.etapa_id,
-        sustento: latestAvance.sustento,
-        avance: totalAvance
-      })
-      .eq('id', proyectoId);
+      const { error: updateError } = await supabase
+        .from('proyectos')
+        .update({ 
+          etapa_id: latestAvance.etapa_id,
+          sustento: latestAvance.sustento,
+          avance: totalAvance
+        })
+        .eq('id', proyectoId);
 
-    if (updateError) {
-      console.error("Error updating proyecto after recalculation:", updateError);
+      if (updateError) {
+        console.error("Error updating proyecto avance financiero after recalculation:", updateError);
+      }
+    } else {
+      // Monto === 0: solo actualizar etapa y sustento, sin tocar el avance financiero
+      const { error: updateError } = await supabase
+        .from('proyectos')
+        .update({ 
+          etapa_id: latestAvance.etapa_id,
+          sustento: latestAvance.sustento
+        })
+        .eq('id', proyectoId);
+
+      if (updateError) {
+        console.error("Error updating proyecto etapa/sustento (monto=0):", updateError);
+      }
     }
   }
-
 }
 
 export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
@@ -707,7 +723,7 @@ export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
     throw new Error(insertError.message);
   }
 
-  await recalculateProyectoAvance(proyectoId, supabase);
+  await recalculateProyectoAvance(proyectoId, supabase, Number(avanceData.monto) || 0);
 
   revalidatePath('/dashboard/gestion-proyectos');
   return data;
@@ -734,7 +750,7 @@ export async function updateAvanceProyecto(id: any, avanceData: any) {
   }
 
   if (data?.proyecto_id) {
-    await recalculateProyectoAvance(data.proyecto_id, supabase);
+    await recalculateProyectoAvance(data.proyecto_id, supabase, Number(avanceData.monto) || 0);
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
