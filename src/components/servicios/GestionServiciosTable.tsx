@@ -242,6 +242,7 @@ export default function GestionServiciosTable({
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 w-16">ID</th>
+                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Grupo</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 min-w-[300px]">Nombre del Servicio</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Documento</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Eje / Línea</th>
@@ -253,7 +254,7 @@ export default function GestionServiciosTable({
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 italic font-medium">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400 italic font-medium">
                     No se encontraron servicios registrados.
                   </td>
                 </tr>
@@ -261,6 +262,9 @@ export default function GestionServiciosTable({
                 filteredData.map((row) => (
                   <tr key={row.id} className="hover:bg-blue-50/20 transition-colors group">
                     <td className="px-6 py-4 text-xs font-black text-gray-400">{row.id}</td>
+                    <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                        {row.grupo?.descripcion || '-'}
+                    </td>
                     <td className="px-6 py-4">
                         <div className="text-sm font-bold text-gray-900 group-hover:text-blue-700 transition-colors line-clamp-2">
                             {row.nombre}

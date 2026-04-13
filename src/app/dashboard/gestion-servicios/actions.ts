@@ -23,6 +23,7 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
       modalidad:modalidad_id(descripcion),
       institucion:institucion_id(descripcion),
       condicion:condicion_id(descripcion),
+      grupo:grupo_id(descripcion),
       avances:avance_beca(*)
     `)
     .order('id', { ascending: true });
@@ -96,43 +97,38 @@ export async function deleteServicio(id: any) {
 }
 
 async function recalculateBecaAvance(becaId: any, supabase: any) {
-  const { data: avances, error: fetchError } = await supabase
-    .from('avance_beca')
-    .select('monto_avance')
-    .eq('beca_id', becaId);
+  // Safe date calculation for America/Lima (UTC-5)
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const peruTime = new Date(utc - (5 * 3600000));
+  const today = peruTime.toISOString().split('T')[0];
 
-  if (fetchError) {
-    console.error("Error fetching advances for recalculation:", fetchError);
-    return;
-  }
+  console.log(`[DEBUG] Recalculating stage for Beca ${becaId} as of ${today}`);
 
-  const totalAvance = (avances || []).reduce((sum: number, av: any) => sum + Number(av.monto_avance || 0), 0);
-
-  // Get the latest etapa_id from the latest avance (by date and id)
-  const { data: latestAvance, error: latestError } = await supabase
+  // Fetch only valid (past or current) advances
+  const { data: latestValid, error } = await supabase
     .from('avance_beca')
     .select('etapa_id')
     .eq('beca_id', becaId)
+    .lte('fecha', today)
     .order('fecha', { ascending: false })
     .order('id', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const updatePayload: any = {
-    avance: totalAvance
-  };
-
-  if (latestAvance) {
-    updatePayload.etapa_id = latestAvance.etapa_id;
+  if (error) {
+    console.error("[DEBUG] Error fetching valid advances:", error);
+    return;
   }
 
-  const { error: updateError } = await supabase
-    .from('becas_nueva')
-    .update(updatePayload)
-    .eq('id', becaId);
-
-  if (updateError) {
-    console.error("Error updating becas_nueva after recalculation:", updateError);
+  if (latestValid) {
+    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${latestValid.etapa_id}`);
+    await supabase
+      .from('becas_nueva')
+      .update({ etapa_id: latestValid.etapa_id })
+      .eq('id', becaId);
+  } else {
+    console.log(`[DEBUG] No valid advance found for Beca ${becaId}. Stage remains unchanged.`);
   }
 }
 
@@ -141,7 +137,12 @@ export async function addAvanceServicio(becaId: any, avanceData: any) {
   
   const { data, error: insertError } = await supabase
     .from('avance_beca')
-    .insert([{ ...avanceData, beca_id: becaId }])
+    .insert([{ 
+      beca_id: becaId,
+      etapa_id: avanceData.etapa_id,
+      fecha: avanceData.fecha,
+      sustento: avanceData.sustento 
+    }])
     .select()
     .single();
 
@@ -161,7 +162,11 @@ export async function updateAvanceServicio(id: any, avanceData: any) {
   
   const { data, error: updateError } = await supabase
     .from('avance_beca')
-    .update(avanceData)
+    .update({
+      etapa_id: avanceData.etapa_id,
+      fecha: avanceData.fecha,
+      sustento: avanceData.sustento
+    })
     .eq('id', id)
     .select()
     .single();
