@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Save, Plus, History, Edit2, Trash2 } from "lucide-react";
 import { 
     addAvanceServicio, 
@@ -47,8 +47,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
     const [newAvance, setNewAvance] = useState({
         etapa_id: "",
         fecha: new Date().toISOString().split('T')[0],
-        monto_avance: 0,
-        descripcion: ""
+        sustento: ""
     });
 
     useEffect(() => {
@@ -136,11 +135,9 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             setNewAvance({
                 etapa_id: "",
                 fecha: new Date().toISOString().split('T')[0],
-                monto_avance: 0,
-                descripcion: ""
+                sustento: ""
             });
-            // Recalculated on server, but we can update local UI if needed or let revalidation handle it
-            onClose(); // Close and let parent revalidate
+            onClose(); 
         } catch (error) {
             console.error("Error adding avance:", error);
             alert("Error al registrar avance");
@@ -156,12 +153,11 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             await updateAvanceServicio(editingAvance.id, {
                 etapa_id: Number(editingAvance.etapa_id),
                 fecha: editingAvance.fecha,
-                monto_avance: Number(editingAvance.monto_avance),
-                descripcion: editingAvance.descripcion
+                sustento: editingAvance.sustento
             });
             alert("Avance actualizado correctamente");
             setEditingAvance(null);
-            onClose(); // Close and let parent revalidate
+            onClose(); 
         } catch (error) {
             console.error("Error updating avance:", error);
             alert("Error al actualizar avance");
@@ -176,7 +172,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             setIsSubmitting(true);
             await deleteAvanceServicio(avanceId, servicio.id);
             alert("Avance eliminado correctamente");
-            onClose(); // Close and let parent revalidate
+            onClose(); 
         } catch (error) {
             console.error("Error deleting avance:", error);
             alert("Error al eliminar avance");
@@ -206,7 +202,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                     </button>
                 </div>
 
-                {/* Tabs for Edit Mode */}
+                {/* Tabs */}
                 {servicio && (
                     <div className="flex border-b border-gray-100 bg-gray-50/50">
                         <button 
@@ -378,7 +374,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
-                                        disabled={servicio} // In edit mode, advances should be added via the tab
+                                        disabled={servicio} 
                                     />
                                     {servicio && <p className="text-[9px] text-blue-500 font-bold px-1 uppercase mt-1">Se actualiza vía Gestión de Avances</p>}
                                 </div>
@@ -397,7 +393,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                         </form>
                     ) : (
                         <div className="space-y-6">
-                            {/* Historial (Lineal simplification) */}
+                            {/* Registro de Nuevo Avance */}
                             <div className="space-y-3">
                                 <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
                                     <History className="w-4 h-4 text-blue-600" />
@@ -426,21 +422,11 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                             />
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/)</label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                value={newAvance.monto_avance}
-                                                onChange={(e) => setNewAvance({...newAvance, monto_avance: Number(e.target.value)})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-1 md:col-span-1">
+                                        <div className="space-y-1 md:col-span-2">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
                                             <input
-                                                value={newAvance.descripcion}
-                                                onChange={(e) => setNewAvance({...newAvance, descripcion: e.target.value})}
+                                                value={newAvance.sustento}
+                                                onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                 placeholder="Ej: Informe mensual aprobado"
                                             />
@@ -461,11 +447,11 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                 </div>
                             </div>
 
-                            {/* Existing History List */}
+                            {/* Historial */}
                             <div className="space-y-3">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances</label>
                                 <div className="space-y-2">
-                                    {servicio.avances && servicio.avances.length > 0 ? (
+                                    {servicio?.avances && servicio.avances.length > 0 ? (
                                         [...servicio.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
                                             <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
                                                 <div className="flex flex-col flex-1">
@@ -477,13 +463,9 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                         })()}
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
-                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.descripcion || '-'}</p>
+                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="text-right">
-                                                        <span className="text-xs font-bold text-emerald-700 block">S/ {Number(av.monto_avance || 0).toLocaleString('es-PE')}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
+                                                <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
                                                        <button 
                                                            onClick={(e) => { e.preventDefault(); setEditingAvance(av); }}
                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -498,7 +480,6 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                        >
                                                            <Trash2 className="w-3.5 h-3.5" />
                                                        </button>
-                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -511,7 +492,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                     )}
                 </div>
 
-                {/* Sub-modal Overlay for Editing Advance */}
+                {/* Modal de Edición de Avance */}
                 {editingAvance && (
                    <div className="absolute inset-0 z-[110] bg-black/60 flex items-center justify-center p-4">
                        <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
@@ -541,20 +522,10 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                    />
                                </div>
                                <div className="space-y-1">
-                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/)</label>
-                                   <input
-                                       type="number"
-                                       step="0.01"
-                                       value={editingAvance.monto_avance}
-                                       onChange={(e) => setEditingAvance({...editingAvance, monto_avance: e.target.value})}
-                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                   />
-                               </div>
-                               <div className="space-y-1">
                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
                                    <textarea
-                                       value={editingAvance.descripcion || ""}
-                                       onChange={(e) => setEditingAvance({...editingAvance, descripcion: e.target.value})}
+                                       value={editingAvance.sustento || ""}
+                                       onChange={(e) => setEditingAvance({...editingAvance, sustento: e.target.value})}
                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
                                        placeholder="Ej: Informe mensual aprobado"
                                    />
@@ -574,7 +545,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                    </div>
                 )}
 
-                {/* Footer and Save Button (Only shown in Datos Generales or if new) */}
+                {/* Footer General */}
                 {!showAvances && (
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                         <button
