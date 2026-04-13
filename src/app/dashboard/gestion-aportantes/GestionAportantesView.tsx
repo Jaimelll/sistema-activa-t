@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useTransition, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Trash2, X, Save } from "lucide-react";
-import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte, getEmpresasData, getAniosAportes } from "./actions";
+import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte, getEmpresasData, getAniosAportes, updateFinancialSummary } from "./actions";
 import EmpresaModal from "./EmpresaModal";
 import AporteModal from "./AporteModal";
 
@@ -23,8 +23,52 @@ const inputCls = "w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl 
 const fmt = (v: number) => `S/ ${v.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function GestionAportantesView({ initialData, sectores }: { initialData: EmpresaRow[]; sectores: any[]; }) {
+export default function GestionAportantesView({ initialData, sectores, initialFinancialSummary }: { initialData: EmpresaRow[]; sectores: any[]; initialFinancialSummary: any; }) {
     const router = useRouter();
+
+    // Financial Summary State
+    const rubrosFinancieros = ['Intereses', 'G. Operativos', 'Proyectos', 'Becas', 'Saldos en Bancos'];
+    const rubroIdMap: Record<string, number> = {
+        'Intereses': 68,
+        'G. Operativos': 69,
+        'Proyectos': 70,
+        'Becas': 71,
+        'Saldos en Bancos': 72
+    };
+
+    const [finanzas, setFinanzas] = useState(() => {
+        const initial: Record<string, any> = {};
+        rubrosFinancieros.forEach(r => {
+            // initialFinancialSummary[r] ahora es { id, monto }
+            initial[r] = initialFinancialSummary[r]?.monto ?? '';
+        });
+        return initial;
+    });
+
+    const [focusedInput, setFocusedInput] = useState<string | null>(null);
+
+    const formatDisplay = (val: any) => {
+        if (val === undefined || val === null || val === '') return '';
+        const num = parseFloat(String(val).replace(/,/g, ''));
+        if (isNaN(num)) return val;
+        return new Intl.NumberFormat('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        }).format(num);
+    };
+
+    const handleSaveFinanzas = async () => {
+        await withSubmit(async () => {
+            const updates = rubrosFinancieros.map(r => {
+                const val = finanzas[r];
+                const monto = parseFloat(String(val || 0).replace(/,/g, ''));
+                // Priorizar ID del server, fallback al map estático según instrucción del usuario
+                const id = initialFinancialSummary[r]?.id || rubroIdMap[r];
+                return { id: Number(id), monto, rubro: r };
+            });
+            await updateFinancialSummary(updates);
+        });
+    };
 
     // Search & Filter
     const [searchTerm, setSearchTerm] = useState("");
@@ -174,6 +218,54 @@ export default function GestionAportantesView({ initialData, sectores }: { initi
                     {error} <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
                 </div>
             )}
+
+            {/* Panel Financiero 2026 - Real */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 overflow-hidden">
+                <div className="flex items-center gap-2 mb-4 border-b border-gray-50 pb-2">
+                    <Wallet className="w-4 h-4 text-blue-500" />
+                    <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Ajuste de Presupuesto Anual 2026 (Escenario Real)</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                    {rubrosFinancieros.map(r => (
+                        <div key={r} className="space-y-1.5 focus-within:z-10">
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider ml-1">{r}</label>
+                            <div className="relative group">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold pointer-events-none group-focus-within:text-blue-500 transition-colors">S/</span>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all shadow-inner"
+                                    value={focusedInput === r ? (finanzas[r] ?? '') : formatDisplay(finanzas[r] ?? '')}
+                                    onFocus={() => setFocusedInput(r)}
+                                    onBlur={() => setFocusedInput(null)}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                        setFinanzas({ ...finanzas, [r]: val });
+                                    }}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                    ))}
+                    <div className="lg:col-span-1">
+                        <button 
+                            onClick={handleSaveFinanzas}
+                            disabled={submitting}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 h-[42px] ${
+                                submitting ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-slate-900 hover:bg-black text-white shadow-slate-200'
+                            }`}
+                        >
+                            {submitting ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                <><Save className="w-4 h-4" /> Guardar Cambios</>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
