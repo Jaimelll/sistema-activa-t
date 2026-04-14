@@ -193,11 +193,11 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
 
             {/* Department Paths */}
             <g id="peru-departments" className="drop-shadow-[0_0_8px_rgba(0,0,0,0.15)]">
-              {PERU_MAP_DATA.map((region) => {
+              {PERU_MAP_DATA.map((region, index) => {
                 const isHovered = hoveredRegion === region.id;
                 return (
                   <path
-                    key={region.id}
+                    key={`${region.id}-${index}`}
                     d={region.path}
                     fill={isHovered ? "#e0f2fe" : "#f1f5f9"}
                     stroke={isHovered ? "#0ea5e9" : "#475569"}
