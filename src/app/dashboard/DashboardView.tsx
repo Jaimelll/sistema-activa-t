@@ -1,5 +1,5 @@
 "use client";
-// Force Update: 2026-03-02 09:55 - Sorting Fix 
+// Force Update: 2026-04-14 MAP-BUBBLE-v2
 
 import { useState, useMemo, useEffect } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
@@ -12,6 +12,158 @@ import Image from 'next/image';
 import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
 import { TimelineChart } from '@/components/dashboard/charts/TimelineChart';
+
+// ─── PERU MAP BUBBLE ─────────────────────────────────────────────────────────
+
+const PERU_EXCLUDED = ['por definir','multiregional','vraem','cusco y puno','multirregional'];
+function peruIsExcluded(name: string) {
+  const l = name.toLowerCase().trim();
+  return PERU_EXCLUDED.some(e => l.includes(e));
+}
+
+const PERU_COORDS: Record<string,[number,number]> = {
+  tumbes:[42,42],piura:[52,75],lambayeque:[62,110],'la libertad':[72,138],
+  ancash:[82,172],lima:[90,220],ica:[95,265],cajamarca:[115,108],
+  amazonas:[140,82],'san mart\u00edn':[170,108],'san martin':[170,108],
+  'hu\u00e1nuco':[145,168],huanuco:[145,168],pasco:[132,198],
+  'jun\u00edn':[128,225],junin:[128,225],huancavelica:[118,255],
+  ayacucho:[130,290],'apur\u00edmac':[140,310],apurimac:[140,310],
+  arequipa:[138,348],moquegua:[160,390],tacna:[168,425],
+  cusco:[185,315],puno:[205,358],loreto:[210,96],
+  ucayali:[218,200],'madre de dios':[250,308],
+};
+function peruGetCoords(name: string): [number,number]|null {
+  const l = name.toLowerCase().trim();
+  if (PERU_COORDS[l]) return PERU_COORDS[l];
+  for (const k of Object.keys(PERU_COORDS)) {
+    if (l.includes(k)||k.includes(l)) return PERU_COORDS[k];
+  }
+  return null;
+}
+
+const PERU_SVG_PATH=`M52 30 L42 40 L38 52 L40 62 L48 70 L50 82 L56 90
+  L58 102 L62 108 L64 115 L68 118 L72 128 L76 138 L78 148 L82 155
+  L84 162 L90 168 L90 178 L92 188 L94 200 L92 210 L90 220 L92 230
+  L94 240 L94 250 L96 260 L96 270 L100 280 L106 290 L110 305 L114 318
+  L120 330 L125 342 L130 352 L135 362 L138 372 L142 382 L150 395
+  L158 408 L162 418 L168 428 L172 438 L178 445 L186 448 L195 446
+  L205 443 L215 440 L222 434 L225 425 L228 415 L232 405 L238 392
+  L245 378 L252 365 L260 350 L268 335 L272 320 L275 305 L274 290
+  L272 278 L268 265 L268 252 L270 240 L272 226 L274 212 L276 198
+  L275 185 L274 172 L272 160 L270 148 L268 138 L264 126 L260 115
+  L256 105 L252 95 L248 82 L244 70 L242 58 L245 46 L250 36 L248 28
+  L238 22 L225 18 L210 16 L195 14 L180 14 L165 16 L150 18 L138 22
+  L125 26 L112 28 L100 28 L88 28 L75 28 L64 28 L52 30 Z`;
+
+function peruBubbleR(count:number,max:number){if(!max)return 0;return 6+((count/max)*(32-6));}
+function peruBubbleColor(count:number,max:number){const r=count/max;if(r>0.75)return{fill:'#1d4ed8',stroke:'#93c5fd'};if(r>0.5)return{fill:'#2563eb',stroke:'#bfdbfe'};if(r>0.25)return{fill:'#3b82f6',stroke:'#dbeafe'};return{fill:'#60a5fa',stroke:'#eff6ff'};}
+
+interface PeruBubble { regionId:any; regionName:string; count:number; proyectos:{id:number;codigo:string;nombre:string}[]; }
+
+function InlinePeruMap({data}:{data:PeruBubble[]}){
+  const [tip,setTip]=useState<{name:string;count:number;proyectos:{id:number;codigo:string;nombre:string}[];x:number;y:number}|null>(null);
+  const bubbles=data
+    .filter(d=>!peruIsExcluded(d.regionName))
+    .map(d=>({...d,coords:peruGetCoords(d.regionName)}))
+    .filter(d=>d.coords!==null) as Array<PeruBubble&{coords:[number,number]}>;
+  const maxC=Math.max(...bubbles.map(b=>b.count),1);
+  const totalFiltered=data.reduce((a,b)=>a+b.count,0);
+  const totalMapped=bubbles.reduce((a,b)=>a+b.count,0);
+  const unmapped=totalFiltered-totalMapped;
+  return(
+    <div className="card w-full">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">Distribución Geográfica de Proyectos</h3>
+          <p className="text-[11px] text-gray-400 mt-0.5">Mapa proporcional por departamento — tamaño de burbuja = N° proyectos</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {unmapped>0&&<span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded-full font-semibold">{unmapped} proy. sin ubicación estándar</span>}
+          <span className="text-[10px] text-gray-400 italic">Hover para ver detalle</span>
+        </div>
+      </div>
+      <div className="flex gap-6 items-start">
+        <div className="flex-1 flex justify-center">
+          <svg viewBox="0 0 310 480" className="w-full max-w-xs h-auto" style={{overflow:'visible'}}>
+            <defs>
+              <filter id="pg"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="ps"><feDropShadow dx="1" dy="2" stdDeviation="3" floodOpacity="0.12"/></filter>
+            </defs>
+            <path d={PERU_SVG_PATH} fill="#f0f4ff" stroke="#c7d2fe" strokeWidth="1.5" strokeLinejoin="round" filter="url(#ps)"/>
+            {[...bubbles].sort((a,b)=>a.count-b.count).map(b=>{
+              const r=peruBubbleR(b.count,maxC);
+              const c=peruBubbleColor(b.count,maxC);
+              return(
+                <g key={b.regionId} style={{cursor:'pointer'}}
+                  onMouseMove={e=>setTip({name:b.regionName,count:b.count,proyectos:b.proyectos,x:e.clientX,y:e.clientY})}
+                  onMouseLeave={()=>setTip(null)}>
+                  <circle cx={b.coords[0]} cy={b.coords[1]} r={r+4} fill={c.fill} opacity={0.15}/>
+                  <circle cx={b.coords[0]} cy={b.coords[1]} r={r} fill={c.fill} stroke={c.stroke} strokeWidth={1.5} opacity={0.88} filter="url(#pg)"/>
+                  {r>=12&&<text x={b.coords[0]} y={b.coords[1]+4} textAnchor="middle" fontSize={r>=18?10:8} fontWeight="800" fill="white" style={{pointerEvents:'none'}}>{b.count}</text>}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        <div className="w-52 shrink-0 space-y-3 pt-2">
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Escala</p>
+            <div className="flex items-end gap-3">
+              {[0.25,0.5,1].map((ratio,i)=>{
+                const r=peruBubbleR(Math.round(maxC*ratio),maxC);
+                return(<div key={i} className="flex flex-col items-center gap-1">
+                  <div style={{width:r*2,height:r*2,borderRadius:'50%',background:'#2563eb',opacity:0.7}}/>
+                  <span className="text-[9px] text-gray-400">{['Bajo','Medio','Alto'][i]}</span>
+                </div>);
+              })}
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Top Regiones</p>
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {[...bubbles].sort((a,b)=>b.count-a.count).map((b,i)=>(
+                <div key={b.regionId} className="group cursor-default"
+                  onMouseMove={e=>setTip({name:b.regionName,count:b.count,proyectos:b.proyectos,x:e.clientX,y:e.clientY})}
+                  onMouseLeave={()=>setTip(null)}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[10px] font-semibold text-gray-700">{i+1}. {b.regionName}</span>
+                    <span className="text-[10px] font-extrabold text-blue-700">{b.count}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1">
+                    <div className="h-1 bg-blue-500 rounded-full" style={{width:`${(b.count/maxC)*100}%`}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      {tip&&(
+        <div className="fixed z-50 pointer-events-none" style={{left:tip.x+14,top:tip.y-10}}>
+          <div className="bg-gray-900 text-white rounded-xl shadow-2xl border border-white/10 p-3 w-64 text-xs">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+              <span className="font-bold text-sm text-blue-300">{tip.name}</span>
+              <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[10px] font-extrabold">{tip.count} proy.</span>
+            </div>
+            <div className="space-y-1.5">
+              {[...tip.proyectos].sort((a,b)=>b.id-a.id).slice(0,3).map(p=>(
+                <div key={p.id} className="flex gap-2 items-start">
+                  <span className="shrink-0 text-[9px] font-bold text-gray-400">#{p.id}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-blue-200 truncate">{p.codigo||'—'}</p>
+                    <p className="text-[9px] text-gray-400 line-clamp-2">{p.nombre}</p>
+                  </div>
+                </div>
+              ))}
+              {tip.count>3&&<p className="text-[9px] text-gray-500 italic pt-1 border-t border-white/10">+ {tip.count-3} más</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ─── FIN PERU MAP BUBBLE ─────────────────────────────────────────────────────
 
 interface DashboardViewProps {
     initialData: any[];
@@ -170,6 +322,30 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             // Para regiones, suele haber una etapa predominante o se muestra la del registro actual.
         });
         return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+    }, [filteredData]);
+
+    // Bubble Map Data — agrupado por región, excluyendo regiones no geográficas
+    const bubbleMapData = useMemo(() => {
+        const map = new Map<any, { regionId: any; regionName: string; count: number; proyectos: { id: number; codigo: string; nombre: string }[] }>();
+        filteredData.forEach(d => {
+            const key = d.regionId ?? d.region;
+            if (!map.has(key)) {
+                map.set(key, {
+                    regionId: d.regionId,
+                    regionName: d.region || 'Desconocido',
+                    count: 0,
+                    proyectos: [],
+                });
+            }
+            const entry = map.get(key)!;
+            entry.count += 1;
+            entry.proyectos.push({
+                id: d.id,
+                codigo: d.codigo_proyecto || d.codigo || '',
+                nombre: d.nombre || '',
+            });
+        });
+        return Array.from(map.values());
     }, [filteredData]);
 
     const projectsByStatus = useMemo(() => {
@@ -550,6 +726,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* === MAPA INTERACTIVO DE BURBUJAS POR DEPARTAMENTO === */}
+            <div className="w-full mt-2">
+                <InlinePeruMap data={bubbleMapData} />
             </div>
 
             {/* Gestora Chart */}

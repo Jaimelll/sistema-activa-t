@@ -1,6 +1,6 @@
 import DashboardView from './DashboardView';
 import { getDashboardData, fetchDynamicYears, getEtapas, getLineas, getEjes, getTimelineData, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos, getEspecialistas, getFasesOptions } from './actions';
-
+// TOUCH: 2026-04-14 map-bubble
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
