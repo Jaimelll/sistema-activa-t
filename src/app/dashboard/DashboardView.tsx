@@ -175,7 +175,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
     // Bubble Map Data — agrupado por región, excluyendo regiones no geográficas
     const bubbleMapData = useMemo(() => {
-        const map = new Map<any, { regionId: any; regionName: string; count: number; proyectos: { id: number; codigo: string; nombre: string }[] }>();
+        const map = new Map<any, { regionId: any; regionName: string; count: number; proyectos: { id: number; codigo: string; nombre: string; contacto?: string }[] }>();
         filteredData.forEach(d => {
             const key = d.regionId ?? d.region;
             if (!map.has(key)) {
@@ -192,6 +192,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 id: d.id,
                 codigo: d.codigo_proyecto || d.codigo || '',
                 nombre: d.nombre || '',
+                contacto: d.contacto || '',
             });
         });
         return Array.from(map.values());

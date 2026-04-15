@@ -117,7 +117,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         grupo_id: p.grupo_id,
         provincia: p.provincia || '',
         especialista_id: p.especialista_id,
-        especialista: p.especialista?.nombre || ''
+        especialista: p.especialista?.nombre || '',
+        contacto: p.contacto || ''
       };
     });
   } catch (err) {
@@ -217,7 +218,8 @@ export async function getProyectoCompletoById(id: string) {
       grupo_id: p.grupo_id,
       provincia: p.provincia || '',
       especialista_id: p.especialista_id,
-      especialista: p.especialista?.nombre || ''
+      especialista: p.especialista?.nombre || '',
+      contacto: p.contacto || ''
     };
   } catch (err) {
     console.error("FATAL ERROR getProyectoCompletoById:", err);
@@ -448,7 +450,7 @@ export async function getTimelineData(especialistaId?: number) {
         etapas (descripcion, fase),
         grupo_id,
         grupo (id, descripcion, orden),
-        avance_tecnico, provincia, especialista_id,
+        avance_tecnico, provincia, especialista_id, contacto,
         especialista:especialistas(nombre),
         check_inicio:avance_proyecto!inner(etapa_id),
         avance_proyecto (id, fecha, etapa_id, sustento)
@@ -499,7 +501,8 @@ export async function getTimelineData(especialistaId?: number) {
       })),
       provincia: p.provincia || '',
       especialista_id: p.especialista_id,
-      especialista: p.especialista?.nombre || ''
+      especialista: p.especialista?.nombre || '',
+      contacto: p.contacto || ''
     }));
   } catch (err) {
     console.error("FATAL ERROR getTimelineData:", err);

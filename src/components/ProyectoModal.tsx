@@ -52,6 +52,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
         modalidad_id: "",
         grupo_id: "",
         sustento: "",
+        contacto: "",
         año: new Date().getFullYear()
     });
 
@@ -89,6 +90,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 modalidad_id: proyecto.modalidadId || "",
                 grupo_id: proyecto.grupo_id || "",
                 sustento: proyecto.sustento || "",
+                contacto: proyecto.contacto || "",
                 año: proyecto.año || new Date().getFullYear()
             });
 
@@ -121,6 +123,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 modalidad_id: "",
                 grupo_id: "",
                 sustento: "",
+                contacto: "",
                 año: new Date().getFullYear()
             });
 
@@ -546,6 +549,24 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
                                         disabled={isReadOnly}
                                     />
+                                </div>
+
+                                <div className="md:col-span-2 space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datos de Contacto y Notas</label>
+                                    {isReadOnly ? (
+                                        <div className={`w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs min-h-[80px] ${!formData.contacto ? 'text-gray-300 italic' : 'text-gray-700 whitespace-pre-wrap'}`}>
+                                            {formData.contacto || 'No registrado'}
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            name="contacto"
+                                            value={formData.contacto || ""}
+                                            onChange={handleChange}
+                                            rows={3}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm resize-none"
+                                            placeholder="Información de contacto, teléfonos, correos o notas adicionales..."
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </form>
