@@ -231,6 +231,40 @@ export default function InfGerencialView({
             });
     }, [finanzasData]);
 
+    const ingresosEgresosData = useMemo(() => {
+        const years = [2021, 2022, 2023, 2024, 2025, 2026];
+        const rows: any[] = [];
+        
+        years.forEach(year => {
+            const scenarios = Array.from(new Set(finanzasData.filter(d => d.año === year).map(d => d.escenario || 'Real')));
+            
+            scenarios.forEach(escenario => {
+                const yearItems = finanzasData.filter(d => d.año === year && d.escenario === escenario);
+                if (yearItems.length > 0) {
+                    const row: any = { 
+                        year: year === 2026 && escenario === 'Proyectado' ? '2026 Proyectado' : year.toString()
+                    };
+                    let ingresos = 0;
+                    let egresos = 0;
+                    yearItems.forEach(item => {
+                        if (['Aportes', 'Intereses'].includes(item.rubro)) {
+                            ingresos += item.monto;
+                        } else if (['G. Operativos', 'Proyectos', 'Becas'].includes(item.rubro)) {
+                            egresos += item.monto;
+                        }
+                    });
+                    
+                    if (ingresos > 0 || egresos > 0) {
+                        row.Ingresos = ingresos;
+                        row.Egresos = egresos;
+                        rows.push(row);
+                    }
+                }
+            });
+        });
+        return rows;
+    }, [finanzasData]);
+
     const last5Years = useMemo(() => {
         const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
         return allYears.filter(y => y >= 2021);
@@ -550,6 +584,35 @@ export default function InfGerencialView({
                             <span className="text-lg font-bold text-slate-800 tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* Ingresos vs Egresos */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">Ingresos vs Egresos 2021-2026</h3>
+                </div>
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+                        <span className="text-sm font-bold text-slate-600">Ingresos (Aportes + Intereses)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#f97316' }} />
+                        <span className="text-sm font-bold text-slate-600">Egresos (G. Operativos + Proyectos + Becas)</span>
+                    </div>
+                </div>
+                <div className="h-[350px] w-full flex flex-col items-center justify-center">
+                    <ResponsiveContainer width="100%" height={350}>
+                        <BarChart data={ingresosEgresosData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
+                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
+                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#f97316" radius={[4, 4, 0, 0]} barSize={24} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
