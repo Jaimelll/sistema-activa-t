@@ -9,6 +9,7 @@ interface ProyectoBurbuja {
   id: number;
   codigo: string;
   nombre: string;
+  contacto?: string;
 }
 
 interface RegionBubble {
@@ -86,6 +87,12 @@ function MapTooltip({ data }: { data: TooltipData }) {
                 <p className="text-[9px] text-gray-400 line-clamp-2 leading-snug">
                   {p.nombre}
                 </p>
+                {p.contacto && (
+                    <p className="text-[9px] text-blue-200 line-clamp-2 mt-1 flex items-start gap-1">
+                        <span className="flex-shrink-0 mt-0.5">👤</span>
+                        <span className="italic">{p.contacto}</span>
+                    </p>
+                )}
               </div>
             </div>
           ))}
