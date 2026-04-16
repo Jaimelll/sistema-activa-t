@@ -10,6 +10,7 @@ interface ProyectoBurbuja {
   codigo: string;
   nombre: string;
   contacto?: string;
+  institucion?: string;
 }
 
 interface RegionBubble {
@@ -67,7 +68,7 @@ function MapTooltip({ data }: { data: TooltipData }) {
       className="fixed z-50 pointer-events-none transition-transform duration-75"
       style={{ left: data.x + 14, top: data.y - 10 }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-64 text-xs ring-1 ring-black/5">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-[550px] text-xs ring-1 ring-black/5">
         {/* Header */}
         <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
           <span className="font-bold text-sm text-blue-300">{data.regionName}</span>
@@ -77,18 +78,24 @@ function MapTooltip({ data }: { data: TooltipData }) {
         </div>
 
         {/* proyectos list */}
-        <div className="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+        <div className="space-y-1.5 pr-1">
           {recent.map((p) => (
             <div key={p.id} className="flex gap-2 items-start border-l-2 border-blue-500/30 pl-2">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-bold text-blue-100 truncate">
+                <p className="text-sm font-bold text-blue-100 truncate">
                   {p.codigo || `#${p.id}`}
                 </p>
-                <p className="text-[9px] text-gray-400 line-clamp-2 leading-snug">
+                <p className="text-sm font-semibold text-gray-300 line-clamp-2 leading-snug">
                   {p.nombre}
                 </p>
+                {p.institucion && (
+                    <p className="text-xs text-yellow-200 font-bold italic line-clamp-1 mt-1 flex items-start gap-1">
+                        <span className="flex-shrink-0 mt-0.5">🏢</span>
+                        <span>{p.institucion}</span>
+                    </p>
+                )}
                 {p.contacto && (
-                    <p className="text-[9px] text-blue-200 line-clamp-2 mt-1 flex items-start gap-1">
+                    <p className="text-xs text-blue-200 line-clamp-2 mt-1 flex items-start gap-1">
                         <span className="flex-shrink-0 mt-0.5">👤</span>
                         <span className="italic">{p.contacto}</span>
                     </p>
@@ -284,42 +291,10 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
 
         {/* Legend + Region List Sidebar */}
         <div className="w-full md:w-64 shrink-0 flex flex-col bg-gray-50/50 rounded-2xl p-5 border border-gray-100 h-[600px]">
-          <div className="mb-8">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-3 bg-blue-500 rounded-full"></span>
-              Escala de Proyectos
-            </p>
-            <div className="flex items-end justify-between px-2">
-              {[0.2, 0.6, 1].map((ratio, i) => {
-                const count = Math.round(maxCount * ratio);
-                const r = bubbleRadius(count, maxCount);
-                const labels = ['Baja', 'Media', 'Alta'];
-                return (
-                  <div key={i} className="flex flex-col items-center gap-2">
-                    <div
-                      style={{
-                        width: r * 1.4,
-                        height: r * 1.4,
-                        borderRadius: '50%',
-                        background: '#3b82f6',
-                        opacity: 0.8 - (i * 0.1),
-                      }}
-                      className="shadow-sm border border-blue-200"
-                    />
-                    <div className="text-center">
-                      <p className="text-[10px] font-bold text-gray-600">{count}</p>
-                      <p className="text-[8px] text-gray-400 uppercase">{labels[i]}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="flex-1 flex flex-col min-h-0">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <span className="w-1.5 h-3 bg-blue-500 rounded-full"></span>
-              Ranking de Regiones
+              Proyectos por Región
             </p>
             <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {[...bubbles]
@@ -341,11 +316,11 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
                           <span className={`text-[10px] font-bold w-5 h-5 rounded-md flex items-center justify-center transition-colors ${i < 3 ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'}`}>
                             {i + 1}
                           </span>
-                          <span className={`text-[11px] font-bold transition-colors ${isHovered ? 'text-blue-700' : 'text-gray-700'}`}>
+                          <span className={`text-sm font-bold transition-colors ${isHovered ? 'text-blue-700' : 'text-gray-700'}`}>
                             {b.regionName}
                           </span>
                         </div>
-                        <span className="text-[11px] font-black text-gray-900">
+                        <span className="text-sm font-black text-gray-900">
                           {b.count}
                         </span>
                       </div>
