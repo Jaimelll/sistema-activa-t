@@ -127,6 +127,126 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   }
 }
 
+export async function getGestionProyectosData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string }) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    if (!supabaseServiceKey) {
+      console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing");
+      return [];
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    let query = supabase
+      .from('proyectos')
+      .select(`
+        *,
+        lineas (descripcion),
+        ejes (descripcion),
+        regiones (descripcion),
+        instituciones_ejecutoras (nombre),
+        modalidades (descripcion),
+        etapas (descripcion, fase),
+        especialista:especialistas(nombre),
+        avance_tecnico,
+        avance_proyecto (
+          id,
+          fecha,
+          etapa_id,
+          sustento,
+          monto
+        )
+      `);
+
+    if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
+      const yearVal = Number(filters.periodo);
+      if (!isNaN(yearVal)) query = query.eq('año', yearVal);
+    }
+
+    const applyFilter = (column: string, value?: string) => {
+      if (value && value !== 'all' && value !== 'todos') {
+        query = query.eq(column, value);
+      }
+    };
+
+    applyFilter('eje_id', filters?.eje);
+    applyFilter('linea_id', filters?.linea);
+    applyFilter('modalidad_id', filters?.modalidad);
+    applyFilter('especialista_id', filters?.especialistaId);
+
+    if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
+      query = query.eq('etapa_id', filters.etapa);
+    }
+
+    if (filters?.especialistaId && Number(filters.especialistaId) !== 0) {
+      query = query.eq('especialista_id', filters.especialistaId);
+    }
+
+    query = query.not('etapas.descripcion', 'ilike', 'no habilitada').order('id', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching gestion proyectos data:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) return [];
+
+    return data.map((p: any) => {
+      let year = p.año ? String(p.año) : 'Unknown';
+      if (year === 'Unknown' && p.fecha_inicio) {
+        year = new Date(p.fecha_inicio).getFullYear().toString();
+      } else if (year === 'Unknown' && p.created_at) {
+        year = new Date(p.created_at).getFullYear().toString();
+      }
+
+      return {
+        id: p.id,
+        nombre: p.nombre || 'Sin Nombre',
+        codigo: p.codigo_proyecto,
+        codigo_proyecto: p.codigo_proyecto,
+        region: p.regiones?.descripcion || p.region || 'Desconocido',
+        linea: p.lineas?.descripcion || 'Sin Linea',
+        lineaId: p.linea_id,
+        eje: p.ejes?.descripcion || 'Sin Eje',
+        ejeId: p.eje_id,
+        etapa: p.etapas?.descripcion || 'Sin Etapa',
+        etapaId: p.etapa_id,
+        institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
+        institucionId: p.institucion_ejecutora_id,
+        gestora: p.gestora || '',
+        regionId: p.region_id,
+        modalidad: p.modalidades?.descripcion || 'Desconocido',
+        modalidadId: p.modalidad_id,
+        estado: p.etapas?.descripcion || 'Activo',
+        sustento: p.sustento || '',
+        year: year,
+        año: Number(p.año) || 0,
+        fase: p.etapas?.fase || '',
+        monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
+        avance: Number(p.avance) || 0,
+        contrapartida: Number(p.contrapartida) || 0,
+        monto_total: Number(p.monto_total) || 0,
+        beneficiarios: Number(p.beneficiarios) || 0,
+        avance_tecnico: Number(p.avance_tecnico) || 0,
+        fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+        fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
+        avances: p.avance_proyecto || [],
+        grupo_id: p.grupo_id,
+        provincia: p.provincia || '',
+        especialista_id: p.especialista_id,
+        especialista: p.especialista?.nombre || ''
+      };
+    });
+  } catch (err) {
+    console.error("FATAL ERROR getGestionProyectosData:", err);
+    return [];
+  }
+}
+
 // --- GLOBAL DASHBOARD FILTERS (REACTIVE) ---
 
 export async function getDashboardStats(especialistaId?: number) {
