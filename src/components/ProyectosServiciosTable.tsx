@@ -28,6 +28,7 @@ interface ProyectosServiciosTableProps {
   etapasList: any[];
   grupos: any[];
   especialistas: any[];
+  fases?: string[];
 }
 
 export default function ProyectosServiciosTable({ 
@@ -40,10 +41,11 @@ export default function ProyectosServiciosTable({
   regiones,
   etapasList,
   grupos,
-  especialistas
+  especialistas,
+  fases = []
 }: ProyectosServiciosTableProps) {
   // Filters State
-  const [selectedExecution, setSelectedExecution] = useState('process'); // Default: En proceso
+  const [selectedFase, setSelectedFase] = useState('Ejecución del Proyecto'); // Default: Ejecución del Proyecto
   const [selectedEtapa, setSelectedEtapa] = useState('all'); // Changed to 'all' to avoid blank initial state if no 'Lanzamiento' exists
   const [selectedEje, setSelectedEje] = useState('all');
   const [selectedLinea, setSelectedLinea] = useState('all');
@@ -63,12 +65,8 @@ export default function ProyectosServiciosTable({
         item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.codigo?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // 2. Execution filter
-      const eid = Number(item.etapaId || 0);
-      const isExecuted = eid === 6 || eid === 7; 
-      let matchesExec = true;
-      if (selectedExecution === 'process') matchesExec = !isExecuted;
-      if (selectedExecution === 'executed') matchesExec = isExecuted;
+      // 2. Fase filter
+      const matchesFase = selectedFase === 'all' || item.fase === selectedFase;
 
       // 3. Etapa filter
       const matchesEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
@@ -85,9 +83,9 @@ export default function ProyectosServiciosTable({
       // 7. Especialista filter
       const matchesEspecialista = selectedEspecialista === 'all' || String(item.especialista_id) === String(selectedEspecialista);
 
-      return matchesSearch && matchesExec && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesEspecialista;
+      return matchesSearch && matchesFase && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesEspecialista;
     });
-  }, [initialData, searchTerm, selectedExecution, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedEspecialista]);
+  }, [initialData, searchTerm, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedEspecialista]);
 
   // Excel Export
   const downloadExcel = () => {
@@ -199,17 +197,20 @@ export default function ProyectosServiciosTable({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* En Proceso Filter */}
+          {/* Fase Filter */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Estado Filtro</label>
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Fase</label>
             <select
-              className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg bg-blue-50 text-blue-900 font-bold focus:outline-none"
-              value={selectedExecution}
-              onChange={(e) => setSelectedExecution(e.target.value)}
+              className="w-full h-9 px-3 py-1 text-xs border-2 border-blue-600 font-bold text-white bg-blue-600 rounded-lg shadow-md transition-all hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 outline-none"
+              value={selectedFase}
+              onChange={(e) => setSelectedFase(e.target.value)}
             >
-              <option value="all">Todas</option>
-              <option value="process">En proceso</option>
-              <option value="executed">Ejecutados</option>
+              <option value="all" className="bg-white text-gray-900">Todas las Fases</option>
+              {fases?.map(fase => (
+                <option key={fase} value={fase} className="bg-white text-gray-900">
+                    {fase}
+                </option>
+              ))}
             </select>
           </div>
 
