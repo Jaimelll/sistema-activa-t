@@ -58,17 +58,26 @@ interface TooltipData {
   proyectos: ProyectoBurbuja[];
   x: number;
   y: number;
+  isRightSide: boolean;
+  isBottomSide: boolean;
 }
 
 function MapTooltip({ data }: { data: TooltipData }) {
   const recent = [...data.proyectos].sort((a, b) => b.id - a.id);
 
+  const transformX = data.isRightSide ? 'calc(-100% - 14px)' : '14px';
+  const transformY = data.isBottomSide ? 'calc(-100% - 14px)' : '-10px';
+
   return (
     <div
       className="fixed z-50 pointer-events-none transition-transform duration-75"
-      style={{ left: data.x + 14, top: data.y - 10 }}
+      style={{ 
+        left: data.x, 
+        top: data.y,
+        transform: `translate(${transformX}, ${transformY})`
+      }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-[550px] text-xs ring-1 ring-black/5">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-[550px] max-w-[90vw] text-xs ring-1 ring-black/5">
         {/* Header */}
         <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
           <span className="font-bold text-sm text-blue-300">{data.regionName}</span>
@@ -140,12 +149,17 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent, region: RegionBubble) => {
+      const isRightSide = e.clientX > window.innerWidth / 2;
+      const isBottomSide = e.clientY > window.innerHeight - 350;
+
       setTooltip({
         regionName: region.regionName,
         count: region.count,
         proyectos: region.proyectos,
         x: e.clientX,
         y: e.clientY,
+        isRightSide,
+        isBottomSide
       });
     },
     []
