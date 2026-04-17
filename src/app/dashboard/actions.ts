@@ -238,7 +238,8 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         grupo_id: p.grupo_id,
         provincia: p.provincia || '',
         especialista_id: p.especialista_id,
-        especialista: p.especialista?.nombre || ''
+        especialista: p.especialista?.nombre || '',
+        contacto: p.contacto || ''
       };
     });
   } catch (err) {

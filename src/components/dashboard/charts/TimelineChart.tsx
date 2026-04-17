@@ -24,42 +24,51 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const processedData = useMemo(() => {
-        if (!data || data.length === 0) return [];
+    const { processedData, minDate, maxDate, ticks } = useMemo(() => {
+        if (!data || data.length === 0) {
+            return { 
+                processedData: [], 
+                minDate: new Date('2024-01-01').getTime(), 
+                maxDate: new Date('2026-12-31').getTime() 
+            };
+        }
 
         const groups = new Map();
         const TODAY = new Date().getTime();
-        const JAN_2024 = new Date('2024-01-01').getTime();
+        
+        // 1. Calculate absolute bounds from ALL data
+        let absoluteMin = Infinity;
+        let absoluteMax = -Infinity;
 
+        data.forEach((project: any) => {
+            (project.avances || []).forEach((a: any) => {
+                const ts = new Date(a.fecha).getTime();
+                if (!isNaN(ts)) {
+                    if (ts < absoluteMin) absoluteMin = ts;
+                    if (ts > absoluteMax) absoluteMax = ts;
+                }
+            });
+        });
+
+        // 2. Group data for the chart
         data.forEach((project: any) => {
             if (!project.avances || project.avances.length === 0) return;
 
-            // 1. Find Stage 1 (Bases) Date - REQUIRED
+            // Find Stage 1 (Bases) Date - REQUIRED to start the line
             const stage1 = project.avances.find((a: any) => a.etapa_id === 1 && a.fecha);
-            if (!stage1) return; // Ignore if no Stage 1
+            if (!stage1) return;
 
             const t1 = new Date(stage1.fecha).getTime();
             if (isNaN(t1)) return;
 
-            // Format Date for Key: DD/MM/YY
-            const dateObj = new Date(t1);
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const yearShort = String(dateObj.getFullYear()).slice(-2);
-            const dateStr = `${day}/${month}/${yearShort}`;
-
-            const ejeId = project.eje_id || '?';
-            const lineaId = project.linea_id || '?';
-
-            // New Key Format: Group by grupo_id
             const key = project.grupo_id || 'Sin Grupo';
 
             if (!groups.has(key)) {
                 groups.set(key, {
                     name: project.grupo_descripcion || project.grupo?.descripcion || 'Sin Grupo',
                     orden: project.grupo_orden || project.grupo?.orden || 999,
-                    ejeId: Number(ejeId) || 999,
-                    lineaId: Number(lineaId) || 999,
+                    ejeId: Number(project.eje_id) || 999,
+                    lineaId: Number(project.linea_id) || 999,
                     stage1Dates: [],
                     stage2Dates: [],
                     stage3Dates: [],
@@ -68,11 +77,9 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     stage6Dates: [],
                     endDates: [],
                     projectCount: 0,
-                    start: null,
                     projects: [],
                     ejeDesc: project.eje || '',
                     lineaDesc: project.linea || '',
-                    etapa: project.etapa || project.estado || 'Sin Etapa'
                 });
             }
 
@@ -92,7 +99,6 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                 etapa: project.etapa || project.estado || '-'
             });
 
-            // Collect dates for all stages
             project.avances.forEach((a: any) => {
                 const ts = new Date(a.fecha).getTime();
                 if (!isNaN(ts)) {
@@ -102,76 +108,58 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     if (a.etapa_id === 4) group.stage4Dates.push(ts);
                     if (a.etapa_id === 5) group.stage5Dates.push(ts);
                     if (a.etapa_id === 6) group.stage6Dates.push(ts);
-                    // Track max date as potential end
                     group.endDates.push(ts);
                 }
             });
         });
 
-        const getAvg = (arr: number[]) => (arr && arr.length > 0) ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+        const getMin = (arr: number[]) => (arr && arr.length > 0) ? Math.min(...arr) : null;
+        const getMax = (arr: number[]) => (arr && arr.length > 0) ? Math.max(...arr) : null;
 
         const chartData = Array.from(groups.values()).map((g: any) => {
-            const avg1 = getAvg(g.stage1Dates);
-            const avg2 = getAvg(g.stage2Dates);
-            const avg3 = getAvg(g.stage3Dates);
-            const avg4 = getAvg(g.stage4Dates);
-            const avg5 = getAvg(g.stage5Dates);
-            const avg6 = getAvg(g.stage6Dates);
-            const avgEnd = getAvg(g.endDates);
+            // APPLY LOGIC: Min for 1-4, Max for 5+
+            const date1 = getMin(g.stage1Dates);
+            const date2 = getMin(g.stage2Dates);
+            const date3 = getMin(g.stage3Dates);
+            const date4 = getMin(g.stage4Dates);
+            const date5 = getMax(g.stage5Dates);
+            const date6 = getMax(g.stage6Dates);
+            const dateEndRaw = getMax(g.endDates);
 
-            // Mandatory Start
-            if (!avg1) return null;
+            if (!date1) return null;
 
-            let t1 = avg1;
-            let tEndProject = avg6 || avgEnd || TODAY;
-            // Strict logic: if avg6 exists, project is done. If not, it's ongoing -> Today.
-            if (!avg6) tEndProject = Math.max(tEndProject, TODAY);
+            let t1 = date1;
+            let tEndProject = date6 || dateEndRaw || TODAY;
+            if (!date6) tEndProject = Math.max(tEndProject, TODAY);
 
             let d1 = 0, d2 = 0, d3 = 0, d4 = 0, d5 = 0, d6 = 0;
-            let date1 = t1;
-            let date2 = null, date3 = null, date4 = null, date5 = null, date6 = null;
 
-            // --- CASCADE LOGIC (6 STAGES) ---
-
-            // 1. Stage 1 -> 2
-            if (!avg2) {
+            // --- CASCADE LOGIC ---
+            if (!date2) {
                 d1 = tEndProject - t1;
             } else {
-                const t2 = Math.max(avg2, t1);
+                const t2 = Math.max(date2, t1);
                 d1 = t2 - t1;
-                date2 = t2;
-
-                // 2. Stage 2 -> 3
-                if (!avg3) {
+                if (!date3) {
                     d2 = tEndProject - t2;
                 } else {
-                    const t3 = Math.max(avg3, t2);
+                    const t3 = Math.max(date3, t2);
                     d2 = t3 - t2;
-                    date3 = t3;
-
-                    // 3. Stage 3 -> 4
-                    if (!avg4) {
+                    if (!date4) {
                         d3 = tEndProject - t3;
                     } else {
-                        const t4 = Math.max(avg4, t3);
+                        const t4 = Math.max(date4, t3);
                         d3 = t4 - t3;
-                        date4 = t4;
-
-                        // 4. Stage 4 -> 5
-                        if (!avg5) {
+                        if (!date5) {
                             d4 = tEndProject - t4;
                         } else {
-                            const t5 = Math.max(avg5, t4);
+                            const t5 = Math.max(date5, t4);
                             d4 = t5 - t4;
-                            date5 = t5;
-
-                            // 5. Stage 5 -> 6
-                            if (!avg6) {
+                            if (!date6) {
                                 d5 = tEndProject - t5;
                             } else {
-                                const t6 = Math.max(avg6, t5);
+                                const t6 = Math.max(date6, t5);
                                 d5 = t6 - t5;
-                                date6 = t6;
                                 d6 = tEndProject - t6;
                             }
                         }
@@ -180,43 +168,64 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
             }
 
             return {
-                name: g.name,
-                orden: g.orden,
-                ejeId: g.ejeId,
-                lineaId: g.lineaId,
-                ejeDesc: g.ejeDesc,
-                lineaDesc: g.lineaDesc,
-                count: g.projectCount,
-                totalFondo: g.totalFondo,
-                projects: g.projects,
+                ...g,
                 etapa: g.projects.every((p: any) => p.etapa === g.projects[0].etapa)
                     ? (g.projects[0].etapa || 'No definida')
                     : 'Múltiples etapas',
                 start: t1,
-                d1, d2, d3, d4, d5, d6,
-                date1, date2, date3, date4, date5, date6, dateEnd: tEndProject,
-                d1_safe: Math.max(0, d1),
-                d2_safe: Math.max(0, d2),
-                d3_safe: Math.max(0, d3),
-                d4_safe: Math.max(0, d4),
-                d5_safe: Math.max(0, d5),
-                d6_safe: Math.max(0, d6),
+                date1: t1, date2, date3, date4, date5, date6, dateEnd: tEndProject,
+                d1_safe: isNaN(d1) ? 0 : Math.max(0, d1),
+                d2_safe: isNaN(d2) ? 0 : Math.max(0, d2),
+                d3_safe: isNaN(d3) ? 0 : Math.max(0, d3),
+                d4_safe: isNaN(d4) ? 0 : Math.max(0, d4),
+                d5_safe: isNaN(d5) ? 0 : Math.max(0, d5),
+                d6_safe: isNaN(d6) ? 0 : Math.max(0, d6),
             };
         })
             .filter(Boolean)
             .sort((a: any, b: any) => a.orden - b.orden);
 
-        return chartData;
+        // Calculate dynamic bounds with padding (1 month)
+        if (absoluteMin === Infinity) {
+            absoluteMin = new Date('2024-01-01').getTime();
+            absoluteMax = new Date('2026-12-31').getTime();
+        }
+        
+        const finalMax = Math.max(absoluteMax, TODAY);
+        
+        // Use real values with 30-day padding instead of rounding to full years
+        const PAD = 30 * 24 * 60 * 60 * 1000;
+        const dynamicMin = absoluteMin - PAD;
+        const dynamicMax = finalMax + PAD;
 
+        // Generate semi-annual ticks
+        const ticks = [];
+        let currTick = new Date(dynamicMin);
+        currTick.setMonth(currTick.getMonth() < 6 ? 0 : 6, 1);
+        currTick.setHours(0, 0, 0, 0);
+        
+        while (currTick.getTime() <= dynamicMax) {
+            if (currTick.getTime() >= dynamicMin) {
+                ticks.push(currTick.getTime());
+            }
+            currTick.setMonth(currTick.getMonth() + 6);
+        }
+
+        return { processedData: chartData, minDate: dynamicMin, maxDate: dynamicMax, ticks };
     }, [data]);
 
     const formatXAxis = (tickItem: number) => {
-        return new Date(tickItem).toLocaleDateString('es-PE', { year: '2-digit', month: 'short', timeZone: 'UTC' });
+        const date = new Date(tickItem);
+        const month = date.toLocaleDateString('es-PE', { month: 'short' }).replace('.', '');
+        const year = date.toLocaleDateString('es-PE', { year: '2-digit' });
+        return `${month} ${year}`;
     };
 
-    const formatDate = (ts: number | null) => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' }) : '-';
+    const formatDate = (ts: number | null) => {
+        if (!ts || isNaN(ts)) return '-';
+        return new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'UTC' });
+    };
 
-    // Helper to clean Y Axis Label - Revert to short IDs as requested
     const formatYAxis = (name: string) => name;
 
     const ONE_DAY = 86400000;
@@ -226,16 +235,29 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
             const d = payload[0].payload;
             const totalMonto = d.projects ? d.projects.reduce((sum: number, p: any) => sum + (Number(p.monto) || 0), 0) : 0;
             return (
-                <div className="bg-white p-3 rounded-lg shadow-xl border border-gray-200 text-xs shadow-blue-900/10">
+                <div className="bg-white p-4 rounded-xl shadow-2xl border border-gray-100 text-xs min-w-[240px]">
                     <div className="mb-2 pb-2 border-b border-gray-100">
-                        <p className="font-bold text-gray-800">
-                            {d.name} | {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
+                        <p className="font-bold text-gray-800 text-sm">
+                            {d.name}
+                        </p>
+                        <p className="text-gray-500 font-medium">
+                            {d.etapa === 'Múltiples etapas' ? 'Múltiples etapas' : `Etapa: ${d.etapa}`}
                         </p>
                     </div>
 
-                    <div className="space-y-1">
-                        <p className="text-gray-600">Proyectos: <span className="font-bold text-gray-800">{d.count}</span></p>
-                        <p className="text-gray-600">Monto Total: <span className="font-bold text-blue-700">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></p>
+                    <div className="space-y-2">
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Temporalidad:</span>
+                            <span className="font-bold text-gray-700">{formatDate(d.date1)} - {formatDate(d.dateEnd)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Proyectos:</span>
+                            <span className="font-bold text-gray-800">{d.count}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-gray-500">Monto Total:</span>
+                            <span className="font-bold text-blue-700">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+                        </div>
                     </div>
                 </div>
             );
@@ -251,23 +273,13 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         }
     };
 
-
-    const JAN_2024 = new Date('2024-01-01').getTime();
-    const END_2026 = new Date('2026-12-31').getTime();
-
-    const minDate = useMemo(() => {
-        if (!processedData.length) return JAN_2024;
-        const min = Math.min(...processedData.map((d: any) => d.start).filter(Boolean));
-        return Math.max(min || JAN_2024, JAN_2024);
-    }, [processedData]);
-
     const COLORS = {
         bases: '#60a5fa',   // Blue
         actos: '#34d399',   // Emerald
         consejo: '#fbbf24', // Amber
         firma: '#a78bfa',    // Violet
-        ejecucion: '#6366f1', // Indigo (New)
-        ejecutado: '#f43f5e'  // Rose (New)
+        ejecucion: '#6366f1', // Indigo 
+        ejecutado: '#f43f5e'  // Rose
     };
 
     return (
@@ -292,19 +304,23 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                             xAxisId="bottom"
                             type="number"
                             orientation="bottom"
-                            domain={[minDate, END_2026]}
+                            domain={[minDate, maxDate]}
+                            ticks={ticks}
                             tickFormatter={formatXAxis}
-                            tick={{ fontSize: 12, fill: '#6b7280' }}
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
                             allowDataOverflow={true}
+                            minTickGap={10}
                         />
                         <XAxis
                             xAxisId="top"
                             type="number"
                             orientation="top"
-                            domain={[minDate, END_2026]}
+                            domain={[minDate, maxDate]}
+                            ticks={ticks}
                             tickFormatter={formatXAxis}
-                            tick={{ fontSize: 12, fill: '#6b7280' }}
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
                             allowDataOverflow={true}
+                            minTickGap={10}
                         />
                         <YAxis
                             type="category"
