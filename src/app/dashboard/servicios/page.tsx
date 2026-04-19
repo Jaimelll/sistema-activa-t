@@ -65,6 +65,7 @@ export default function ServiciosPage() {
                 .from('becas_nueva')
                 .select(`
                     *,
+                    beneficiarios,
                     institucion:institucion_id(descripcion),
                     eje:eje_id(descripcion),
                     linea:linea_id(descripcion),
