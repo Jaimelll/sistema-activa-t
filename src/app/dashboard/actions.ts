@@ -794,57 +794,48 @@ export async function getRegiones() {
 
 async function recalculateProyectoAvance(proyectoId: any, supabase: any, currentMonto?: number) {
   const today = new Date().toISOString().split('T')[0];
-  // Get the latest etapa_id and sustento from the latest avance (fecha <= today)
-  const { data: latestAvance, error: latestError } = await supabase
+  
+  // 1. Obtener TODO el historial de avances para este proyecto
+  const { data: allAvances, error: fetchError } = await supabase
     .from('avance_proyecto')
-    .select('etapa_id, sustento')
+    .select('etapa_id, sustento, fecha, monto')
     .eq('proyecto_id', proyectoId)
-    .lte('fecha', today)
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1)
-    .single();
+    .lte('fecha', today)                 // 2. Filtrar fecha <= hoy (ignora proyecciones)
+    .order('fecha', { ascending: false }) // 3. Ordenar por fecha descendente
+    .order('id', { ascending: false });
 
-  if (latestAvance) {
-    // Regla de negocio: solo actualizar el avance financiero en 'proyectos'
-    // si el monto del avance procesado es mayor a cero.
-    // Los avances con monto === 0 se guardan como historial cualitativo
-    // pero NO alteran el avance financiero del proyecto principal.
-    if (currentMonto !== undefined && currentMonto > 0) {
-      // Calculate the SUM of all montos for this project
-      const { data: totalMonto, error: sumError } = await supabase
-        .from('avance_proyecto')
-        .select('monto')
-        .eq('proyecto_id', proyectoId);
+  if (fetchError) {
+    console.error("Error al obtener historial para sincronización:", fetchError);
+    return;
+  }
 
-      const totalAvance = totalMonto?.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0) || 0;
+  if (allAvances && allAvances.length > 0) {
+    // 4. El avance más reciente (índice 0) define la etapa actual
+    const latestAvance = allAvances[0];
+    const newEtapaId = latestAvance.etapa_id;
 
-      const { error: updateError } = await supabase
-        .from('proyectos')
-        .update({ 
-          etapa_id: latestAvance.etapa_id,
-          sustento: latestAvance.sustento,
-          avance: totalAvance
-        })
-        .eq('id', proyectoId);
+    // 5. Asigna como sustento el texto del avance más reciente. Si está vacío, busca hacia atrás.
+    const sustentoFinal = allAvances.find((av: any) => av.sustento && av.sustento.trim() !== '')?.sustento || '';
 
-      if (updateError) {
-        console.error("Error updating proyecto avance financiero after recalculation:", updateError);
-      }
-    } else {
-      // Monto === 0: solo actualizar etapa y sustento, sin tocar el avance financiero
-      const { error: updateError } = await supabase
-        .from('proyectos')
-        .update({ 
-          etapa_id: latestAvance.etapa_id,
-          sustento: latestAvance.sustento
-        })
-        .eq('id', proyectoId);
+    // Calculamos el avance financiero total (solo de avances reales <= hoy)
+    const totalAvanceFinanciero = allAvances.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0);
 
-      if (updateError) {
-        console.error("Error updating proyecto etapa/sustento (monto=0):", updateError);
-      }
+    // Actualizamos el proyecto padre
+    const { error: updateError } = await supabase
+      .from('proyectos')
+      .update({ 
+        etapa_id: newEtapaId,
+        sustento: sustentoFinal,
+        avance: totalAvanceFinanciero
+      })
+      .eq('id', proyectoId);
+
+    if (updateError) {
+      console.error("Error al sincronizar proyecto padre:", updateError);
     }
+    
+    // 6. CRÍTICO: Limpiar caché de Next.js
+    revalidatePath('/dashboard/gestion-proyectos');
   }
 }
 

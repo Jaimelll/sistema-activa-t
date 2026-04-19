@@ -67,6 +67,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                     stageDates: {},
                     totalBudget: 0,
                     totalAvance: 0,
+                    totalBeneficiarios: 0,
                     count: 0,
                     maxStageId: 0,
                     ids: [],
@@ -77,6 +78,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
             g.count++;
             g.totalBudget += Number(beca.presupuesto) || 0;
             g.totalAvance += Number(beca.avance) || 0;
+            g.totalBeneficiarios += Number(beca.beneficiarios) || 0;
             g.ids.push(beca.id);
 
             if ((beca.etapa_id || 0) > g.maxStageId) g.maxStageId = beca.etapa_id;
@@ -136,6 +138,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 firstStart: etapa1Date,
                 lastEnd: endDate,
                 etapa1Date: etapa1Date,
+                totalBeneficiarios: g.totalBeneficiarios,
                 grupoId: Number(g.key),
                 grupoOrden: g.grupoOrden,
             };
@@ -222,6 +225,7 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 etapa1Date: row.etapa1Date,
                 inicioVacio,
                 ...adjustedDurations,
+                totalBeneficiarios: row.totalBeneficiarios,
                 grupoId: row.grupoId,
                 grupoOrden: row.grupoOrden,
             };
@@ -292,8 +296,8 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                             {fmtDate(d.firstStart)} – {fmtDate(d.lastEnd)}
                         </span>
                     </TooltipRow>
-                    <TooltipRow label="Becas">
-                        <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.count} u.</span>
+                    <TooltipRow label="BENEFICIARIOS">
+                        <span className="font-black text-blue-600 px-2 bg-blue-50 rounded italic">{d.totalBeneficiarios} pers.</span>
                     </TooltipRow>
                     <TooltipRow label="Presupuesto total">
                         <span className="font-black text-gray-900 px-2 bg-slate-50 rounded border border-slate-100">

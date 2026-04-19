@@ -452,7 +452,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances</label>
                                 <div className="space-y-2">
                                     {servicio?.avances && servicio.avances.length > 0 ? (
-                                        [...servicio.avances].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
+                                        [...servicio.avances].sort((a, b) => (new Date(b.fecha) as any) - (new Date(a.fecha) as any)).map((av: any, idx: number) => (
                                             <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
                                                 <div className="flex flex-col flex-1">
                                                     <span className="text-[10px] font-black text-blue-600">

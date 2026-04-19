@@ -295,7 +295,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                         <form id="proyecto-form" onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2 space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nombre del Proyecto</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nombre del Proyecto</label>
                                     <input
                                         required
                                         name="nombre"
@@ -308,7 +308,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Provincia</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Provincia</label>
                                     <input
                                         name="provincia"
                                         value={formData.provincia || ""}
@@ -320,7 +320,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Especialista</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Especialista</label>
                                     <select
                                         name="especialista_id"
                                         value={formData.especialista_id || ""}
@@ -336,7 +336,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Código Proyecto</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Código Proyecto</label>
                                     <input
                                         required
                                         name="codigo_proyecto"
@@ -349,7 +349,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Año</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Año</label>
                                     <input
                                         type="number"
                                         name="año"
@@ -361,7 +361,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Región</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Región</label>
                                     <select
                                         name="region_id"
                                         value={formData.region_id || ""}
@@ -375,7 +375,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Institución Ejecutora</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Institución Ejecutora</label>
                                     <select
                                         name="institucion_ejecutora_id"
                                         value={formData.institucion_ejecutora_id || ""}
@@ -389,7 +389,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Eje</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Eje</label>
                                     <select
                                         name="eje_id"
                                         value={formData.eje_id || ""}
@@ -403,7 +403,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Línea</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Línea</label>
                                     <select
                                         name="linea_id"
                                         value={formData.linea_id || ""}
@@ -417,7 +417,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Etapa Actual</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Etapa Actual</label>
                                     <select
                                         name="etapa_id"
                                         value={formData.etapa_id || ""}
@@ -431,7 +431,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Modalidad</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Modalidad</label>
                                     <select
                                         name="modalidad_id"
                                         value={formData.modalidad_id || ""}
@@ -445,12 +445,12 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sustento Actual (Sincronizado)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Sustento Actual (Sincronizado)</label>
                                     <textarea
                                         name="sustento"
                                         value={formData.sustento || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none min-h-[80px] text-xs resize-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none min-h-[120px] text-sm resize-none leading-relaxed"
                                         placeholder="El sustento se sincroniza automáticamente con el último avance real..."
                                         disabled={isReadOnly}
                                     />
@@ -461,7 +461,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
 
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Grupo de Interés</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Grupo de Interés</label>
                                     <select
                                         name="grupo_id"
                                         value={formData.grupo_id || ""}
@@ -475,7 +475,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presupuestado (S/)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Presupuestado (S/)</label>
                                     <input
                                         type={isReadOnly ? "text" : "number"}
                                         name="monto_fondoempleo"
@@ -488,7 +488,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contrapartida (S/)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Contrapartida (S/)</label>
                                     <input
                                         type={isReadOnly ? "text" : "number"}
                                         name="contrapartida"
@@ -501,7 +501,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avance Total (S/)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avance Total (S/)</label>
                                     <input
                                         type={isReadOnly ? "text" : "number"}
                                         name="avance"
@@ -514,7 +514,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Beneficiarios</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Beneficiarios</label>
                                     <input
                                         type="number"
                                         name="beneficiarios"
@@ -526,7 +526,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Gestora</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Gestora</label>
                                     <input
                                         name="gestora"
                                         value={formData.gestora || ""}
@@ -538,7 +538,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avance Tecnico (%)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Avance Tecnico (%)</label>
                                     <input
                                         type="number"
                                         name="avance_tecnico"
@@ -552,9 +552,9 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="md:col-span-2 space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Datos de Contacto y Notas</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Datos de Contacto y Notas</label>
                                     {isReadOnly ? (
-                                        <div className={`w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-xs min-h-[80px] ${!formData.contacto ? 'text-gray-300 italic' : 'text-gray-700 whitespace-pre-wrap'}`}>
+                                        <div className={`w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-xl text-base min-h-[100px] leading-relaxed ${!formData.contacto ? 'text-gray-300 italic' : 'text-gray-700 whitespace-pre-wrap'}`}>
                                             {formData.contacto || 'No registrado'}
                                         </div>
                                     ) : (
@@ -562,8 +562,8 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                             name="contacto"
                                             value={formData.contacto || ""}
                                             onChange={handleChange}
-                                            rows={3}
-                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm resize-none"
+                                            rows={4}
+                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-base resize-none leading-relaxed"
                                             placeholder="Información de contacto, teléfonos, correos o notas adicionales..."
                                         />
                                     )}
@@ -582,7 +582,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Nueva Etapa</label>
                                                 <select
                                                     value={newAvance.etapa_id}
                                                     onChange={(e) => setNewAvance({ ...newAvance, etapa_id: e.target.value })}
@@ -593,7 +593,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                 </select>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Fecha</label>
                                                 <input
                                                     type="date"
                                                     value={newAvance.fecha}
@@ -602,7 +602,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -614,7 +614,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                             </div>
 
                                             <div className="md:col-span-2 space-y-1">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
+                                                <label className="text-xs font-bold text-gray-400 uppercase">Sustento / Observación</label>
                                                 <textarea
                                                     value={newAvance.sustento}
                                                     onChange={(e) => setNewAvance({ ...newAvance, sustento: e.target.value })}
@@ -625,11 +625,10 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                         </div>
 
                                         {actionFeedback && (
-                                            <div className={`p-3 rounded-xl text-[11px] font-bold text-center animate-in fade-in slide-in-from-top-2 duration-300 ${
-                                                actionFeedback.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
-                                                actionFeedback.type === 'info' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
-                                                'bg-red-100 text-red-700 border border-red-200'
-                                            }`}>
+                                            <div className={`p-3 rounded-xl text-[11px] font-bold text-center animate-in fade-in slide-in-from-top-2 duration-300 ${actionFeedback.type === 'success' ? 'bg-green-100 text-green-700 border border-green-200' :
+                                                    actionFeedback.type === 'info' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                                        'bg-red-100 text-red-700 border border-red-200'
+                                                }`}>
                                                 {actionFeedback.message}
                                             </div>
                                         )}
@@ -652,13 +651,13 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                             )}
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
+                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Historial de Avances del Proyecto</label>
                                 <div className="space-y-2">
                                     {proyecto.avances && proyecto.avances.length > 0 ? (
-                                        [...proyecto.avances].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()).map((av: any, idx: number) => (
-                                            <div key={av.id || idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
+                                        [...proyecto.avances].sort((a, b) => (new Date(b.fecha) as any) - (new Date(a.fecha) as any)).map((av: any, idx: number) => (
+                                            <div key={av.id || idx} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
                                                 <div className="flex flex-col flex-1">
-                                                    <span className="text-[10px] font-black text-blue-600">
+                                                    <span className="text-sm font-black text-blue-600">
                                                         {(() => {
                                                             if (!av.fecha) return '-';
                                                             const parts = av.fecha.split('T')[0].split('-');
@@ -666,11 +665,11 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                                         })()}
                                                     </span>
 
-                                                    <span className="text-xs font-bold text-gray-800">
+                                                    <span className="text-base font-bold text-gray-800">
                                                         {av.etapa_nombre || options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}
-                                                        {av.monto > 0 && <span className="ml-2 text-blue-600">({formatCurrency(av.monto)})</span>}
+                                                        {av.monto > 0 && <span className="ml-2 text-blue-600 font-black">({formatCurrency(av.monto)})</span>}
                                                     </span>
-                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+                                                    <p className="text-sm text-gray-500 italic mt-1 leading-relaxed">{av.sustento || '-'}</p>
 
                                                 </div>
                                                 {!isReadOnly && (
@@ -700,7 +699,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-xs text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
+                                        <p className="text-sm text-gray-400 italic text-center py-4 bg-gray-50 rounded-xl">No hay historial de avances registrado.</p>
                                     )}
                                 </div>
                             </div>
@@ -718,7 +717,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                             </div>
                             <div className="p-5 space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Etapa</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Etapa</label>
                                     <select
                                         value={editingAvance.etapa_id}
                                         onChange={(e) => setEditingAvance({ ...editingAvance, etapa_id: e.target.value })}
@@ -729,7 +728,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Fecha</label>
                                     <input
                                         type="date"
                                         value={editingAvance.fecha}
@@ -738,7 +737,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -749,7 +748,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Sustento / Observación</label>
+                                    <label className="text-xs font-bold text-gray-400 uppercase">Sustento / Observación</label>
                                     <textarea
                                         value={editingAvance.sustento || ""}
                                         onChange={(e) => setEditingAvance({ ...editingAvance, sustento: e.target.value })}
