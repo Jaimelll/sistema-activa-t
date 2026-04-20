@@ -119,7 +119,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
         const uniqueEtapas = Array.from(uniqueEtapasSet)
             .map(e => JSON.parse(e))
-            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+            .sort((a: any, b: any) => Number(a.value) - Number(b.value));
 
         const dynamicLineas = lines
             .filter((l: any) => uniqueLineas.includes(String(l.value)))
