@@ -41,16 +41,16 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="bg-gray-100 border-b-2 border-gray-200 text-gray-700 text-[9px] uppercase font-extrabold tracking-widest">
-                            <th className="px-3 py-2">ID</th>
-                            <th className="px-3 py-2 min-w-[200px]">Nombre de Servicio</th>
-                            <th className="px-3 py-2">Institución</th>
-                            <th className="px-3 py-2">Estado</th>
-                            <th className="px-3 py-2 text-right">Presupuesto</th>
-                            <th className="px-3 py-2 text-right">Avance</th>
-                            <th className="px-3 py-2 text-center">%</th>
-                            <th className="px-3 py-2 text-center">Inicio</th>
-                            <th className="px-3 py-2 text-center">Fin</th>
+                        <tr className="bg-gray-100 border-b-2 border-gray-200 text-gray-700 text-sm uppercase font-extrabold tracking-widest">
+                            <th className="px-4 py-3">ID</th>
+                            <th className="px-4 py-3 min-w-[200px]">Nombre de Servicio</th>
+                            <th className="px-4 py-3">Institución</th>
+                            <th className="px-4 py-3">Estado</th>
+                            <th className="px-4 py-3 text-right">Presupuesto</th>
+                            <th className="px-4 py-3 text-right">Avance</th>
+                            <th className="px-4 py-3 text-center">%</th>
+                            <th className="px-4 py-3 text-center">Inicio</th>
+                            <th className="px-4 py-3 text-center">Fin</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -85,55 +85,55 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
                                     <tr
                                         key={item.id}
                                         className={clsx(
-                                            "hover:bg-blue-50/30 transition-colors group text-[10px]",
+                                            "hover:bg-blue-50/30 transition-colors group text-sm",
                                             idx % 2 === 0 ? "bg-white" : "bg-gray-50/20"
                                         )}
                                     >
                                         <td 
-                                            className="px-3 py-1.5 font-extrabold text-blue-600 tabular-nums whitespace-nowrap cursor-pointer hover:underline"
+                                            className="px-4 py-3 font-bold text-blue-600 tabular-nums whitespace-nowrap cursor-pointer hover:underline"
                                             onClick={() => onViewDetails?.(item.id)}
                                         >
                                             {loadingId === item.id ? (
                                                 <div className="flex items-center gap-1.5 text-blue-600">
-                                                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                     </svg>
-                                                    <span className="text-[8px] uppercase tracking-tighter">...</span>
+                                                    <span className="text-xs uppercase tracking-tighter">...</span>
                                                 </div>
                                             ) : item.id}
                                         </td>
-                                        <td className="px-3 py-1.5">
+                                        <td className="px-4 py-3">
                                             <div
                                                 className="font-bold text-gray-800 line-clamp-1 group-hover:text-blue-700 transition-colors"
                                                 title={item.nombre}
                                             >
                                                 {item.nombre}
                                             </div>
-                                            <div className="text-[8px] text-gray-400 mt-0.5 tracking-tighter uppercase font-medium">
+                                            <div className="text-xs text-gray-400 mt-0.5 tracking-tighter uppercase font-medium">
                                                 {item.documento || 'PENDIENTE'}
                                             </div>
                                         </td>
-                                        <td className="px-3 py-1.5 text-gray-600 font-medium whitespace-nowrap">
+                                        <td className="px-4 py-3 text-gray-600 font-medium whitespace-nowrap">
                                             {item.institucion?.descripcion || '-'}
                                         </td>
-                                        <td className="px-3 py-1.5">
+                                        <td className="px-4 py-3">
                                             <span
-                                                className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wide text-white whitespace-nowrap"
+                                                className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide text-white whitespace-nowrap"
                                                 style={{ backgroundColor: etapaColor }}
                                             >
                                                 {etapaNombre}
                                             </span>
                                         </td>
-                                        <td className="px-3 py-1.5 text-right font-bold text-blue-900 tabular-nums whitespace-nowrap">
+                                        <td className="px-4 py-3 text-right font-bold text-blue-900 tabular-nums whitespace-nowrap">
                                             S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
-                                        <td className="px-3 py-1.5 text-right font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                                        <td className="px-4 py-3 text-right font-bold text-emerald-700 tabular-nums whitespace-nowrap">
                                             S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </td>
-                                        <td className="px-3 py-1.5 text-center">
+                                        <td className="px-4 py-3 text-center">
                                             <span className={clsx(
-                                                "px-1.5 py-0.5 rounded-full font-bold text-[8px] min-w-[36px] inline-block ring-1 ring-inset",
+                                                "px-2 py-1 rounded-full font-bold text-xs min-w-[45px] inline-block ring-1 ring-inset",
                                                 progress >= 100
                                                     ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
                                                     : progress > 50
@@ -143,10 +143,10 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
                                                 {progress.toFixed(1)}%
                                             </span>
                                         </td>
-                                        <td className="px-3 py-1.5 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
+                                        <td className="px-4 py-3 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
                                             {fechaInicio}
                                         </td>
-                                        <td className="px-3 py-1.5 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
+                                        <td className="px-4 py-3 text-center text-gray-500 font-bold tabular-nums whitespace-nowrap">
                                             {fechaFin}
                                         </td>
                                     </tr>
@@ -158,11 +158,11 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
             </div>
 
             {!loading && sortedData.length > 0 && (
-                <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                    <span className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest">
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                    <span className="text-xs text-gray-400 font-extrabold uppercase tracking-widest">
                         Total
                     </span>
-                    <span className="text-[9px] text-gray-500 font-bold">
+                    <span className="text-xs text-gray-500 font-bold">
                         {sortedData.length} servicios listados
                     </span>
                 </div>

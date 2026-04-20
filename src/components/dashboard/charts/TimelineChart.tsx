@@ -401,7 +401,7 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
 
             {/* Detail Panel - Rendered BELOW chart */}
             {selectedGroup && selectedGroup.projects && selectedGroup.projects.length > 0 && (
-                <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-xs"
+                <div className="mt-4 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm"
                     style={{ scrollbarGutter: 'stable' }}
                 >
                     <div className="mb-4 pb-2 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-2 text-gray-800">
@@ -421,17 +421,17 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     <div className="pr-1">
                         <table className="w-full border-collapse">
                             <thead>
-                                <tr className="border-b border-gray-300">
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">ID</th>
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Código</th>
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Institución Ejecutora</th>
-                                    <th className="text-left py-1 px-2 font-bold text-gray-700">Región</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Presupuesto</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">Avance</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">%</th>
-                                    <th className="text-right py-1 px-2 font-bold text-gray-700">% Ejec.</th>
-                                    <th className="text-center py-1 px-2 font-bold text-gray-700">Inicio</th>
-                                    <th className="text-center py-1 px-2 font-bold text-gray-700">Fin</th>
+                                <tr className="border-b border-gray-300 text-sm uppercase tracking-wider">
+                                    <th className="text-left py-3 px-4 font-bold text-gray-700">ID</th>
+                                    <th className="text-left py-3 px-4 font-bold text-gray-700">Código</th>
+                                    <th className="text-left py-3 px-4 font-bold text-gray-700">Institución Ejecutora</th>
+                                    <th className="text-left py-3 px-4 font-bold text-gray-700">Región</th>
+                                    <th className="text-right py-3 px-4 font-bold text-gray-700">Presupuesto</th>
+                                    <th className="text-right py-3 px-4 font-bold text-gray-700">Avance</th>
+                                    <th className="text-right py-3 px-4 font-bold text-gray-700">%</th>
+                                    <th className="text-right py-3 px-4 font-bold text-gray-700">% Ejec.</th>
+                                    <th className="text-center py-3 px-4 font-bold text-gray-700">Inicio</th>
+                                    <th className="text-center py-3 px-4 font-bold text-gray-700">Fin</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -448,7 +448,7 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                                         return (
                                             <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-100'}>
                                                 <td 
-                                                    className="py-1 px-2 text-blue-600 font-bold whitespace-nowrap cursor-pointer hover:underline"
+                                                    className="py-3 px-4 text-blue-600 font-bold whitespace-nowrap cursor-pointer hover:underline"
                                                     onClick={async (e) => {
                                                         e.stopPropagation();
                                                         setIsLoadingModal(p.id);
@@ -478,17 +478,17 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                                                         </span>
                                                     ) : p.id}
                                                 </td>
-                                                <td className="py-1 px-2 text-gray-800 whitespace-nowrap">{p.codigo}</td>
-                                                <td className="py-1 px-2 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
-                                                <td className="py-1 px-2 text-gray-600 whitespace-nowrap">
+                                                <td className="py-3 px-4 text-gray-800 whitespace-nowrap">{p.codigo}</td>
+                                                <td className="py-3 px-4 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
+                                                <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
                                                     {p.region || '-'}
                                                 </td>
-                                                <td className="py-1 px-2 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                                <td className="py-1 px-2 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
-                                                <td className="py-1 px-2 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
-                                                <td className="py-1 px-2 text-right text-blue-600 font-bold whitespace-nowrap">{p.avance_tecnico ?? 0}%</td>
-                                                <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaInicio}</td>
-                                                <td className="py-1 px-2 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
+                                                <td className="py-3 px-4 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                                <td className="py-3 px-4 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                                                <td className="py-3 px-4 text-right text-gray-700 font-bold whitespace-nowrap">{porcentaje.toFixed(1)}%</td>
+                                                <td className="py-3 px-4 text-right text-blue-600 font-bold whitespace-nowrap">{p.avance_tecnico ?? 0}%</td>
+                                                <td className="py-3 px-4 text-center text-gray-600 whitespace-nowrap">{fechaInicio}</td>
+                                                <td className="py-3 px-4 text-center text-gray-600 whitespace-nowrap">{fechaFin}</td>
                                             </tr>
                                         );
                                     })}
