@@ -10,12 +10,49 @@ interface TimelineChartProps {
     options?: any;
 }
 
+// ── CONFIGURACIÓN DINÁMICA ──────────────────────────────────────────────────
+const STAGE_PALETTE = [
+    '#60a5fa', // Blue (Bases)
+    '#34d399', // Emerald (Actos)
+    '#fbbf24', // Amber (Aprobado)
+    '#a78bfa', // Violet (Firma)
+    '#6366f1', // Indigo (Ejecución)
+    '#f43f5e', // Rose (Cierre)
+    '#14b8a6', // Teal
+    '#f97316', // Orange
+    '#06b6d4', // Cyan
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#84cc16', // Lime
+    '#d946ef', // Fuchsia
+];
+
+// Punto de quiebre: IDs menores usan el valor Mínimo (inicio), 
+// IDs mayores o iguales usan el valor Máximo (último avance).
+const EXECUTION_START_ID = 5;
+
 export function TimelineChart({ data, options = {} }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedModalProyecto, setSelectedModalProyecto] = useState<any>(null);
     const [isLoadingModal, setIsLoadingModal] = useState<string | null>(null);
+
+    // Obtener etapas del catálogo o usar por defecto si no hay
+    const allStages = useMemo(() => {
+        if (options.etapas && Array.from(options.etapas).length > 0) {
+            return [...options.etapas].sort((a: any, b: any) => Number(a.value) - Number(b.value));
+        }
+        // Fallback histórico para evitar roturas
+        return [
+            { value: 1, label: 'Bases' },
+            { value: 2, label: 'Lanzamiento' },
+            { value: 3, label: 'Aprobado' },
+            { value: 4, label: 'Firma' },
+            { value: 5, label: 'Ejecución' },
+            { value: 6, label: 'Ejecutado' },
+        ];
+    }, [options.etapas]);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -24,21 +61,24 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const { processedData, minDate, maxDate, ticks } = useMemo(() => {
+    const { processedData, minDate, maxDate, ticks, activeStages } = useMemo(() => {
         if (!data || data.length === 0) {
             return { 
                 processedData: [], 
                 minDate: new Date('2024-01-01').getTime(), 
-                maxDate: new Date('2026-12-31').getTime() 
+                maxDate: new Date('2026-12-31').getTime(),
+                activeStages: []
             };
         }
 
         const groups = new Map();
         const TODAY = new Date().getTime();
         
-        // 1. Calculate absolute bounds from ALL data
         let absoluteMin = Infinity;
         let absoluteMax = -Infinity;
+
+        // 1. Identificar etapas que realmente tienen datos para no pintar barras vacías legendariamente
+        const stagePresence = new Set<number>();
 
         data.forEach((project: any) => {
             (project.avances || []).forEach((a: any) => {
@@ -46,20 +86,17 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                 if (!isNaN(ts)) {
                     if (ts < absoluteMin) absoluteMin = ts;
                     if (ts > absoluteMax) absoluteMax = ts;
+                    stagePresence.add(Number(a.etapa_id));
                 }
             });
         });
 
-        // 2. Group data for the chart
+        // Etapas a renderizar (que existan en el catálogo y tengan datos o sean básicas)
+        const activeStages = allStages.filter((s: any) => stagePresence.has(Number(s.value)));
+
+        // 2. Agrupar datos
         data.forEach((project: any) => {
             if (!project.avances || project.avances.length === 0) return;
-
-            // Find Stage 1 (Bases) Date - REQUIRED to start the line
-            const stage1 = project.avances.find((a: any) => a.etapa_id === 1 && a.fecha);
-            if (!stage1) return;
-
-            const t1 = new Date(stage1.fecha).getTime();
-            if (isNaN(t1)) return;
 
             const key = project.grupo_id || 'Sin Grupo';
 
@@ -69,13 +106,8 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     orden: project.grupo_orden || project.grupo?.orden || 999,
                     ejeId: Number(project.eje_id) || 999,
                     lineaId: Number(project.linea_id) || 999,
-                    stage1Dates: [],
-                    stage2Dates: [],
-                    stage3Dates: [],
-                    stage4Dates: [],
-                    stage5Dates: [],
-                    stage6Dates: [],
-                    endDates: [],
+                    datesByStage: {} as Record<number, number[]>,
+                    endDates: [] as number[],
                     projectCount: 0,
                     projects: [],
                     ejeDesc: project.eje || '',
@@ -102,103 +134,86 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
             project.avances.forEach((a: any) => {
                 const ts = new Date(a.fecha).getTime();
                 if (!isNaN(ts)) {
-                    if (a.etapa_id === 1) group.stage1Dates.push(ts);
-                    if (a.etapa_id === 2) group.stage2Dates.push(ts);
-                    if (a.etapa_id === 3) group.stage3Dates.push(ts);
-                    if (a.etapa_id === 4) group.stage4Dates.push(ts);
-                    if (a.etapa_id === 5) group.stage5Dates.push(ts);
-                    if (a.etapa_id === 6) group.stage6Dates.push(ts);
+                    const eid = Number(a.etapa_id);
+                    if (!group.datesByStage[eid]) group.datesByStage[eid] = [];
+                    group.datesByStage[eid].push(ts);
                     group.endDates.push(ts);
                 }
             });
         });
 
-        const getMin = (arr: number[]) => (arr && arr.length > 0) ? Math.min(...arr) : null;
-        const getMax = (arr: number[]) => (arr && arr.length > 0) ? Math.max(...arr) : null;
-
         const chartData = Array.from(groups.values()).map((g: any) => {
-            // APPLY LOGIC: Min for 1-4, Max for 5+
-            const date1 = getMin(g.stage1Dates);
-            const date2 = getMin(g.stage2Dates);
-            const date3 = getMin(g.stage3Dates);
-            const date4 = getMin(g.stage4Dates);
-            const date5 = getMax(g.stage5Dates);
-            const date6 = getMax(g.stage6Dates);
-            const dateEndRaw = getMax(g.endDates);
-
-            if (!date1) return null;
-
-            let t1 = date1;
-            let tEndProject = date6 || dateEndRaw || TODAY;
-            if (!date6) tEndProject = Math.max(tEndProject, TODAY);
-
-            let d1 = 0, d2 = 0, d3 = 0, d4 = 0, d5 = 0, d6 = 0;
-
-            // --- CASCADE LOGIC ---
-            if (!date2) {
-                d1 = tEndProject - t1;
-            } else {
-                const t2 = Math.max(date2, t1);
-                d1 = t2 - t1;
-                if (!date3) {
-                    d2 = tEndProject - t2;
+            // Resolver fechas pivote para cada etapa disponible en el catálogo
+            const pivotDates: Record<number, number | null> = {};
+            
+            allStages.forEach((s: any) => {
+                const eid = Number(s.value);
+                const dates = g.datesByStage[eid];
+                if (dates && dates.length > 0) {
+                    pivotDates[eid] = (eid < EXECUTION_START_ID) 
+                        ? Math.min(...dates) 
+                        : Math.max(...dates);
                 } else {
-                    const t3 = Math.max(date3, t2);
-                    d2 = t3 - t2;
-                    if (!date4) {
-                        d3 = tEndProject - t3;
-                    } else {
-                        const t4 = Math.max(date4, t3);
-                        d3 = t4 - t3;
-                        if (!date5) {
-                            d4 = tEndProject - t4;
-                        } else {
-                            const t5 = Math.max(date5, t4);
-                            d4 = t5 - t4;
-                            if (!date6) {
-                                d5 = tEndProject - t5;
-                            } else {
-                                const t6 = Math.max(date6, t5);
-                                d5 = t6 - t5;
-                                d6 = tEndProject - t6;
-                            }
-                        }
-                    }
+                    pivotDates[eid] = null;
                 }
-            }
+            });
 
-            return {
+            // La fecha de inicio absoluta del grupo es la mínima de cualquier avance
+            const tStart = Math.min(...g.endDates);
+            const tEndRaw = Math.max(...g.endDates);
+            
+            // Si el proyecto no está terminado (ID 6 suele ser terminado, pero lo hacemos dinámico)
+            // Si la última etapa del catálogo no tiene fecha, extendemos hasta hoy
+            const lastStageId = allStages[allStages.length - 1].value;
+            let tEndMax = pivotDates[lastStageId] || tEndRaw || TODAY;
+            if (!pivotDates[lastStageId]) tEndMax = Math.max(tEndMax, TODAY);
+
+            const result: any = {
                 ...g,
+                start: tStart,
+                dateEnd: tEndMax,
                 etapa: g.projects.every((p: any) => p.etapa === g.projects[0].etapa)
                     ? (g.projects[0].etapa || 'No definida')
                     : 'Múltiples etapas',
-                start: t1,
-                date1: t1, date2, date3, date4, date5, date6, dateEnd: tEndProject,
-                d1_safe: isNaN(d1) ? 0 : Math.max(0, d1),
-                d2_safe: isNaN(d2) ? 0 : Math.max(0, d2),
-                d3_safe: isNaN(d3) ? 0 : Math.max(0, d3),
-                d4_safe: isNaN(d4) ? 0 : Math.max(0, d4),
-                d5_safe: isNaN(d5) ? 0 : Math.max(0, d5),
-                d6_safe: isNaN(d6) ? 0 : Math.max(0, d6),
             };
+
+            // Calcular DURACIONES (deltas) en cascada
+            // d_n = t(n+1) - t(n)
+            
+            // Filtrar solo las fechas que existen en este grupo específico para la cascada
+            const groupExistingStages = allStages
+                .map((s: any) => ({ id: Number(s.value), date: pivotDates[Number(s.value)] }))
+                .filter(s => s.date !== null);
+
+            for (let i = 0; i < groupExistingStages.length; i++) {
+                const current = groupExistingStages[i];
+                const next = groupExistingStages[i+1];
+                
+                const tCurr = current.date!;
+                const tNext = next ? next.date! : tEndMax;
+                
+                const delta = Math.max(0, tNext - tCurr);
+                result[`d${current.id}_safe`] = delta;
+                
+                // Guardar la fecha real para el tooltip
+                result[`date${current.id}`] = tCurr;
+            }
+
+            return result;
         })
             .filter(Boolean)
             .sort((a: any, b: any) => a.orden - b.orden);
 
-        // Calculate dynamic bounds with padding (1 month)
         if (absoluteMin === Infinity) {
             absoluteMin = new Date('2024-01-01').getTime();
             absoluteMax = new Date('2026-12-31').getTime();
         }
         
         const finalMax = Math.max(absoluteMax, TODAY);
-        
-        // Use real values with 30-day padding instead of rounding to full years
         const PAD = 30 * 24 * 60 * 60 * 1000;
         const dynamicMin = absoluteMin - PAD;
         const dynamicMax = finalMax + PAD;
 
-        // Generate semi-annual ticks
         const ticks = [];
         let currTick = new Date(dynamicMin);
         currTick.setMonth(currTick.getMonth() < 6 ? 0 : 6, 1);
@@ -211,8 +226,8 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
             currTick.setMonth(currTick.getMonth() + 6);
         }
 
-        return { processedData: chartData, minDate: dynamicMin, maxDate: dynamicMax, ticks };
-    }, [data]);
+        return { processedData: chartData, minDate: dynamicMin, maxDate: dynamicMax, ticks, activeStages };
+    }, [data, allStages]);
 
     const formatXAxis = (tickItem: number) => {
         const date = new Date(tickItem);
@@ -228,12 +243,15 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
 
     const formatYAxis = (name: string) => name;
 
-    const ONE_DAY = 86400000;
-
     const SimpleTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
             const totalMonto = d.projects ? d.projects.reduce((sum: number, p: any) => sum + (Number(p.monto) || 0), 0) : 0;
+            
+            // Intentar encontrar la primera fecha de etapa disponible
+            const firstStage = activeStages[0];
+            const startDate = firstStage ? d[`date${firstStage.value}`] : d.start;
+
             return (
                 <div className="bg-white p-4 rounded-xl shadow-2xl border border-gray-100 text-xs min-w-[240px]">
                     <div className="mb-2 pb-2 border-b border-gray-100">
@@ -248,11 +266,11 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     <div className="space-y-2">
                         <div className="flex justify-between">
                             <span className="text-gray-500">Temporalidad:</span>
-                            <span className="font-bold text-gray-700">{formatDate(d.date1)} - {formatDate(d.dateEnd)}</span>
+                            <span className="font-bold text-gray-700">{formatDate(startDate)} - {formatDate(d.dateEnd)}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Proyectos:</span>
-                            <span className="font-bold text-gray-800">{d.count}</span>
+                            <span className="font-bold text-gray-800">{d.projectCount}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">Monto Total:</span>
@@ -273,15 +291,6 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         }
     };
 
-    const COLORS = {
-        bases: '#60a5fa',   // Blue
-        actos: '#34d399',   // Emerald
-        consejo: '#fbbf24', // Amber
-        firma: '#a78bfa',    // Violet
-        ejecucion: '#6366f1', // Indigo 
-        ejecutado: '#f43f5e'  // Rose
-    };
-
     return (
         <div className="card w-full bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6" onClick={() => setSelectedGroup(null)}>
             <div className="flex justify-between items-center mb-6">
@@ -290,13 +299,13 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                 </div>
             </div>
 
-            <div className="w-full" style={{ height: Math.max(400, processedData.length * 40) + 'px' }}>
+            <div className="w-full" style={{ minHeight: '450px', height: Math.max(450, processedData.length * 45) + 'px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         layout="vertical"
                         data={processedData}
-                        margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
-                        barSize={18}
+                        margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+                        barSize={20}
                         onClick={handleChartClick}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -325,8 +334,8 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                         <YAxis
                             type="category"
                             dataKey="name"
-                            width={isMobile ? 120 : 180}
-                            tick={{ fontSize: isMobile ? 9 : 11, fill: '#374151', width: isMobile ? 110 : 170 }}
+                            width={isMobile ? 120 : 200}
+                            tick={{ fontSize: isMobile ? 9 : 11, fill: '#374151', width: isMobile ? 110 : 190 }}
                             interval={0}
                             tickFormatter={formatYAxis}
                         />
@@ -334,57 +343,44 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                         <Legend
                             verticalAlign="top"
                             align="left"
+                            layout="horizontal"
                             wrapperStyle={{
-                                fontSize: '12px',
-                                paddingBottom: '20px',
-                                paddingLeft: isMobile ? '135px' : '195px'
+                                fontSize: '11px',
+                                paddingBottom: '30px',
+                                paddingLeft: isMobile ? '135px' : '215px',
+                                width: 'auto'
                             }}
                         />
 
                         {/* Invisible Start */}
                         <Bar dataKey="start" stackId="a" fill="transparent" legendType="none" xAxisId="bottom" />
 
-                        {/* 1. Bases (Blue) */}
-                        <Bar dataKey="d1_safe" stackId="a" name="Bases" fill={COLORS.bases} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d1-${index}`} fill={d.d1_safe > 0 ? COLORS.bases : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
-
-                        {/* 2. Actos (Emerald) */}
-                        <Bar dataKey="d2_safe" stackId="a" name="Lanzamiento" fill={COLORS.actos} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d2-${index}`} fill={d.d2_safe > 0 ? COLORS.actos : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
-
-                        {/* 3. Consejo (Amber) */}
-                        <Bar dataKey="d3_safe" stackId="a" name="Aprobado" fill={COLORS.consejo} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d3-${index}`} fill={d.d3_safe > 0 ? COLORS.consejo : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
-
-                        {/* 4. Firma (Violet) */}
-                        <Bar dataKey="d4_safe" stackId="a" name="Firma" fill={COLORS.firma} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d4-${index}`} fill={d.d4_safe > 0 ? COLORS.firma : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
-
-                        {/* 5. En Ejecución (Indigo) */}
-                        <Bar dataKey="d5_safe" stackId="a" name="Ejecución" fill={COLORS.ejecucion} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d5-${index}`} fill={d.d5_safe > 0 ? COLORS.ejecucion : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
-
-                        {/* 6. Ejecutado (Rose) */}
-                        <Bar dataKey="d6_safe" stackId="a" name="Ejecutado" fill={COLORS.ejecutado} minPointSize={0} xAxisId="bottom">
-                            {processedData.map((d: any, index: number) => (
-                                <Cell key={`cell-d6-${index}`} fill={d.d6_safe > 0 ? COLORS.ejecutado : 'transparent'} stroke="none" />
-                            ))}
-                        </Bar>
+                        {/* Generación Dinámica de Barras */}
+                        {activeStages.map((s: any, idx: number) => {
+                            const stageId = Number(s.value);
+                            const color = STAGE_PALETTE[stageId - 1] || STAGE_PALETTE[idx % STAGE_PALETTE.length];
+                            const dataKey = `d${stageId}_safe`;
+                            
+                            return (
+                                <Bar 
+                                    key={stageId}
+                                    dataKey={dataKey} 
+                                    stackId="a" 
+                                    name={s.label} 
+                                    fill={color} 
+                                    minPointSize={0} 
+                                    xAxisId="bottom"
+                                >
+                                    {processedData.map((d: any, index: number) => (
+                                        <Cell 
+                                            key={`cell-${stageId}-${index}`} 
+                                            fill={d[dataKey] > 0 ? color : 'transparent'} 
+                                            stroke="none" 
+                                        />
+                                    ))}
+                                </Bar>
+                            );
+                        })}
 
                         {/* Reference Line for Today */}
                         <ReferenceLine
