@@ -486,8 +486,9 @@ export async function getEtapas() {
 
     const { data, error } = await supabase
       .from('etapas')
-      .select('descripcion')
-      .not('descripcion', 'ilike', 'no habilitada');
+      .select('id, descripcion')
+      .not('descripcion', 'ilike', 'no habilitada')
+      .order('id', { ascending: true });
 
     if (error) {
       console.error("Error fetching stages:", error);
@@ -495,7 +496,16 @@ export async function getEtapas() {
     }
 
     if (!data) return [];
-    return Array.from(new Set(data.map((d: any) => d.descripcion))).filter(Boolean).sort();
+    // Mantener el orden del .order('id') eliminando duplicados si los hubiera
+    const uniqueDescriptions: string[] = [];
+    const seen = new Set();
+    data.forEach((d: any) => {
+      if (d.descripcion && !seen.has(d.descripcion)) {
+        seen.add(d.descripcion);
+        uniqueDescriptions.push(d.descripcion);
+      }
+    });
+    return uniqueDescriptions;
   } catch (err) {
     console.error("FATAL ERROR getEtapas:", err);
     return [];
