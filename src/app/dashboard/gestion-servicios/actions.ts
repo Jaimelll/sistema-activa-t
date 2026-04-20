@@ -242,3 +242,31 @@ export async function getGrupos() {
     label: `${item.orden} - ${item.descripcion}` 
   }));
 }
+
+export async function getServicioCompletoById(id: number) {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from('becas_nueva')
+    .select(`
+      *,
+      eje:eje_id(descripcion),
+      linea:linea_id(descripcion),
+      etapa:etapa_id(descripcion),
+      modalidad:modalidad_id(descripcion),
+      institucion:institucion_id(descripcion),
+      condicion:condicion_id(descripcion),
+      grupo:grupo_id(descripcion),
+      avances:avance_beca(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching servicio ${id}:`, error);
+    return null;
+  }
+
+  return data;
+}
+

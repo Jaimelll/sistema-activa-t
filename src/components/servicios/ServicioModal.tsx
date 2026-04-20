@@ -22,9 +22,10 @@ interface ServicioModalProps {
         condiciones: any[];
         grupos: any[];
     };
+    isReadOnly?: boolean;
 }
 
-export default function ServicioModal({ isOpen, onClose, onSave, servicio, options }: ServicioModalProps) {
+export default function ServicioModal({ isOpen, onClose, onSave, servicio, options, isReadOnly = false }: ServicioModalProps) {
     const [formData, setFormData] = useState<any>({
         nombre: "",
         documento: "",
@@ -191,7 +192,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                             <Save className="w-5 h-5" />
                         </div>
                         <h3 className="text-xl font-bold text-gray-900">
-                            {servicio ? 'Editar Gestión de Servicio' : 'Añadir Nuevo Servicio'}
+                            {isReadOnly ? 'Detalles del Servicio' : (servicio ? 'Editar Gestión de Servicio' : 'Añadir Nuevo Servicio')}
                         </h3>
                     </div>
                     <button 
@@ -236,6 +237,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Nombre completo de la beca o servicio"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -248,6 +250,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Ej: FE-2024-001"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -259,6 +262,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.periodo}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -269,6 +273,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.institucion_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Institución</option>
                                         {options.instituciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -282,6 +287,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.eje_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Eje</option>
                                         {options.ejes.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -295,6 +301,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.linea_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Línea</option>
                                         {options.lineas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -308,6 +315,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.modalidad_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Modalidad</option>
                                         {options.modalidades.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -321,6 +329,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.condicion_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Condición</option>
                                         {options.condiciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -334,6 +343,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.grupo_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Grupo</option>
                                         {options.grupos.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -347,6 +357,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.etapa_id || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Etapa</option>
                                         {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -362,6 +373,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.presupuesto}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
 
@@ -374,7 +386,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.avance}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
-                                        disabled={servicio} 
+                                        disabled={isReadOnly || !!servicio} 
                                     />
                                     {servicio && <p className="text-[9px] text-blue-500 font-bold px-1 uppercase mt-1">Se actualiza vía Gestión de Avances</p>}
                                 </div>
@@ -387,6 +399,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         value={formData.beneficiarios}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        disabled={isReadOnly}
                                     />
                                 </div>
                             </div>
@@ -394,58 +407,60 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                     ) : (
                         <div className="space-y-6">
                             {/* Registro de Nuevo Avance */}
-                            <div className="space-y-3">
-                                <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                                    <History className="w-4 h-4 text-blue-600" />
-                                    Registrar Nuevo Avance / Cambio de Etapa
-                                </h4>
-                                
-                                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
-                                            <select
-                                                value={newAvance.etapa_id}
-                                                onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                            >
-                                                <option value="">Seleccione Etapa</option>
-                                                {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                            </select>
+                            {!isReadOnly && (
+                                <div className="space-y-3">
+                                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                        <History className="w-4 h-4 text-blue-600" />
+                                        Registrar Nuevo Avance / Cambio de Etapa
+                                    </h4>
+                                    
+                                    <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
+                                                <select
+                                                    value={newAvance.etapa_id}
+                                                    onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                >
+                                                    <option value="">Seleccione Etapa</option>
+                                                    {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                                <input
+                                                    type="date"
+                                                    value={newAvance.fecha}
+                                                    onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                />
+                                            </div>
+                                            <div className="space-y-1 md:col-span-2">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
+                                                <input
+                                                    value={newAvance.sustento}
+                                                    onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                                    placeholder="Ej: Informe mensual aprobado"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
-                                            <input
-                                                type="date"
-                                                value={newAvance.fecha}
-                                                onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-1 md:col-span-2">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
-                                            <input
-                                                value={newAvance.sustento}
-                                                onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                                placeholder="Ej: Informe mensual aprobado"
-                                            />
-                                        </div>
+                                        <button
+                                            onClick={handleAddAvance}
+                                            disabled={isSubmitting}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                        >
+                                            {isSubmitting ? 'Procesando...' : (
+                                                <>
+                                                    <Plus className="w-4 h-4" />
+                                                    Registrar Avance
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={handleAddAvance}
-                                        disabled={isSubmitting}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
-                                    >
-                                        {isSubmitting ? 'Procesando...' : (
-                                            <>
-                                                <Plus className="w-4 h-4" />
-                                                Registrar Avance
-                                            </>
-                                        )}
-                                    </button>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Historial */}
                             <div className="space-y-3">
@@ -465,22 +480,24 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                     <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
                                                     <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
                                                 </div>
-                                                <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
-                                                       <button 
-                                                           onClick={(e) => { e.preventDefault(); setEditingAvance(av); }}
-                                                           className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                           title="Editar Avance"
-                                                       >
-                                                           <Edit2 className="w-3.5 h-3.5" />
-                                                       </button>
-                                                       <button 
-                                                           onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
-                                                           className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                           title="Eliminar Avance"
-                                                       >
-                                                           <Trash2 className="w-3.5 h-3.5" />
-                                                       </button>
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
+                                                        <button 
+                                                            onClick={(e) => { e.preventDefault(); setEditingAvance(av); }}
+                                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Editar Avance"
+                                                        >
+                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.preventDefault(); handleDeleteAvance(av.id); }}
+                                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Eliminar Avance"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     ) : (
@@ -553,21 +570,23 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                             onClick={onClose}
                             className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 rounded-xl transition-colors"
                         >
-                            Cancelar
+                            {isReadOnly ? 'Cerrar' : 'Cancelar'}
                         </button>
-                        <button
-                            type="submit"
-                            form="servicio-form"
-                            disabled={isSubmitting}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20"
-                        >
-                            {isSubmitting ? 'Guardando...' : (
-                                <>
-                                    <Save className="w-4 h-4" />
-                                    Guardar {servicio ? 'Cambios' : 'Servicio'}
-                                </>
-                            )}
-                        </button>
+                        {!isReadOnly && (
+                            <button
+                                type="submit"
+                                form="servicio-form"
+                                disabled={isSubmitting}
+                                className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20"
+                            >
+                                {isSubmitting ? 'Guardando...' : (
+                                    <>
+                                        <Save className="w-4 h-4" />
+                                        Guardar {servicio ? 'Cambios' : 'Servicio'}
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

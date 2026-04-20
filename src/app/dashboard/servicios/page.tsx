@@ -16,6 +16,9 @@ export default function ServiciosPage() {
         ejes: [] as any[],
         lineas: [] as any[],
         condiciones: [] as any[],
+        modalidades: [] as any[],
+        instituciones: [] as any[],
+        grupos: [] as any[],
         search: '',
         enProceso: false
     });
@@ -31,25 +34,35 @@ export default function ServiciosPage() {
         async function loadInitialData() {
             setLoading(true);
 
-            // Fetch all catalog options for filters
             const [
                 { data: etapas },
                 { data: ejes },
                 { data: lineas },
-                { data: condiciones }
+                { data: condiciones },
+                { data: modalidades },
+                { data: instituciones },
+                { data: grupos }
             ] = await Promise.all([
-                supabase.from('etapas').select('id, descripcion'),
-                supabase.from('ejes').select('id, descripcion'),
-                supabase.from('lineas').select('id, descripcion'),
-                supabase.from('condicion').select('id, descripcion')
+                supabase.from('etapas').select('id, descripcion').order('id'),
+                supabase.from('ejes').select('id, descripcion').order('id'),
+                supabase.from('lineas').select('id, descripcion').order('id'),
+                supabase.from('condicion').select('id, descripcion').order('id'),
+                supabase.from('modalidades').select('id, descripcion').order('id'),
+                supabase.from('institucion').select('id, descripcion').order('id'),
+                supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden')
             ]);
+
+            const mapToOptions = (arr: any[] | null) => (arr || []).map(item => ({ value: item.id, label: item.descripcion }));
 
             setFilters(prev => ({
                 ...prev,
-                etapas: etapas || [],
-                ejes: ejes || [],
-                lineas: lineas || [],
-                condiciones: condiciones || []
+                etapas: mapToOptions(etapas),
+                ejes: mapToOptions(ejes),
+                lineas: mapToOptions(lineas),
+                condiciones: mapToOptions(condiciones),
+                modalidades: mapToOptions(modalidades),
+                instituciones: mapToOptions(instituciones),
+                grupos: (grupos || []).map(g => ({ value: g.id, label: `${g.orden} - ${g.descripcion}` }))
             }));
 
             // Set all active by default
@@ -187,6 +200,15 @@ export default function ServiciosPage() {
                         const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
                         return matchEtapa && matchEje && matchLinea && matchCondicion;
                     })}
+                    options={{
+                        etapas: filters.etapas,
+                        ejes: filters.ejes,
+                        lineas: filters.lineas,
+                        condiciones: filters.condiciones,
+                        modalidades: filters.modalidades,
+                        instituciones: filters.instituciones,
+                        grupos: filters.grupos
+                    }}
                 />
             </div>
 

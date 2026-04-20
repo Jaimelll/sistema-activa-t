@@ -7,9 +7,12 @@ import {
 } from 'recharts';
 
 import { ServiciosTable as DetalleBecasTable } from './ServiciosTable';
+import { getServicioCompletoById } from '@/app/dashboard/gestion-servicios/actions';
+import ServicioModal from './ServicioModal';
 
 interface ServiciosTimelineProps {
     data: any[];
+    options: any;
 }
 
 const STAGES = [
@@ -26,7 +29,38 @@ const STAGE_BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s]));
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const MARGIN_DAYS = 30;
 
-export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
+export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
+    const [selectedGroup, setSelectedGroup] = useState<any>(null);
+    
+    // Modal states
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedServicio, setSelectedServicio] = useState<any>(null);
+    const [loadingId, setLoadingId] = useState<number | null>(null);
+
+    const handleViewDetails = async (id: number) => {
+        try {
+            setLoadingId(id);
+            const detail = await getServicioCompletoById(id);
+            if (detail) {
+                setSelectedServicio(detail);
+                setIsModalOpen(true);
+            } else {
+                alert("No se pudo cargar la información del servicio.");
+            }
+        } catch (error) {
+            console.error("Error loading service detail:", error);
+            alert("Error al cargar los detalles.");
+        } finally {
+            setLoadingId(null);
+        }
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        // Clear state after animation ideally, but this is safe
+        setTimeout(() => setSelectedServicio(null), 200);
+    };
+
     const [selectedGroupIds, setSelectedGroupIds] = useState<number[] | null>(null);
 
     // Fuerza un re‑render después del montaje para que el gráfico se dibuje correctamente
@@ -252,24 +286,6 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
         return data.filter((beca: any) => selectedGroupIds.includes(beca.id));
     }, [selectedGroupIds, data]);
 
-    const selectedGroupData = useMemo(() => {
-        if (!selectedGroupIds || selectedGroupIds.length === 0) return null;
-        const group = chartData.find((g: any) =>
-            JSON.stringify(g.ids) === JSON.stringify(selectedGroupIds)
-        );
-        if (group) {
-            return {
-                startDate: group.firstStart,
-                endDate: group.lastEnd,
-                name: group.name,
-            };
-        }
-        return null;
-    }, [selectedGroupIds, chartData]);
-
-    const selectedGroupStartDate = selectedGroupData?.startDate;
-    const selectedGroupEndDate = selectedGroupData?.endDate;
-
     // ── TOOLTIP ─────────────────────────────────────────────────────────────
     const CustomTooltip = ({ active, payload }: any) => {
         if (!active || !payload?.length) return null;
@@ -426,6 +442,11 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                                                         ? null
                                                         : clickedIds
                                                 );
+                                                setSelectedGroup({
+                                                    items: filteredData,
+                                                    start: eventData.payload.firstStart,
+                                                    end: eventData.payload.lastEnd
+                                                });
                                             }
                                         }}
                                     >
@@ -465,19 +486,23 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                 </div>
             </div>
 
-            {selectedGroupIds && selectedGroupIds.length > 0 && (
+            {selectedGroupIds && selectedGroupIds.length > 0 && selectedGroup && (
                 <div className="mt-8 pt-6 border-t border-gray-100 animate-in fade-in zoom-in-95 duration-500">
                     <div className="mb-4">
                         <h4 className="text-lg font-bold text-gray-800 uppercase tracking-wide">
                             Becas Vinculadas al Grupo
                         </h4>
                     </div>
-                    <DetalleBecasTable
-                        data={filteredData}
-                        loading={false}
-                        groupStartDate={selectedGroupStartDate}
-                        groupEndDate={selectedGroupEndDate}
-                    />
+                    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                        <DetalleBecasTable 
+                            data={filteredData} 
+                            loading={false} 
+                            groupStartDate={selectedGroup.start}
+                            groupEndDate={selectedGroup.end}
+                            onViewDetails={handleViewDetails}
+                            loadingId={loadingId}
+                        />
+                    </div>
                 </div>
             )}
 
@@ -496,6 +521,16 @@ export function ServiciosTimeline({ data }: ServiciosTimelineProps) {
                     </span>
                 </div>
             </div>
+
+            {/* Servicio Detail Modal */}
+            <ServicioModal 
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSave={async () => {}} // Read-only
+                servicio={selectedServicio}
+                options={options}
+                isReadOnly={true}
+            />
         </div>
     );
 }
