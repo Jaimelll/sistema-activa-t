@@ -298,22 +298,26 @@ export default function InfGerencialView({
             .map(e => e[0]);
     }, [baseData]);
 
-    const stackedData = useMemo(() => {
-        return [...last5Years].reverse().map(year => {
-            const row: any = { year: year.toString() };
-            top10Companies.forEach(company => {
-                const entry = baseData.find(d => d.anio === year && d.razon_social === company);
-                row[company] = entry ? entry.monto : 0;
-            });
-            return row;
+    const top10CompaniesPerYear = useMemo(() => {
+        const result: Record<number, { name: string, monto: number }[]> = {};
+        last5Years.forEach(year => {
+            const yearData = baseData.filter(d => d.anio === year);
+            const totals = new Map<string, number>();
+            yearData.forEach(d => totals.set(d.razon_social, (totals.get(d.razon_social) || 0) + d.monto));
+            result[year] = Array.from(totals.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(e => ({ name: e[0], monto: e[1] }));
         });
-    }, [baseData, last5Years, top10Companies]);
+        return result;
+    }, [baseData, last5Years]);
 
-    const companyColorMap = useMemo(() => {
-        const map = new Map<string, string>();
-        top10Companies.forEach((company, i) => map.set(company, VIBRANT_PALETTE[i % VIBRANT_PALETTE.length]));
-        return map;
-    }, [top10Companies]);
+    const annualTotalData = useMemo(() => {
+        return [...last5Years].reverse().map(year => ({
+            year: year.toString(),
+            total: annualTotals[year] || 0
+        }));
+    }, [last5Years, annualTotals]);
 
     const lineData = useMemo(() => {
         const sectorFiltered = initialData.filter(d => selectedSector === 'all' || d.seccion_desc === selectedSector);
@@ -460,7 +464,6 @@ export default function InfGerencialView({
 
             {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Stacked Bar Chart */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <div className="mb-8 text-center">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2021 – 2026</h3>
@@ -468,15 +471,9 @@ export default function InfGerencialView({
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height={320}>
                             <BarChart
-                                data={highlightedEmpresa
-                                    ? [...last5Years].reverse().map(year => {
-                                        const entry = baseData.find(d => d.anio === year && d.razon_social === highlightedEmpresa);
-                                        return { year: year.toString(), [highlightedEmpresa]: entry ? entry.monto : 0 };
-                                    })
-                                    : stackedData
-                                }
+                                data={annualTotalData}
                                 layout="vertical"
-                                margin={{ top: 5, right: 20, left: 10, bottom: 10 }}
+                                margin={{ top: 5, right: 30, left: 10, bottom: 10 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                 <XAxis type="number" hide />
@@ -484,19 +481,41 @@ export default function InfGerencialView({
                                 <Tooltip 
                                     content={({ active, payload, label }) => {
                                         if (active && payload && payload.length) {
-                                            const yearTotal = annualTotals[Number(label)] || 0;
+                                            const year = Number(label);
+                                            const yearTotal = annualTotals[year] || 0;
+                                            const top10 = top10CompaniesPerYear[year] || [];
+                                            
+                                            // Si hay búsqueda activa, resaltar esa empresa si está en el top 10
                                             return (
-                                                <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-50 min-w-[300px]">
-                                                    <p className="text-lg font-bold text-slate-900 mb-2 border-b pb-2">
-                                                        Total Aportes {label}: {formatCurrency(yearTotal)}
-                                                    </p>
-                                                    <div className="space-y-2">
-                                                        {payload.map((entry: any, index: number) => (
-                                                            <div key={index} className="flex justify-between items-center gap-4">
-                                                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{entry.name}</span>
-                                                                <span className="text-sm font-bold text-slate-700">{formatCurrency(entry.value)}</span>
+                                                <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-50 min-w-[320px] animate-in fade-in zoom-in duration-200">
+                                                    <div className="mb-4 border-b pb-3">
+                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Resumen del Año</p>
+                                                        <p className="text-lg font-black text-slate-900">
+                                                            Total Aportes {label}:
+                                                        </p>
+                                                        <p className="text-xl font-black text-blue-700">
+                                                            {formatCurrency(yearTotal)}
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2.5">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Top 10 Aportantes</p>
+                                                        {top10.map((item: any, index: number) => (
+                                                            <div key={index} className={`flex justify-between items-center gap-4 p-1.5 rounded-lg transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
+                                                                <div className="flex items-center gap-2 max-w-[200px]">
+                                                                    <span className="text-[10px] font-bold text-slate-400 w-4">{index + 1}.</span>
+                                                                    <span className={`text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-500'}`}>
+                                                                        {item.name}
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`text-xs font-bold tabular-nums ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-700'}`}>
+                                                                    {formatCurrency(item.monto)}
+                                                                </span>
                                                             </div>
                                                         ))}
+                                                        {top10.length === 0 && (
+                                                            <p className="text-[10px] font-bold text-slate-400 italic">No hay datos para este año</p>
+                                                        )}
                                                     </div>
                                                 </div>
                                             );
@@ -504,12 +523,13 @@ export default function InfGerencialView({
                                         return null;
                                     }}
                                 />
-                                {highlightedEmpresa
-                                    ? <Bar key={highlightedEmpresa} dataKey={highlightedEmpresa as string} stackId="a" fill={companyColorMap.get(highlightedEmpresa) || '#2563eb'} barSize={24} radius={[0, 4, 4, 0]} />
-                                    : top10Companies.map((company, index) => (
-                                        <Bar key={company} dataKey={company} stackId="a" fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} barSize={24} />
-                                    ))
-                                }
+                                <Bar 
+                                    dataKey="total" 
+                                    fill="#2563eb" 
+                                    barSize={24} 
+                                    radius={[0, 6, 6, 0]}
+                                    animationDuration={1000}
+                                />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -530,12 +550,8 @@ export default function InfGerencialView({
                                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 600, fontSize: isMobile ? 9 : 10 }} width={isMobile ? 110 : 150} tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val} />
-                                <Tooltip formatter={(value: number) => fmt(value)} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '16px' }} />
-                                <Bar dataKey="value" name="Monto" radius={[0, 4, 4, 0]} barSize={20}>
-                                    {pieData.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={VIBRANT_PALETTE[index % VIBRANT_PALETTE.length]} />
-                                    ))}
-                                </Bar>
+                                <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} />
+                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} animationDuration={1000} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
