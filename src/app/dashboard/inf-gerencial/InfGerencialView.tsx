@@ -8,6 +8,7 @@ import {
 import { Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { getPresupuestoMensual, getPresupuestoComparativo } from './actions';
+import { PresentationButton } from '@/components/PresentationButton';
 
 interface AporteFlat {
     id: string;
@@ -410,8 +411,11 @@ export default function InfGerencialView({
 
             {/* Evolución de Aportes vs PBI Line Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                <div className="mb-6 text-center">
+                <div className="mb-6 text-center relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes vs PBI 1998-2026</h3>
+                    <div className="absolute top-0 right-0">
+                        <PresentationButton chartId="evolucion-aportes" />
+                    </div>
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-6">
                     <div className="flex items-center gap-2">
@@ -465,8 +469,11 @@ export default function InfGerencialView({
             {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8 text-center">
+                    <div className="mb-8 text-center relative">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2021 – 2026</h3>
+                        <div className="absolute top-0 right-0">
+                            <PresentationButton chartId="distribucion-aportes" />
+                        </div>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height={320}>
@@ -537,8 +544,11 @@ export default function InfGerencialView({
 
                 {/* Sector Bar Chart */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8 text-center">
+                    <div className="mb-8 text-center relative">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector 2021-2026</h3>
+                        <div className="absolute top-0 right-0">
+                            <PresentationButton chartId="distribucion-sector" />
+                        </div>
                     </div>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height={320}>
@@ -560,8 +570,11 @@ export default function InfGerencialView({
 
             {/* Financial Evolution Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-6 text-center">
+                <div className="mb-6 text-center relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera 2021-2026</h3>
+                    <div className="absolute top-0 right-0">
+                        <PresentationButton chartId="evolucion-financiera" />
+                    </div>
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
                     {activeRubros.map(rubro => (
@@ -605,8 +618,11 @@ export default function InfGerencialView({
 
             {/* Ingresos vs Egresos */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
-                <div className="mb-6">
+                <div className="mb-6 relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">Ingresos vs Egresos 2021-2026</h3>
+                    <div className="absolute top-0 right-0">
+                        <PresentationButton chartId="ingresos-egresos" />
+                    </div>
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
                     <div className="flex items-center gap-2">
@@ -634,9 +650,12 @@ export default function InfGerencialView({
 
             {/* Comparative Budget Chart (Moved to bottom) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
-                <div className="mb-8">
+                <div className="mb-8 relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">POI 2024-2026</h3>
                     <p className="text-sm font-medium text-slate-400">(Presupuesto vs Ejecutado)</p>
+                    <div className="absolute top-0 right-0">
+                        <PresentationButton chartId="poi-comparativo" />
+                    </div>
                 </div>
                 <div className="h-[350px] w-full flex flex-col items-center justify-center">
                     {isLoadingBudget ? (
@@ -662,8 +681,11 @@ export default function InfGerencialView({
 
             {/* Monthly Budget Chart (Moved to bottom) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-6 text-center">
+                <div className="mb-6 text-center relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Presupuesto Mensual Proyectado 2026</h3>
+                    <div className="absolute top-0 right-0">
+                        <PresentationButton chartId="presupuesto-mensual" />
+                    </div>
                 </div>
                 <div className="h-[350px] w-full flex flex-col items-center justify-center">
                     {isLoadingBudget ? (
