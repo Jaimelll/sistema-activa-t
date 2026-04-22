@@ -60,6 +60,13 @@ export async function middleware(request: NextRequest) {
     if (user && user.email) {
         const email = getNormalizedEmail(user.email);
         const { pathname } = request.nextUrl;
+
+        // La ruta /presentation es pública para todos los usuarios autenticados
+        // Se usa para el Web Viewer de PowerPoint — nunca se bloquea por permisos de módulo
+        if (pathname.startsWith('/presentation')) {
+            return response;
+        }
+
         const permisos = PERMISOS_POR_USUARIO[email];
 
         if (permisos) {
