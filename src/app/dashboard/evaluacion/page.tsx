@@ -6,6 +6,7 @@ import {
     AlertTriangle, Upload, ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
 import {
     getProyectosConEvaluacion,
     triggerEvaluacion,
@@ -70,6 +71,8 @@ interface PhaseCellProps {
     onUploadResult?: (file: File) => void;
     accentColor: 'indigo' | 'amber' | 'teal';
     resultLabel?: string;            // override "VER RES. [FASE]" label
+    /** Solo el admin puede ver y usar el botón EVALUAR */
+    isAdmin: boolean;
 }
 
 const ACCENT_MAP = {
@@ -108,6 +111,7 @@ function PhaseCell({
     onUploadResult,
     accentColor,
     resultLabel,
+    isAdmin,
 }: PhaseCellProps) {
     const c = ACCENT_MAP[accentColor];
 
@@ -175,25 +179,27 @@ function PhaseCell({
                 )}
             </div>
 
-            {/* — Botón EVALUAR (siempre visible cuando hay archivo de entrada) — */}
-            <button
-                onClick={onEvaluar}
-                disabled={isGenerating || dbProcessing}
-                className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${c.evalBg}`}
-                title={`Evaluar ${phaseLabel}`}
-            >
-                {isGenerating ? (
-                    <>
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        Procesando...
-                    </>
-                ) : (
-                    <>
-                        <Play className="w-3 h-3" />
-                        EVALUAR {phaseLabel}
-                    </>
-                )}
-            </button>
+            {/* — Botón EVALUAR (solo visible para el administrador) — */}
+            {isAdmin && (
+                <button
+                    onClick={onEvaluar}
+                    disabled={isGenerating || dbProcessing}
+                    className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${c.evalBg}`}
+                    title={`Evaluar ${phaseLabel}`}
+                >
+                    {isGenerating ? (
+                        <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Procesando...
+                        </>
+                    ) : (
+                        <>
+                            <Play className="w-3 h-3" />
+                            EVALUAR {phaseLabel}
+                        </>
+                    )}
+                </button>
+            )}
 
             {/* — Badge "Procesando…" desde BD (webhook corriendo en segundo plano) — */}
             {dbProcessing && !isGenerating && (
@@ -242,6 +248,18 @@ export default function EvaluacionPage() {
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
+    const [userEmail, setUserEmail] = useState<string | null>(null);
+
+    // Obtener el email del usuario activo al montar el componente
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUserEmail(user?.email ?? null);
+        });
+    }, []);
+
+    // Solo jduran@fondoempleo.com.pe puede ver y usar los botones EVALUAR
+    const isAdmin = userEmail === 'jduran@fondoempleo.com.pe';
     const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
     // Per-row loading sets (allow parallel execution across rows)
@@ -632,6 +650,7 @@ export default function EvaluacionPage() {
                                                 onUploadResult={f => handleUploadResultEval(p.id, f)}
                                                 accentColor="indigo"
                                                 resultLabel="VER RES. EVAL."
+                                                isAdmin={isAdmin}
                                             />
                                         </td>
 
@@ -648,6 +667,7 @@ export default function EvaluacionPage() {
                                                 onUploadResult={f => handleUploadResultSub(p.id, f)}
                                                 accentColor="amber"
                                                 resultLabel="VER RES. SUB."
+                                                isAdmin={isAdmin}
                                             />
                                         </td>
 
@@ -665,6 +685,7 @@ export default function EvaluacionPage() {
                                                 onUploadResult={f => handleUploadResultSuperv(p.id, f)}
                                                 accentColor="teal"
                                                 resultLabel="VER INF. SUPERV."
+                                                isAdmin={isAdmin}
                                             />
                                         </td>
                                     </tr>
