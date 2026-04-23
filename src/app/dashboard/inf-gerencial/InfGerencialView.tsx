@@ -626,11 +626,11 @@ export default function InfGerencialView({
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
                     <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#dc2626' }} />
                         <span className="text-sm font-bold text-slate-600">Ingresos (Aportes + Intereses)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#f97316' }} />
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#2563eb' }} />
                         <span className="text-sm font-bold text-slate-600">Egresos (G. Operativos + Proyectos + Becas)</span>
                     </div>
                 </div>
@@ -641,8 +641,9 @@ export default function InfGerencialView({
                             <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
                             <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
-                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#10b981" radius={[4, 4, 0, 0]} barSize={24} />
-                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#f97316" radius={[4, 4, 0, 0]} barSize={24} />
+                            <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
+                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={24} />
+                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -671,7 +672,6 @@ export default function InfGerencialView({
                                 <Tooltip shared={false} content={<CustomComparativeTooltip />} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
                                 <Bar dataKey="poi" name="Presupuesto" fill="#dc2626" radius={[4, 4, 0, 0]} />
-
                                 <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
