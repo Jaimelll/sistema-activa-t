@@ -303,10 +303,13 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
             linea_id,
             evaluacion_config_id,
             url_archivo_proyecto,
+            monto_fondoempleo,
+            region_id,
             etapas (id, descripcion),
             ejes (descripcion),
             lineas (descripcion),
-            instituciones_ejecutoras (nombre)
+            instituciones_ejecutoras (nombre),
+            regiones (descripcion)
         `)
         .order("id", { ascending: true });
 
@@ -359,6 +362,8 @@ export async function getProyectosConEvaluacion(filters?: EvalFilters) {
             nombre: p.nombre || "Sin nombre",
             codigo: p.codigo_proyecto || "-",
             institucion: p.instituciones_ejecutoras?.nombre || "-",
+            region: p.regiones?.descripcion || "-",
+            presupuesto: p.monto_fondoempleo || 0,
             etapa: p.etapas?.descripcion || "-",
             eje: p.ejes?.descripcion || "-",
             linea: p.lineas?.descripcion || "-",

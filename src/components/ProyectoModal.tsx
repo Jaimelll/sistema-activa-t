@@ -296,15 +296,21 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2 space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Nombre del Proyecto</label>
-                                    <input
-                                        required
-                                        name="nombre"
-                                        value={formData.nombre}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                                        placeholder="Nombre completo del proyecto"
-                                        disabled={isReadOnly}
-                                    />
+                                    {isReadOnly ? (
+                                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 whitespace-normal break-words min-h-[42px]">
+                                            {formData.nombre || "-"}
+                                        </div>
+                                    ) : (
+                                        <textarea
+                                            required
+                                            name="nombre"
+                                            value={formData.nombre}
+                                            onChange={handleChange}
+                                            rows={3}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none text-sm"
+                                            placeholder="Nombre completo del proyecto"
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="space-y-1">
@@ -376,16 +382,21 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Institución Ejecutora</label>
-                                    <select
-                                        name="institucion_ejecutora_id"
-                                        value={formData.institucion_ejecutora_id || ""}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
-                                        disabled={isReadOnly}
-                                    >
-                                        <option value="">Seleccione Institución</option>
-                                        {options.instituciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                    </select>
+                                    {isReadOnly ? (
+                                        <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 whitespace-normal break-words min-h-[42px]">
+                                            {options.instituciones.find(o => String(o.value) === String(formData.institucion_ejecutora_id))?.label || "-"}
+                                        </div>
+                                    ) : (
+                                        <select
+                                            name="institucion_ejecutora_id"
+                                            value={formData.institucion_ejecutora_id || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                        >
+                                            <option value="">Seleccione Institución</option>
+                                            {options.instituciones.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="space-y-1">

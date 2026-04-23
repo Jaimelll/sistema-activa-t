@@ -33,6 +33,8 @@ type Proyecto = {
     nombre: string;
     codigo: string;
     institucion: string;
+    region: string;
+    presupuesto: number;
     evaluacion_config_id: string | null;
     url_archivo_proyecto: string | null;
     eval_pdf_url: string | null;               // url_pdf_final  → resultado Evaluación
@@ -118,7 +120,7 @@ function PhaseCell({
     // ── Estado 1: sin archivo de entrada ────────────────────────────────────
     if (!inputUrl) {
         return (
-            <div className="flex flex-col items-stretch gap-2 min-w-[160px]">
+            <div className="flex flex-col items-center gap-1 w-fit mx-auto">
                 {uploadingThisRow ? (
                     <span className="inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] text-indigo-600">
                         <Loader2 className="w-3 h-3 animate-spin" /> Subiendo...
@@ -147,7 +149,7 @@ function PhaseCell({
 
     // ── Estados 2 y 3: hay archivo de entrada ───────────────────────────────
     return (
-        <div className="flex flex-col items-stretch gap-2 min-w-[160px]">
+        <div className="flex flex-col items-center gap-1.5 w-fit mx-auto">
 
             {/* — Fila VER / CAMBIAR (archivo de entrada) — */}
             <div className="flex flex-row items-center gap-2">
@@ -155,7 +157,7 @@ function PhaseCell({
                     href={inputUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded ${c.viewBg} text-white transition-colors`}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded whitespace-nowrap ${c.viewBg} text-white transition-colors`}
                 >
                     <Eye className="w-3 h-3" />
                     VER
@@ -184,7 +186,7 @@ function PhaseCell({
                 <button
                     onClick={onEvaluar}
                     disabled={isGenerating || dbProcessing}
-                    className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${c.evalBg}`}
+                    className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded whitespace-nowrap text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${c.evalBg}`}
                     title={`Evaluar ${phaseLabel}`}
                 >
                     {isGenerating ? (
@@ -216,7 +218,7 @@ function PhaseCell({
                         href={resultUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded ${c.resBg} text-white transition-colors`}
+                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-bold uppercase rounded whitespace-nowrap ${c.resBg} text-white transition-colors`}
                     >
                         <ExternalLink className="w-3 h-3" />
                         {resultLabel ?? `VER RES. ${phaseLabel}`}
@@ -583,16 +585,18 @@ export default function EvaluacionPage() {
                         <table id="eval-table-v3" className="w-full text-xs" style={{ tableLayout: 'auto' }}>
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50/80">
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-10">ID</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-20">Código</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-52">Proyecto</th>
-                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-40">Institución</th>
-                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600 w-28">Vincular Eval.</th>
-                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600 w-10">Pts.</th>
-                                    {/* Three phase columns — same min width so stacked buttons are comfortable */}
-                                    <th className="text-center py-1.5 px-1 font-semibold text-indigo-700 bg-indigo-50/40 min-w-[155px]">Evaluación</th>
-                                    <th className="text-center py-1.5 px-1 font-semibold text-amber-700 bg-amber-50/40 min-w-[155px]">Subsanación</th>
-                                    <th className="text-center py-1.5 px-1 font-semibold text-teal-700 bg-teal-50/40 min-w-[155px]">Supervisión</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-8">ID</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-16">Código</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-auto">Proyecto</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-auto">Institución</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-28">Región</th>
+                                    <th className="text-left py-1.5 px-2 font-semibold text-gray-600 w-32">Presupuestado</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600 w-[150px]">Vincular Eval.</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-gray-600 w-8">Pts.</th>
+                                    {/* Three phase columns */}
+                                    <th className="text-center py-1.5 px-1 font-semibold text-indigo-700 bg-indigo-50/40 min-w-[180px]">Evaluación</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-amber-700 bg-amber-50/40 min-w-[180px]">Subsanación</th>
+                                    <th className="text-center py-1.5 px-1 font-semibold text-teal-700 bg-teal-50/40 min-w-[180px]">Supervisión</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -616,6 +620,14 @@ export default function EvaluacionPage() {
                                         <td className="py-1.5 px-2" title={p.institucion}>
                                             <div className="whitespace-normal line-clamp-2 text-gray-600 text-[11px]">{p.institucion}</div>
                                         </td>
+                                        
+                                        {/* Región */}
+                                        <td className="py-1.5 px-2 text-gray-600 truncate max-w-[100px]" title={p.region}>{p.region}</td>
+
+                                        {/* Presupuestado */}
+                                        <td className="py-1.5 px-2 text-gray-700 font-medium whitespace-nowrap">
+                                            {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(p.presupuesto)}
+                                        </td>
 
                                         {/* Vincular Eval. */}
                                         <td className="py-1.5 px-1 text-center">
@@ -638,7 +650,7 @@ export default function EvaluacionPage() {
                                         </td>
 
                                         {/* ── EVALUACIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-indigo-50/10 align-top min-w-[160px]">
+                                        <td className="py-1.5 px-1 bg-indigo-50/10 align-top">
                                             <PhaseCell
                                                 phaseLabel="EVAL."
                                                 inputUrl={p.url_archivo_proyecto}
@@ -655,7 +667,7 @@ export default function EvaluacionPage() {
                                         </td>
 
                                         {/* ── SUBSANACIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-amber-50/10 align-top min-w-[160px]">
+                                        <td className="py-1.5 px-1 bg-amber-50/10 align-top">
                                             <PhaseCell
                                                 phaseLabel="SUB."
                                                 inputUrl={p.url_subsanacion}
@@ -672,7 +684,7 @@ export default function EvaluacionPage() {
                                         </td>
 
                                         {/* ── SUPERVISIÓN ── */}
-                                        <td className="py-1.5 px-2 bg-teal-50/10 align-top min-w-[160px]">
+                                        <td className="py-1.5 px-1 bg-teal-50/10 align-top">
                                             <PhaseCell
                                                 phaseLabel="SUPERV."
                                                 inputUrl={p.url_supervision}
@@ -692,7 +704,7 @@ export default function EvaluacionPage() {
                                 ))}
                                 {proyectos.length === 0 && (
                                     <tr>
-                                        <td colSpan={9} className="py-12 text-center text-gray-400">
+                                        <td colSpan={11} className="py-12 text-center text-gray-400">
                                             No se encontraron proyectos con los filtros seleccionados.
                                         </td>
                                     </tr>
