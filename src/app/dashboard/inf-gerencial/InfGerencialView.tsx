@@ -197,7 +197,7 @@ export default function InfGerencialView({
 
     // --- Finanzas Processing ---
     const groupedFinanzas = useMemo(() => {
-        const years = [2021, 2022, 2023, 2024, 2025, 2026];
+        const years = [2024, 2025, 2026];
         const rows: any[] = [];
         
         years.forEach(year => {
@@ -225,7 +225,7 @@ export default function InfGerencialView({
 
     const historicalSaldos = useMemo(() => {
         return finanzasData
-            .filter(d => d.rubro === 'Saldos en Bancos')
+            .filter(d => d.rubro === 'Saldos en Bancos' && d.año >= 2024)
             .sort((a, b) => {
                 if (a.año !== b.año) return a.año - b.año;
                 return (a.escenario === 'Proyectado' ? 1 : -1);
@@ -233,7 +233,7 @@ export default function InfGerencialView({
     }, [finanzasData]);
 
     const ingresosEgresosData = useMemo(() => {
-        const years = [2021, 2022, 2023, 2024, 2025, 2026];
+        const years = [2024, 2025, 2026];
         const rows: any[] = [];
         
         years.forEach(year => {
@@ -571,7 +571,7 @@ export default function InfGerencialView({
             {/* Financial Evolution Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                 <div className="mb-6 text-center relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera 2021-2026</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera 2024-2026</h3>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-financiera" />
                     </div>
@@ -592,7 +592,7 @@ export default function InfGerencialView({
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={formatCompactCurrency} />
                             <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
                             {activeRubros.map((rubro) => (
-                                <Bar key={rubro} dataKey={rubro} fill={COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS]} radius={[4, 4, 0, 0]} barSize={20} />
+                                <Bar key={rubro} dataKey={rubro} fill={COLORS_FINANZAS[rubro as keyof typeof COLORS_FINANZAS]} radius={[4, 4, 0, 0]} maxBarSize={40} />
                             ))}
                         </BarChart>
                     </ResponsiveContainer>
@@ -604,7 +604,7 @@ export default function InfGerencialView({
                 <div className="mb-6 text-center">
                     <h3 className="text-xl font-black text-slate-900 tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
                 </div>
-                <div className="flex flex-nowrap gap-4 min-w-max pb-2">
+                <div className="flex flex-nowrap gap-4 min-w-full pb-2">
                     {historicalSaldos.map((item) => (
                         <div key={`${item.año}-${item.escenario}`} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
                             <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
@@ -619,7 +619,7 @@ export default function InfGerencialView({
             {/* Ingresos vs Egresos */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
                 <div className="mb-6 relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">Ingresos vs Egresos 2021-2026</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">Ingresos vs Egresos 2024-2026</h3>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="ingresos-egresos" />
                     </div>
@@ -641,8 +641,8 @@ export default function InfGerencialView({
                             <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 800, fontSize: 13 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} tickFormatter={formatCompactCurrency} />
                             <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
-                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={24} />
-                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={24} />
+                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#dc2626" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={60} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
