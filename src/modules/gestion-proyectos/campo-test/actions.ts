@@ -22,7 +22,7 @@ export async function getPlanesSupervisionPendientes() {
   const planesConProyecto = await Promise.all(planes.map(async (plan) => {
     const { data: proyecto, error: proyError } = await supabase
       .from('proyectos')
-      .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance') // ✅ Campos agregados
+      .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance, institucion_ejecutora_id')
       .eq('id', plan.id_proyecto)
       .single();
 
@@ -31,8 +31,28 @@ export async function getPlanesSupervisionPendientes() {
       return { ...plan, proyecto: null };
     }
     
-    // Devolvemos el plan con el objeto proyecto dentro
-    return { ...plan, proyecto };
+    // Consulta independiente para la institución
+    let nombre_institucion = `Institución: ${proyecto.institucion_ejecutora_id || 'N/A'}`;
+    if (proyecto.institucion_ejecutora_id) {
+      const { data: inst } = await supabase
+        .from('instituciones_ejecutoras')
+        .select('descripcion')
+        .eq('id', proyecto.institucion_ejecutora_id)
+        .single();
+      
+      if (inst?.descripcion) {
+        nombre_institucion = inst.descripcion;
+      }
+    }
+
+    // Devolvemos el plan con el objeto proyecto enriquecido
+    return { 
+      ...plan, 
+      proyecto: { 
+        ...proyecto, 
+        nombre_institucion 
+      } 
+    };
   }));
 
   return planesConProyecto;

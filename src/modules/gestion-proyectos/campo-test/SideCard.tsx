@@ -33,6 +33,9 @@ export default function SideCard({ proyecto, onStart }) {
         <h3 className="text-xl font-bold text-slate-800 leading-tight">
           {nombre}
         </h3>
+        <div className="text-slate-500 text-xs font-medium mt-1">
+          {datosProyecto.nombre_institucion}
+        </div>
       </div>
 
       <div className="grid gap-3 pt-2">
