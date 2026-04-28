@@ -4,12 +4,14 @@
 import { Calendar, DollarSign, Users } from 'lucide-react';
 
 export default function SideCard({ proyecto }) {
-  if (!proyecto) return <div className="text-red-500">No hay proyecto</div>;
+  if (!proyecto) return <div className="text-red-500 p-4">Cargando datos...</div>;
 
-  // El nombre puede estar en proyecto.proyecto.nombre o proyecto.nombre
-  const nombre = proyecto.proyecto?.nombre || proyecto.nombre || 'Nombre no disponible';
-  const monto = proyecto.proyecto?.monto_fon || proyecto.monto_fon;
-  const beneficiarios = proyecto.proyecto?.beneficiarios || proyecto.beneficiarios;
+  // Accedemos al sub-objeto 'proyecto' que creamos en el action
+  const datosProyecto = proyecto.proyecto || {};
+
+  const nombre = datosProyecto.nombre || 'Nombre no disponible';
+  const monto = datosProyecto.monto_fondoempleo; // ✅ Campo corregido
+  const beneficiarios = datosProyecto.beneficiarios;
 
   const fecha = proyecto.fecha_programada
     ? new Date(proyecto.fecha_programada).toLocaleDateString('es-ES')
@@ -17,33 +19,30 @@ export default function SideCard({ proyecto }) {
 
   const montoFormateado = monto
     ? new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(monto)
-    : 'No especificado';
-
-  const totalPreguntas = proyecto.checklist_preguntas
-    ? Object.keys(proyecto.checklist_preguntas).length
-    : 0;
+    : 'S/ 0.00';
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold text-gray-800">{nombre}</h3>
-      <div className="flex items-center gap-2 text-gray-600">
-        <Calendar size={18} />
-        <span>Fecha Programada: <strong>{fecha}</strong></span>
-      </div>
-      {monto && (
-        <div className="flex items-center gap-2 text-gray-600">
-          <DollarSign size={18} />
-          <span>Monto: <strong>{montoFormateado}</strong></span>
+      {/* Título del Proyecto - ¡Aquí aparecerá el nombre real! */}
+      <h3 className="text-xl font-bold text-slate-800 leading-tight border-b pb-2">
+        {nombre}
+      </h3>
+
+      <div className="grid gap-3 pt-2">
+        <div className="flex items-center gap-2 text-slate-600 text-sm">
+          <Calendar size={16} className="text-blue-500" />
+          <span>Programado: <strong>{fecha}</strong></span>
         </div>
-      )}
-      {beneficiarios && (
-        <div className="flex items-center gap-2 text-gray-600">
-          <Users size={18} />
-          <span>Beneficiarios: <strong>{beneficiarios}</strong></span>
+
+        <div className="flex items-center gap-2 text-slate-600 text-sm">
+          <DollarSign size={16} className="text-green-600" />
+          <span>Inversión: <strong>{montoFormateado}</strong></span>
         </div>
-      )}
-      <div>
-        <p>Preguntas: <strong>{totalPreguntas}</strong> items</p>
+
+        <div className="flex items-center gap-2 text-slate-600 text-sm">
+          <Users size={16} className="text-purple-600" />
+          <span>Beneficiarios: <strong>{beneficiarios || 0}</strong></span>
+        </div>
       </div>
     </div>
   );

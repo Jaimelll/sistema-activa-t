@@ -63,9 +63,9 @@ export default function VistaCampoView() {
                     }
                     proyecto.checklist_preguntas = preguntasArray;
 
-                    // Inicializar coordenadas
-                    const latOriginal = proyecto.proyecto?.latitud ?? -12.046374;
-                    const lngOriginal = proyecto.proyecto?.longitud ?? -77.042793;
+                    // Inicializar coordenadas (ahora sabemos que proyectos no tiene latitud/longitud)
+                    const latOriginal = -12.046374;
+                    const lngOriginal = -77.042793;
                     proyecto.latitud_modificada = latOriginal;
                     proyecto.longitud_modificada = lngOriginal;
 
@@ -89,8 +89,8 @@ export default function VistaCampoView() {
         if (!selectedProject) return;
         try {
             setSaving(true);
-            const lat = selectedProject.latitud_modificada ?? selectedProject.proyecto?.latitud ?? -12.046374;
-            const lng = selectedProject.longitud_modificada ?? selectedProject.proyecto?.longitud ?? -77.042793;
+            const lat = selectedProject.latitud_modificada ?? -12.046374;
+            const lng = selectedProject.longitud_modificada ?? -77.042793;
             await guardarSupervision({
                 id_plan: selectedProject.id,
                 id_proyecto: selectedProject.id_proyecto,

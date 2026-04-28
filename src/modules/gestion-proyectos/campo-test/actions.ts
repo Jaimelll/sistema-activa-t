@@ -6,11 +6,11 @@ import { revalidatePath } from 'next/cache';
 export async function getPlanesSupervisionPendientes() {
   const supabase = await createClient();
 
-  // 🔴 Consulta directa por id_proyecto = 294 (ignora supervisor, solo para pruebas)
+  // 1. Traemos los planes pendientes
   const { data: planes, error } = await supabase
     .from('plan_supervision')
     .select('*')
-    .eq('id_proyecto', 294)
+    .eq('id_proyecto', 294) // Tu ID de prueba
     .eq('estado', 'pendiente');
 
   if (error || !planes || planes.length === 0) {
@@ -18,11 +18,11 @@ export async function getPlanesSupervisionPendientes() {
     return [];
   }
 
-  // Obtener el proyecto manualmente para cada plan
+  // 2. Obtenemos el proyecto manualmente con los nombres de campos CORRECTOS
   const planesConProyecto = await Promise.all(planes.map(async (plan) => {
     const { data: proyecto, error: proyError } = await supabase
       .from('proyectos')
-      .select('id, nombre, monto_fon, beneficiarios, latitud, longitud')
+      .select('id, nombre, monto_fondoempleo, beneficiarios') // ✅ monto_fondoempleo corregido
       .eq('id', plan.id_proyecto)
       .single();
 
@@ -30,10 +30,11 @@ export async function getPlanesSupervisionPendientes() {
       console.error('Error al obtener proyecto:', proyError);
       return { ...plan, proyecto: null };
     }
+    
+    // Devolvemos el plan con el objeto proyecto dentro
     return { ...plan, proyecto };
   }));
 
-  console.log('Datos enviados al frontend:', JSON.stringify(planesConProyecto, null, 2));
   return planesConProyecto;
 }
 
