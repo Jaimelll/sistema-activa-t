@@ -29,20 +29,6 @@ export default function VistaCampoView() {
     };
 
     useEffect(() => {
-        const removeBadButtons = () => {
-            document.querySelectorAll('button').forEach(btn => {
-                if (btn.innerText.includes('INICIAR SUPERVISIÓN') && !btn.style.position?.includes('fixed')) {
-                    btn.remove();
-                }
-            });
-        };
-        removeBadButtons();
-        const observer = new MutationObserver(removeBadButtons);
-        observer.observe(document.body, { childList: true, subtree: true });
-        return () => observer.disconnect();
-    }, []);
-
-    useEffect(() => {
         async function load() {
             try {
                 setLoading(true);
@@ -122,24 +108,16 @@ export default function VistaCampoView() {
         <div style={containerStyle}>
             <div className="fixed top-2 right-2 bg-black text-white px-2 py-1 rounded text-xs z-50">Paso: {step}</div>
 
-            <button
-                onClick={() => goToStep('form')}
-                style={{
-                    position: 'fixed', top: 20, left: 300, zIndex: 9999,
-                    background: '#2563eb', color: 'white', padding: '10px 20px',
-                    borderRadius: '8px', fontWeight: 'bold', border: 'none', cursor: 'pointer'
-                }}
-            >
-                🔵 INICIAR SUPERVISIÓN
-            </button>
-
             <header className="sticky top-0 bg-white border-b p-4 mb-6">Control de Campo</header>
 
             {step === 'info' && (
                 <div className="max-w-2xl mx-auto">
                     <div className="bg-white p-6 rounded-2xl shadow">
                         <h2 className="text-2xl font-bold mb-4">Información General</h2>
-                        <SideCard proyecto={selectedProject} />
+                        <SideCard 
+                            proyecto={selectedProject} 
+                            onStart={() => goToStep('form')}
+                        />
                     </div>
                 </div>
             )}

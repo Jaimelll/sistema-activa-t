@@ -22,7 +22,7 @@ export async function getPlanesSupervisionPendientes() {
   const planesConProyecto = await Promise.all(planes.map(async (plan) => {
     const { data: proyecto, error: proyError } = await supabase
       .from('proyectos')
-      .select('id, nombre, monto_fondoempleo, beneficiarios') // ✅ monto_fondoempleo corregido
+      .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance') // ✅ Campos agregados
       .eq('id', plan.id_proyecto)
       .single();
 
