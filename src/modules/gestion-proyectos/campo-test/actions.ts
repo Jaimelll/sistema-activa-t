@@ -9,22 +9,26 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
 
   if (!user) return [];
 
+  // 1. Consultar el ID del monitor en la tabla 'monitores' usando el CORREO de Auth
+  // Esto resuelve el conflicto de UUIDs diferentes entre Auth y la tabla monitores.
+  const { data: monitorData } = await supabase
+    .from('monitores')
+    .select('id')
+    .eq('correo', user.email)
+    .single();
+
   let query = supabase
     .from('plan_supervision')
     .select('*')
     .eq('estado', 'pendiente');
 
-  // Si no se solicita omitir el filtro, verificamos si es monitor
-  if (!skipUserFilter) {
-    const { data: monitorData } = await supabase
-      .from('monitores')
-      .select('id')
-      .eq('id', user.id)
-      .single();
-
-    if (monitorData) {
-      query = query.eq('id_supervisor', user.id);
-    }
+  // Si se encuentra al monitor por correo, filtramos por su ID de supervisor
+  if (monitorData && !skipUserFilter) {
+    query = query.eq('id_supervisor', monitorData.id);
+  } else if (!skipUserFilter) {
+    // Si no se encuentra en la tabla monitores y no es modo auditoría,
+    // es probable que sea un admin o un usuario sin planes.
+    // Dejamos que la consulta continúe (si es admin verá todo por RLS o lógica previa)
   }
 
   const { data: planes, error } = await query;
