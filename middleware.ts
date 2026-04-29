@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { PERMISOS_POR_USUARIO, getNormalizedEmail } from '@/config/permissions'
+import { getNormalizedEmail, isRutaPermitida, SUPER_ADMIN } from '@/config/permissions'
 
 export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
@@ -18,70 +18,48 @@ export async function middleware(request: NextRequest) {
                     return request.cookies.get(name)?.value
                 },
                 set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({
-                        name,
-                        value,
-                        ...options,
-                    })
+                    request.cookies.set({ name, value, ...options })
+                    response = NextResponse.next({ request: { headers: request.headers } })
+                    response.cookies.set({ name, value, ...options })
                 },
                 remove(name: string, options: CookieOptions) {
-                    request.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({
-                        name,
-                        value: '',
-                        ...options,
-                    })
+                    request.cookies.set({ name, value: '', ...options })
+                    response = NextResponse.next({ request: { headers: request.headers } })
+                    response.cookies.set({ name, value: '', ...options })
                 },
             },
         }
     )
 
     const { data: { user } } = await supabase.auth.getUser()
+    const { pathname } = request.nextUrl;
 
-    if (user && user.email) {
-        const email = getNormalizedEmail(user.email);
-        const { pathname } = request.nextUrl;
+    // ── 1. Usuario NO autenticado ─────────────────────────────────────────────
+    const isAuthRoute = pathname.startsWith('/auth/');
+    if (!user) {
+        // Dejar pasar rutas de auth (login, callback, signout)
+        if (isAuthRoute) return response;
+        // Redirigir al login cualquier otra ruta
+        return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
 
-        // La ruta /presentation es pública para todos los usuarios autenticados
-        // Se usa para el Web Viewer de PowerPoint — nunca se bloquea por permisos de módulo
-        if (pathname.startsWith('/presentation')) {
-            return response;
-        }
+    // ── 2. Usuario autenticado ────────────────────────────────────────────────
+    const email = getNormalizedEmail(user.email);
 
-        const permisos = PERMISOS_POR_USUARIO[email];
+    // Super Admin: acceso incondicional a todo
+    if (email === SUPER_ADMIN) return response;
 
-        if (permisos) {
-            let isAllowedRoute = true;
+    // /presentation es pública para todos los autenticados
+    if (pathname.startsWith('/presentation')) return response;
 
-            if (permisos.rutasPermitidas && !permisos.rutasPermitidas.includes(pathname)) {
-                isAllowedRoute = false;
-            }
-            if (permisos.rutasBloqueadas && permisos.rutasBloqueadas.some(r => pathname.startsWith(r))) {
-                isAllowedRoute = false;
-            }
+    // Rutas de auth siempre permitidas (signout, callback)
+    if (isAuthRoute) return response;
 
-            if (!isAllowedRoute) {
-                return NextResponse.redirect(new URL('/dashboard?error=restriccion', request.url), 307);
-            }
+    // ── 3. Verificar permisos para rutas /dashboard/* ─────────────────────────
+    if (pathname.startsWith('/dashboard')) {
+        if (!isRutaPermitida(email, pathname)) {
+            // Evitar bucle: /dashboard siempre es permitido
+            return NextResponse.redirect(new URL('/dashboard', request.url));
         }
     }
 

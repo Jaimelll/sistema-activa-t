@@ -1,6 +1,6 @@
 import GestionMonitoresView from '@/modules/gestion-proyectos/gestion-monitores/GestionMonitoresView';
 import { createClient } from '@/utils/supabase/server';
-import { getUserPermissions } from '@/config/permissions';
+import { tieneAccesoModulo } from '@/config/permissions';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
@@ -11,11 +11,8 @@ export const metadata = {
 export default async function GestionMonitoresPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  
-  const permisos = getUserPermissions(user?.email);
-  const puedeVer = permisos?.modulosPermitidos?.includes('Gestión de Monitores');
 
-  if (!puedeVer) {
+  if (!tieneAccesoModulo(user?.email, 'Gestión de Monitores')) {
     redirect('/dashboard');
   }
 
