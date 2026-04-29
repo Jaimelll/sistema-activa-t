@@ -34,7 +34,7 @@ export default function SideCard({ proyecto, onStart }) {
           {nombre}
         </h3>
         <div className="text-slate-500 text-xs font-medium mt-1">
-          {datosProyecto.nombre_institucion}
+          {datosProyecto.nombre_institucion || `ID: ${datosProyecto.institucion_ejecutora_id || 'N/A'}`}
         </div>
       </div>
 
