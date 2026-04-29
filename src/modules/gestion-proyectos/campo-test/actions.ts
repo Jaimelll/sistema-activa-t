@@ -22,27 +22,52 @@ export async function getPlanesSupervisionPendientes() {
   const planesConProyecto = await Promise.all(planes.map(async (plan) => {
     const { data: proyecto, error: proyError } = await supabase
       .from('proyectos')
-      .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance, institucion_ejecutora_id')
+      .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance, institucion_ejecutora_id, region_id, etapa_id, contacto, sustento')
       .eq('id', plan.id_proyecto)
       .single();
 
     if (proyError) {
-      console.error('Error al obtener proyecto:', proyError);
+      console.error(`Error al obtener proyecto ${plan.id_proyecto}:`, proyError);
       return { ...plan, proyecto: null };
     }
     
     // Consulta independiente para la institución
-    let nombre_institucion = `ID: ${proyecto.institucion_ejecutora_id || 'N/A'}`;
+    let nombre_institucion = null;
     if (proyecto.institucion_ejecutora_id) {
-      const { data: inst } = await supabase
+      const { data: inst, error: instErr } = await supabase
         .from('instituciones_ejecutoras')
         .select('nombre')
         .eq('id', proyecto.institucion_ejecutora_id)
         .single();
       
-      if (inst?.nombre) {
-        nombre_institucion = inst.nombre;
-      }
+      if (instErr) console.error(`Error lookup institución (${proyecto.institucion_ejecutora_id}):`, instErr);
+      if (inst?.nombre) nombre_institucion = inst.nombre;
+    }
+
+    // Consulta independiente para la Región
+    let nombre_region = null;
+    if (proyecto.region_id) {
+      const { data: reg, error: regErr } = await supabase
+        .from('regiones')
+        .select('descripcion')
+        .eq('id', proyecto.region_id)
+        .single();
+      
+      if (regErr) console.error(`Error lookup región (${proyecto.region_id}):`, regErr);
+      if (reg?.descripcion) nombre_region = reg.descripcion;
+    }
+
+    // Consulta independiente para la Etapa
+    let nombre_etapa = null;
+    if (proyecto.etapa_id) {
+      const { data: etp, error: etpErr } = await supabase
+        .from('etapas')
+        .select('descripcion')
+        .eq('id', proyecto.etapa_id)
+        .single();
+      
+      if (etpErr) console.error(`Error lookup etapa (${proyecto.etapa_id}):`, etpErr);
+      if (etp?.descripcion) nombre_etapa = etp.descripcion;
     }
 
     // Devolvemos el plan con el objeto proyecto enriquecido
@@ -50,7 +75,9 @@ export async function getPlanesSupervisionPendientes() {
       ...plan, 
       proyecto: { 
         ...proyecto, 
-        nombre_institucion 
+        nombre_institucion,
+        nombre_region,
+        nombre_etapa
       } 
     };
   }));
