@@ -105,6 +105,40 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
   return planesConProyecto;
 }
 
+export async function getMisPlanesSupervision() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: monitorData } = await supabase
+    .from('monitores')
+    .select('id')
+    .eq('correo', user.email)
+    .single();
+
+  if (!monitorData) return [];
+
+  const { data: planes, error } = await supabase
+    .from('plan_supervision')
+    .select('*')
+    .eq('id_supervisor', monitorData.id)
+    .order('fecha_programada', { ascending: false });
+
+  if (error || !planes) return [];
+
+  // Enriquecer con datos de proyecto
+  const planesEnriquecidos = await Promise.all(planes.map(async (plan) => {
+    const { data: proyecto } = await supabase
+      .from('proyectos')
+      .select('id, codigo_proyecto, nombre')
+      .eq('id', plan.id_proyecto)
+      .single();
+    return { ...plan, proyecto };
+  }));
+
+  return planesEnriquecidos;
+}
+
 export async function getPlanById(planId: string) {
   const supabase = await createClient();
   const { data: plan, error } = await supabase

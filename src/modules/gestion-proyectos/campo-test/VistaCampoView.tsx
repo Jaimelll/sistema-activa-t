@@ -14,6 +14,7 @@ import EvidenceCapture from './EvidenceCapture';
 import { getPlanesSupervisionPendientes, guardarSupervision, getPlanById, getSupervisionByPlanId } from './actions';
 import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ClipboardCheck, Info } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
 
 export default function VistaCampoView() {
     const [step, setStep] = useState('info');
@@ -140,7 +141,13 @@ export default function VistaCampoView() {
     return (
         <div style={containerStyle}>
             <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 mb-8 flex items-center justify-between z-40">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
+                    <Link 
+                        href="/dashboard/campo"
+                        className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 flex items-center gap-2 font-bold text-xs uppercase"
+                    >
+                        <ArrowLeft size={20} /> <span className="hidden md:inline">Mis Tareas</span>
+                    </Link>
                     <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
                     <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Módulo de Supervisión</h1>
                 </div>
