@@ -13,6 +13,7 @@ import DynamicForm from './DynamicForm';
 import EvidenceCapture from './EvidenceCapture';
 import { getPlanesSupervisionPendientes, guardarSupervision, getPlanById, getSupervisionByPlanId } from './actions';
 import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ClipboardCheck, Info } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function VistaCampoView() {
     const [step, setStep] = useState('info');
@@ -24,7 +25,10 @@ export default function VistaCampoView() {
     const [saving, setSaving] = useState(false);
 
     const searchParams = useSearchParams();
-    const isReadOnly = searchParams.get('readOnly') === 'true';
+    const [userEmail, setUserEmail] = useState('');
+    
+    // Forzamos readOnly si el parámetro está en la URL o si el usuario es erizabal (Gerencia)
+    const isReadOnly = (searchParams.get('readOnly') === 'true') || (userEmail === 'erizabal@fondoempleo.com.pe');
     const planId = searchParams.get('id');
 
     const containerStyle = {
@@ -37,12 +41,20 @@ export default function VistaCampoView() {
         async function load() {
             try {
                 setLoading(true);
+
+                // Obtener correo del usuario actual para validaciones de rol
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user?.email) setUserEmail(user.email.toLowerCase());
+
                 let proyecto = null;
+                const isAuditUser = user?.email?.toLowerCase() === 'erizabal@fondoempleo.com.pe' || user?.email?.toLowerCase() === 'jduran@fondoempleo.com.pe';
 
                 if (planId) {
                     proyecto = await getPlanById(planId);
                 } else {
-                    const data = await getPlanesSupervisionPendientes(isReadOnly);
+                    // Si es usuario de auditoría o modo lectura, saltamos el filtro de monitor
+                    const data = await getPlanesSupervisionPendientes(isReadOnly || isAuditUser);
                     if (data?.length) proyecto = data[0];
                 }
 

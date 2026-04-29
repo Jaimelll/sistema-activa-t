@@ -14,9 +14,26 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
         modulosPermitidos: ['Proyectos', 'Supervisión'],
         rutasPermitidas: ['/dashboard', '/dashboard/campo', '/auth/signout', '/auth/callback'],
     },
+    'jduran@fondoempleo.com.pe': {
+        modulosPermitidos: [
+            'Inf. Gerencial', 
+            'Proyectos', 
+            'Servicios', 
+            'Gestión de Monitores', 
+            'Supervisión',
+            'Documentos',
+            'Evaluación',
+            'Gestión de Proyectos',
+            'Gestión de Servicios',
+            'Gestión de Aportantes',
+            'Institución Ejecutora',
+            'Configuración'
+        ],
+        rutasPermitidas: ['/dashboard', '/dashboard/inf-gerencial', '/dashboard/servicios', '/dashboard/gestion-monitores', '/dashboard/campo', '/auth/signout', '/auth/callback'],
+    },
     'erizabal@fondoempleo.com.pe': {
         modulosPermitidos: ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores'],
-        rutasPermitidas: ['/dashboard', '/dashboard/inf-gerencial', '/dashboard/servicios', '/dashboard/gestion-monitores', '/auth/signout', '/auth/callback'],
+        rutasPermitidas: ['/dashboard', '/dashboard/inf-gerencial', '/dashboard/servicios', '/dashboard/gestion-monitores', '/dashboard/campo', '/auth/signout', '/auth/callback'],
     },
     'arojas@fondoempleo.com.pe': {
         modulosPermitidos: [
