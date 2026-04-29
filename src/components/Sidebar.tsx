@@ -34,6 +34,7 @@ export function Sidebar() {
         { name: 'Inf. Gerencial', icon: LayoutDashboard, href: '/dashboard/inf-gerencial' },
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Servicios', icon: FolderOpen, href: '/dashboard/servicios' },
+        { name: 'Gestión de Monitores', icon: ClipboardCheck, href: '/dashboard/gestion-monitores' },
         { name: 'Documentos', icon: FolderOpen, href: '/dashboard/documentos' },
         { name: 'Evaluación', icon: ClipboardCheck, href: '/dashboard/evaluacion' },
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
