@@ -32,16 +32,16 @@ export async function getPlanesSupervisionPendientes() {
     }
     
     // Consulta independiente para la institución
-    let nombre_institucion = `Institución: ${proyecto.institucion_ejecutora_id || 'N/A'}`;
+    let nombre_institucion = `ID: ${proyecto.institucion_ejecutora_id || 'N/A'}`;
     if (proyecto.institucion_ejecutora_id) {
       const { data: inst } = await supabase
         .from('instituciones_ejecutoras')
-        .select('descripcion')
+        .select('nombre')
         .eq('id', proyecto.institucion_ejecutora_id)
         .single();
       
-      if (inst?.descripcion) {
-        nombre_institucion = inst.descripcion;
+      if (inst?.nombre) {
+        nombre_institucion = inst.nombre;
       }
     }
 
