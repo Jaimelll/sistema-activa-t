@@ -1,13 +1,13 @@
 "use client";
 
-import { LayoutDashboard, FolderOpen, Users, Settings, LogOut, Menu, ClipboardCheck, BookOpen } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Users, LogOut, Menu, ClipboardCheck, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 
 import { createClient } from '@/utils/supabase/client';
-import { getUserPermissions } from '@/config/permissions';
+import { getModulosVisibles } from '@/config/permissions';
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -41,24 +41,13 @@ export function Sidebar() {
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
         { name: 'Gestión de Servicios', icon: BookOpen, href: '/dashboard/gestion-servicios' },
         { name: 'Gestión de Aportantes', icon: Users, href: '/dashboard/gestion-aportantes' },
-        { name: 'Institución Ejecutora', icon: Users, href: '/dashboard/institucion-ejecutora' },
-        { name: 'Configuración', icon: Settings, href: '/dashboard/settings' },
     ];
 
-    // FUNCIÓN PURA DE NAVEGACIÓN: Aislamiento absoluto del arreglo de items
+    // Filtrar los items visibles según los módulos permitidos del usuario
     const getMenuItems = (email: string | null | undefined) => {
-        const permisos = getUserPermissions(email);
-        let itemsFinales = [...allMenuItems];
-
-        if (permisos?.modulosPermitidos) {
-            itemsFinales = itemsFinales.filter(item => permisos.modulosPermitidos!.includes(item.name));
-        }
-
-        if (permisos?.modulosBloqueados) {
-            itemsFinales = itemsFinales.filter(item => !permisos.modulosBloqueados!.includes(item.name));
-        }
-
-        return itemsFinales;
+        const modulosVisibles = getModulosVisibles(email);
+        if (modulosVisibles === 'ALL') return allMenuItems;
+        return allMenuItems.filter(item => modulosVisibles.includes(item.name));
     };
 
     return (
