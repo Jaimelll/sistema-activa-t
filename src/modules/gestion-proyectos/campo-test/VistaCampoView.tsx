@@ -135,6 +135,14 @@ export default function VistaCampoView() {
                 <div className="text-[10px] font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">
                     Paso: {step}
                 </div>
+                {isReadOnly && (
+                    <button 
+                        onClick={() => window.location.href = '/dashboard/gestion-monitores'}
+                        className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-900 transition-colors shadow-sm"
+                    >
+                        <ArrowLeft size={16} /> VOLVER A GESTIÓN
+                    </button>
+                )}
             </header>
 
             {step === 'info' && (
@@ -145,6 +153,13 @@ export default function VistaCampoView() {
                             proyecto={selectedProject} 
                             onStart={() => goToStep('form')}
                         />
+                        {isReadOnly && (
+                            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+                                <button onClick={() => goToStep('form')} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 uppercase text-sm tracking-widest">
+                                    Siguiente <ChevronRight size={20} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -162,10 +177,15 @@ export default function VistaCampoView() {
                         onUpdate={setAnswers} 
                         disabled={isReadOnly} 
                     />
-                    <button onClick={() => goToStep('evidence')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
-                        VER EVIDENCIAS
-                        <ChevronRight size={20} />
-                    </button>
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4">
+                        <button onClick={() => goToStep('info')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                            <ArrowLeft size={20} /> Atrás
+                        </button>
+                        <button onClick={() => goToStep('evidence')} className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                            {isReadOnly ? 'Ver Evidencias' : 'Siguiente'}
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -178,10 +198,15 @@ export default function VistaCampoView() {
                         <h2 className="text-2xl font-bold text-slate-800">Registro de Evidencias {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
                     <EvidenceCapture onCapture={setEvidence} disabled={isReadOnly} />
-                    <button onClick={() => goToStep('map')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
-                        VER UBICACIÓN
-                        <ChevronRight size={20} />
-                    </button>
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4">
+                        <button onClick={() => goToStep('form')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                            <ArrowLeft size={20} /> Atrás
+                        </button>
+                        <button onClick={() => goToStep('map')} className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                            {isReadOnly ? 'Ver Ubicación' : 'Siguiente'}
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -214,9 +239,22 @@ export default function VistaCampoView() {
                         </button>
                     )}
                     {isReadOnly && (
-                        <div className="p-4 bg-blue-50 text-blue-700 rounded-xl flex items-center gap-3 border border-blue-100">
-                            <Info size={24} />
-                            <p className="font-bold uppercase tracking-tight">Estás en modo de visualización de auditoría.</p>
+                        <div className="space-y-6">
+                            <div className="p-4 bg-blue-50 text-blue-700 rounded-xl flex items-center gap-3 border border-blue-100 shadow-sm">
+                                <Info size={24} />
+                                <p className="font-bold uppercase tracking-tight text-sm">Estás en modo de visualización de auditoría.</p>
+                            </div>
+                            <div className="flex justify-between gap-4">
+                                <button onClick={() => goToStep('evidence')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                                    <ArrowLeft size={20} /> Atrás
+                                </button>
+                                <button 
+                                    onClick={() => window.location.href = '/dashboard/gestion-monitores'}
+                                    className="flex-[2] bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-black shadow-xl transition-all flex items-center justify-center gap-3 uppercase text-lg tracking-wider"
+                                >
+                                    <CheckCircle2 size={24} className="text-green-400" /> FINALIZAR AUDITORÍA
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
