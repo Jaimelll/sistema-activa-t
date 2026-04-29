@@ -6,29 +6,17 @@ export type PermisosUsuario = {
 };
 
 export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
-    'rcarbajal@fondoempleo.com.pe': {
-        modulosBloqueados: ['Institución Ejecutora', 'Configuración'],
-        rutasBloqueadas: ['/dashboard/institucion-ejecutora', '/dashboard/settings'],
+    'jleclere@fondoempleo.com.pe': {
+        modulosPermitidos: ['Proyectos', 'Supervisión'],
+        rutasPermitidas: ['/dashboard', '/dashboard/campo', '/auth/signout', '/auth/callback'],
     },
-    // Variante rcabajal por robustez histórica del código
-    'rcabajal@fondoempleo.com.pe': {
-        modulosBloqueados: ['Institución Ejecutora', 'Configuración'],
-        rutasBloqueadas: ['/dashboard/institucion-ejecutora', '/dashboard/settings'],
+    'jbozzo@fondoempleo.com.pe': {
+        modulosPermitidos: ['Proyectos', 'Supervisión'],
+        rutasPermitidas: ['/dashboard', '/dashboard/campo', '/auth/signout', '/auth/callback'],
     },
-    'invitado@fondoempleo.com.pe': {
-        modulosPermitidos: ['Proyectos', 'Servicios', 'Inf. Gerencial'],
-        rutasPermitidas: ['/dashboard', '/dashboard/servicios', '/dashboard/inf-gerencial', '/auth/signout', '/auth/callback'],
-    },
-    'pricra@fondoempleo.com.pe': {
-        modulosPermitidos: ['Proyectos', 'Servicios', 'Inf. Gerencial', 'Gestión de Aportantes'],
-        rutasPermitidas: [
-            '/dashboard', 
-            '/dashboard/servicios', 
-            '/dashboard/inf-gerencial', 
-            '/dashboard/gestion-aportantes', 
-            '/auth/signout', 
-            '/auth/callback'
-        ],
+    'erizabal@fondoempleo.com.pe': {
+        modulosPermitidos: ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores'],
+        rutasPermitidas: ['/dashboard', '/dashboard/inf-gerencial', '/dashboard/servicios', '/dashboard/gestion-monitores', '/auth/signout', '/auth/callback'],
     },
     'arojas@fondoempleo.com.pe': {
         modulosPermitidos: [
@@ -36,7 +24,8 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
             'Proyectos', 
             'Servicios', 
             'Gestión de Proyectos', 
-            'Gestión de Servicios'
+            'Gestión de Servicios',
+            'Gestión de Monitores'
         ],
         rutasPermitidas: [
             '/dashboard', 
@@ -44,6 +33,7 @@ export const PERMISOS_POR_USUARIO: Record<string, PermisosUsuario> = {
             '/dashboard/servicios', 
             '/dashboard/gestion-proyectos', 
             '/dashboard/gestion-servicios', 
+            '/dashboard/gestion-monitores',
             '/auth/signout', 
             '/auth/callback'
         ],
