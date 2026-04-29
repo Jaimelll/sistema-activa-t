@@ -92,16 +92,16 @@ export default function SideCard({ proyecto, onStart }) {
       </div>
 
       {/* Secciones de Gestión */}
-      <div className="space-y-4">
-        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-          <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Contacto</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+          <div className="text-[10px] uppercase font-bold text-slate-400 mb-2 tracking-wider">Contacto de Gestión</div>
           <p className="text-sm text-slate-700 leading-relaxed italic">
             {contacto}
           </p>
         </div>
 
-        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-          <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Sustento</div>
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-sm">
+          <div className="text-[10px] uppercase font-bold text-slate-400 mb-2 tracking-wider">Sustento Técnico</div>
           <p className="text-sm text-slate-700 leading-relaxed">
             {sustento}
           </p>
@@ -111,11 +111,11 @@ export default function SideCard({ proyecto, onStart }) {
       {/* Botón Integrado */}
       <button
         onClick={onStart}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 mt-2 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 tracking-wide"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base font-bold py-4 mt-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 tracking-widest uppercase"
       >
-        <ClipboardCheck size={18} />
+        <ClipboardCheck size={22} />
         INICIAR SUPERVISIÓN
-        <ChevronRight size={18} />
+        <ChevronRight size={22} />
       </button>
     </div>
   );

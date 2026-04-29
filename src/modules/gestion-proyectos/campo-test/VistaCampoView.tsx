@@ -19,7 +19,7 @@ export default function VistaCampoView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [answers, setAnswers] = useState({});
-    const [evidence, setEvidence] = useState({ photos: [], signature: '' });
+    const [evidence, setEvidence] = useState({ photos: [] });
     const [saving, setSaving] = useState(false);
 
     const containerStyle = {
@@ -82,7 +82,6 @@ export default function VistaCampoView() {
                 id_proyecto: selectedProject.id_proyecto,
                 respuestas: answers,
                 fotos: evidence.photos,
-                firma: evidence.signature,
                 latitud: lat,
                 longitud: lng,
             });
@@ -106,14 +105,20 @@ export default function VistaCampoView() {
 
     return (
         <div style={containerStyle}>
-            <div className="fixed top-2 right-2 bg-black text-white px-2 py-1 rounded text-xs z-50">Paso: {step}</div>
-
-            <header className="sticky top-0 bg-white border-b p-4 mb-6">Control de Campo</header>
+            <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 mb-8 flex items-center justify-between z-40">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
+                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Módulo de Supervisión</h1>
+                </div>
+                <div className="text-[10px] font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">
+                    Paso: {step}
+                </div>
+            </header>
 
             {step === 'info' && (
-                <div className="max-w-2xl mx-auto">
-                    <div className="bg-white p-6 rounded-2xl shadow">
-                        <h2 className="text-2xl font-bold mb-4">Información General</h2>
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                        <h2 className="text-2xl font-bold mb-6 text-slate-800 border-b border-slate-100 pb-4">Información General</h2>
                         <SideCard 
                             proyecto={selectedProject} 
                             onStart={() => goToStep('form')}
@@ -123,25 +128,46 @@ export default function VistaCampoView() {
             )}
 
             {step === 'form' && (
-                <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow">
-                    <h2 className="text-2xl font-bold">Checklist</h2>
+                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                        <button onClick={() => goToStep('info')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+                            <ArrowLeft size={24} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión</h2>
+                    </div>
                     <DynamicForm questions={selectedProject?.checklist_preguntas || []} onUpdate={setAnswers} />
-                    <button onClick={() => goToStep('evidence')} className="mt-4 w-full bg-blue-600 text-white py-2 rounded">Continuar</button>
+                    <button onClick={() => goToStep('evidence')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                        CONTINUAR A EVIDENCIAS
+                        <ChevronRight size={20} />
+                    </button>
                 </div>
             )}
 
             {step === 'evidence' && (
-                <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow">
-                    <h2 className="text-2xl font-bold">Evidencias y Firma</h2>
+                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                        <button onClick={() => goToStep('form')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+                            <ArrowLeft size={24} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-slate-800">Registro de Evidencias</h2>
+                    </div>
                     <EvidenceCapture onCapture={setEvidence} />
-                    <button onClick={() => goToStep('map')} className="mt-4 w-full bg-blue-600 text-white py-2 rounded">Siguiente</button>
+                    <button onClick={() => goToStep('map')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
+                        CONTINUAR A UBICACIÓN
+                        <ChevronRight size={20} />
+                    </button>
                 </div>
             )}
 
             {step === 'map' && (
-                <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow">
-                    <h2 className="text-2xl font-bold">Ubicación final</h2>
-                    <div className="h-[350px] w-full rounded-xl overflow-hidden border-2 border-gray-200 mb-4">
+                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
+                        <button onClick={() => goToStep('evidence')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+                            <ArrowLeft size={24} />
+                        </button>
+                        <h2 className="text-2xl font-bold text-slate-800">Validación de Ubicación</h2>
+                    </div>
+                    <div className="h-[450px] w-full rounded-2xl overflow-hidden border-2 border-slate-100 mb-6 shadow-inner">
                         <MapSection
                             selectedProject={selectedProject}
                             onLocationChange={(lat, lng) => setSelectedProject(prev => ({ ...prev, latitud_modificada: lat, longitud_modificada: lng }))}
@@ -150,10 +176,10 @@ export default function VistaCampoView() {
                     <button
                         onClick={handleFinish}
                         disabled={saving}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-lg shadow-lg transition-colors"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
                     >
-                        {saving ? <Loader2 className="animate-spin inline mr-2" size={20} /> : <CheckCircle2 className="inline mr-2" size={20} />}
-                        {saving ? 'GUARDANDO...' : 'FINALIZAR SUPERVISIÓN'}
+                        {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                        {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
                     </button>
                 </div>
             )}
