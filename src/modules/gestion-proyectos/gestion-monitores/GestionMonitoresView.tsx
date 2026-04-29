@@ -11,8 +11,10 @@ import {
     CheckCircle2, 
     Clock,
     LayoutDashboard,
-    ChevronRight
+    ChevronRight,
+    Eye
 } from 'lucide-react';
+import Link from 'next/link';
 import { 
     getProyectosList, 
     getMonitoresList, 
@@ -47,23 +49,13 @@ interface ChecklistItem {
 
 export default function GestionMonitoresView() {
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
-    // INYECCIÓN FORZADA DE DATOS (HARDCODED) - TEST V2
-    const [monitores, setMonitores] = useState<Monitor[]>([
-        { id: 'hc-1', nombre: 'Juan Carlos Leclere' },
-        { id: 'hc-2', nombre: 'José Bozzo' }
-    ]);
-    const [planes, setPlanes] = useState<Plan[]>([
-        {
-            id: 'test-1',
-            proyecto: { id: 294, codigo_proyecto: 'PRY-294', nombre: 'PROYECTO DE PRUEBA V2' },
-            monitor: { nombre: 'Juan Carlos Leclere' },
-            fecha_programada: new Date().toISOString(),
-            estado: 'pendiente'
-        }
-    ]);
+    const [monitores, setMonitores] = useState<Monitor[]>([]);
+    const [planes, setPlanes] = useState<Plan[]>([]);
     
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [errorMonitores, setErrorMonitores] = useState<string | null>(null);
+    const [errorFetch, setErrorFetch] = useState<any>(null);
     const [projectSearch, setProjectSearch] = useState('');
     const [showProjectList, setShowProjectList] = useState(false);
 
@@ -77,30 +69,24 @@ export default function GestionMonitoresView() {
     ]);
 
     useEffect(() => {
-        async function loadData() {
+        async function loadInitialData() {
             try {
-                const [proyData, monData, planData] = await Promise.all([
+                const [proyData, planData, monData] = await Promise.all([
                     getProyectosList(),
-                    getMonitoresList(),
-                    getPlanesSupervision()
+                    getPlanesSupervision(),
+                    getMonitoresList()
                 ]);
-                
+
                 if (proyData) setProyectos(proyData);
-                
-                // Si llegan datos reales, los añadimos a los hardcoded o los reemplazamos
-                if (monData && monData.length > 0) {
-                    setMonitores(monData);
-                }
-                if (planData && planData.length > 0) {
-                    setPlanes(planData);
-                }
+                if (planData) setPlanes(planData || []);
+                if (monData) setMonitores(monData);
             } catch (err) {
                 console.error('Error loading data:', err);
             } finally {
                 setLoading(false);
             }
         }
-        loadData();
+        loadInitialData();
     }, []);
 
     const addQuestion = () => {
@@ -135,8 +121,7 @@ export default function GestionMonitoresView() {
             setChecklist([{ id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }]);
             
             const updatedPlanes = await getPlanesSupervision();
-            if (updatedPlanes?.length > 0) setPlanes(updatedPlanes);
-            
+            setPlanes(updatedPlanes || []);
             alert('Plan de supervisión creado exitosamente');
         } catch (err: any) {
             alert('Error al guardar: ' + err.message);
@@ -153,15 +138,14 @@ export default function GestionMonitoresView() {
                 <div>
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2 uppercase">
                         <LayoutDashboard className="text-blue-600" />
-                        GESTIÓN DE MONITORES (V2 - TEST)
+                        GESTIÓN DE MONITORES
                     </h1>
-                    <p className="text-slate-500 text-sm italic font-bold">Modo: Inyección Forzada Activa</p>
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-7xl mx-auto">
                 {/* Formulario de Creación */}
-                <div className="lg:col-span-1">
+                <div className="w-full">
                     <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
@@ -206,12 +190,13 @@ export default function GestionMonitoresView() {
                                                     className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
                                                     onClick={() => {
                                                         setFormData({...formData, id_proyecto: p.id.toString()});
-                                                        setProjectSearch(`[${p.id}] | ${p.nombre}`);
+                                                        setProjectSearch(`[${p.id}] | [${p.codigo_proyecto}] | ${p.nombre}`);
                                                         setShowProjectList(false);
                                                     }}
                                                 >
-                                                    <div className="text-xs font-bold text-slate-700">[{p.id}] | {p.codigo_proyecto}</div>
-                                                    <div className="text-[11px] text-slate-500 truncate">{p.nombre}</div>
+                                                    <div className="text-[11px] font-bold text-slate-700">
+                                                        [{p.id}] | [{p.codigo_proyecto}] | {p.nombre}
+                                                    </div>
                                                 </button>
                                             ))
                                         }
@@ -300,7 +285,7 @@ export default function GestionMonitoresView() {
                 </div>
 
                 {/* Lista de Planes */}
-                <div className="lg:col-span-2">
+                <div className="w-full">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
@@ -313,39 +298,55 @@ export default function GestionMonitoresView() {
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                        <th className="px-6 py-4">Proyecto</th>
-                                        <th className="px-6 py-4">Monitor</th>
-                                        <th className="px-6 py-4">Fecha</th>
-                                        <th className="px-6 py-4">Estado</th>
+                                        <th className="px-8 py-5">Proyecto</th>
+                                        <th className="px-8 py-5">Monitor</th>
+                                        <th className="px-8 py-5">Fecha</th>
+                                        <th className="px-8 py-5">Estado</th>
+                                        <th className="px-8 py-5 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                     {planes.map((plan) => (
                                         <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-slate-800">
-                                                    [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}]
+                                            <td className="px-8 py-5 min-w-[450px]">
+                                                <div className="text-sm font-bold text-slate-800 leading-tight">
+                                                    [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}] | {plan.proyecto?.nombre || 'S/N'}
                                                 </div>
-                                                <div className="text-[11px] text-slate-500 truncate max-w-[250px]">
-                                                    {plan.proyecto?.nombre || 'S/N'}
+                                                <div className="text-[11px] text-slate-500 mt-2 italic leading-relaxed">
+                                                    {plan.proyecto?.nombre ? 'Información completa del proyecto disponible en modo auditoría.' : 'Sin descripción adicional'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-8 py-5">
                                                 <div className="flex items-center gap-2 text-sm text-slate-600">
                                                     <User size={14} className="text-slate-400" />
                                                     {plan.monitor?.nombre || 'No asignado'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                            <td className="px-8 py-5 text-sm text-slate-600 font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar size={14} className="text-slate-400" />
                                                     {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100">
-                                                    <Clock size={12} /> {plan.estado}
+                                            <td className="px-8 py-5">
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                                    plan.estado === 'pendiente' 
+                                                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                                                    : 'bg-green-50 text-green-600 border-green-100'
+                                                }`}>
+                                                    {plan.estado === 'pendiente' ? <Clock size={12} /> : <CheckCircle2 size={12} />}
+                                                    {plan.estado}
                                                 </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <Link 
+                                                    href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
+                                                    target="_blank"
+                                                    className="inline-flex items-center justify-center p-2.5 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
+                                                    title="Visualizar en modo auditoría"
+                                                >
+                                                    <Eye size={20} className="group-hover:scale-110 transition-transform" />
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))}

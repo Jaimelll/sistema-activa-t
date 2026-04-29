@@ -3,18 +3,34 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function getPlanesSupervisionPendientes() {
+export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // 1. Traemos los planes pendientes
-  const { data: planes, error } = await supabase
+  if (!user) return [];
+
+  let query = supabase
     .from('plan_supervision')
     .select('*')
-    .eq('id_proyecto', 294) // Tu ID de prueba
     .eq('estado', 'pendiente');
 
+  // Si no se solicita omitir el filtro, verificamos si es monitor
+  if (!skipUserFilter) {
+    const { data: monitorData } = await supabase
+      .from('monitores')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (monitorData) {
+      query = query.eq('id_supervisor', user.id);
+    }
+  }
+
+  const { data: planes, error } = await query;
+
   if (error || !planes || planes.length === 0) {
-    console.error('No se encontró plan:', error);
+    console.error('No se encontraron planes pendientes:', error);
     return [];
   }
 
@@ -83,6 +99,55 @@ export async function getPlanesSupervisionPendientes() {
   }));
 
   return planesConProyecto;
+}
+
+export async function getPlanById(planId: string) {
+  const supabase = await createClient();
+  const { data: plan, error } = await supabase
+    .from('plan_supervision')
+    .select('*')
+    .eq('id', planId)
+    .single();
+
+  if (error || !plan) {
+    console.error('No se encontró plan:', error);
+    return null;
+  }
+
+  const { data: proyecto, error: proyError } = await supabase
+    .from('proyectos')
+    .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance, institucion_ejecutora_id, region_id, etapa_id, contacto, sustento')
+    .eq('id', plan.id_proyecto)
+    .single();
+
+  if (proyError) return { ...plan, proyecto: null };
+
+  // Enriquecer proyecto (mismo código que en getPlanesSupervisionPendientes)
+  const { data: inst } = await supabase.from('instituciones_ejecutoras').select('nombre').eq('id', proyecto.institucion_ejecutora_id).single();
+  const { data: reg } = await supabase.from('regiones').select('descripcion').eq('id', proyecto.region_id).single();
+  const { data: etp } = await supabase.from('etapas').select('descripcion').eq('id', proyecto.etapa_id).single();
+
+  return {
+    ...plan,
+    proyecto: {
+      ...proyecto,
+      nombre_institucion: inst?.nombre || null,
+      nombre_region: reg?.descripcion || null,
+      nombre_etapa: etp?.descripcion || null
+    }
+  };
+}
+
+export async function getSupervisionByPlanId(planId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('supervisiones_registro')
+    .select('*')
+    .eq('id_plan', planId)
+    .single();
+  
+  if (error) return null;
+  return data;
 }
 
 export async function guardarSupervision(payload: any) {

@@ -21,14 +21,14 @@ export async function getMonitoresList() {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('monitores')
-        .select('*')
+        .select('id, nombre')
         .order('nombre', { ascending: true });
     
     if (error) {
         console.error('CRITICAL: Error fetching monitores:', error);
         return [];
     }
-    return data;
+    return data || [];
 }
 
 export async function getPlanesSupervision() {
@@ -57,20 +57,23 @@ export async function crearPlanSupervision(payload: {
 }) {
     const supabase = await createClient();
     
+    // Log para depuración en el servidor
+    console.log('Iniciando inserción de plan:', payload);
+
     const { data, error } = await supabase
         .from('plan_supervision')
-        .insert([{
+        .insert({
             id_proyecto: payload.id_proyecto,
             id_supervisor: payload.id_supervisor,
             fecha_programada: payload.fecha_programada,
             checklist_preguntas: payload.checklist_preguntas,
             estado: 'pendiente'
-        }])
+        })
         .select();
     
     if (error) {
-        console.error('Error creating plan:', error);
-        throw new Error(error.message);
+        console.error('ERROR Supabase (400?):', error);
+        throw new Error(`Error de base de datos: ${error.message} (Código: ${error.code})`);
     }
     
     revalidatePath('/dashboard/gestion-monitores');

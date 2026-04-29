@@ -4,13 +4,14 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 const MapSection = dynamic(() => import('./MapSection'), { ssr: false, loading: () => <div className="h-[350px] bg-slate-100 animate-pulse flex items-center justify-center">Cargando mapa...</div> });
 
 import SideCard from './SideCard';
 import DynamicForm from './DynamicForm';
 import EvidenceCapture from './EvidenceCapture';
-import { getPlanesSupervisionPendientes, guardarSupervision } from './actions';
+import { getPlanesSupervisionPendientes, guardarSupervision, getPlanById, getSupervisionByPlanId } from './actions';
 import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ClipboardCheck, Info } from 'lucide-react';
 
 export default function VistaCampoView() {
@@ -22,6 +23,10 @@ export default function VistaCampoView() {
     const [evidence, setEvidence] = useState({ photos: [] });
     const [saving, setSaving] = useState(false);
 
+    const searchParams = useSearchParams();
+    const isReadOnly = searchParams.get('readOnly') === 'true';
+    const planId = searchParams.get('id');
+
     const containerStyle = {
         position: 'fixed', top: 0, right: 0, bottom: 0, left: '288px',
         overflowY: 'auto', backgroundColor: '#f8fafc', zIndex: 10,
@@ -32,11 +37,29 @@ export default function VistaCampoView() {
         async function load() {
             try {
                 setLoading(true);
-                const data = await getPlanesSupervisionPendientes();
-                console.log('VistaCampoView: datos recibidos =', data);
-                if (data?.length) {
-                    let proyecto = data[0];
-                    // Transformar checklist_preguntas de objeto a array
+                let proyecto = null;
+
+                if (planId) {
+                    proyecto = await getPlanById(planId);
+                } else {
+                    const data = await getPlanesSupervisionPendientes(isReadOnly);
+                    if (data?.length) proyecto = data[0];
+                }
+
+                if (proyecto) {
+                    // Si es modo lectura, cargar respuestas históricas
+                    if (isReadOnly) {
+                        const registro = await getSupervisionByPlanId(proyecto.id);
+                        if (registro) {
+                            setAnswers(registro.respuestas_json || {});
+                            setEvidence({ photos: registro.fotos_urls || [] });
+                            proyecto.latitud_modificada = registro.latitud;
+                            proyecto.longitud_modificada = registro.longitud;
+                        }
+                        proyecto.isReadOnly = true;
+                    }
+
+                    // Transformar checklist_preguntas
                     let preguntasArray = [];
                     if (proyecto.checklist_preguntas) {
                         if (Array.isArray(proyecto.checklist_preguntas)) {
@@ -49,11 +72,10 @@ export default function VistaCampoView() {
                     }
                     proyecto.checklist_preguntas = preguntasArray;
 
-                    // Inicializar coordenadas (ahora sabemos que proyectos no tiene latitud/longitud)
-                    const latOriginal = -12.046374;
-                    const lngOriginal = -77.042793;
-                    proyecto.latitud_modificada = latOriginal;
-                    proyecto.longitud_modificada = lngOriginal;
+                    if (!proyecto.latitud_modificada) {
+                        proyecto.latitud_modificada = -12.046374;
+                        proyecto.longitud_modificada = -77.042793;
+                    }
 
                     setSelectedProject(proyecto);
                 } else {
@@ -67,7 +89,7 @@ export default function VistaCampoView() {
             }
         }
         load();
-    }, []);
+    }, [planId, isReadOnly]);
 
     const goToStep = (newStep) => setStep(newStep);
 
@@ -133,11 +155,15 @@ export default function VistaCampoView() {
                         <button onClick={() => goToStep('info')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
-                        <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
-                    <DynamicForm questions={selectedProject?.checklist_preguntas || []} onUpdate={setAnswers} />
+                    <DynamicForm 
+                        questions={selectedProject?.checklist_preguntas || []} 
+                        onUpdate={setAnswers} 
+                        disabled={isReadOnly} 
+                    />
                     <button onClick={() => goToStep('evidence')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
-                        CONTINUAR A EVIDENCIAS
+                        VER EVIDENCIAS
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -149,11 +175,11 @@ export default function VistaCampoView() {
                         <button onClick={() => goToStep('form')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
-                        <h2 className="text-2xl font-bold text-slate-800">Registro de Evidencias</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">Registro de Evidencias {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
-                    <EvidenceCapture onCapture={setEvidence} />
+                    <EvidenceCapture onCapture={setEvidence} disabled={isReadOnly} />
                     <button onClick={() => goToStep('map')} className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2">
-                        CONTINUAR A UBICACIÓN
+                        VER UBICACIÓN
                         <ChevronRight size={20} />
                     </button>
                 </div>
@@ -165,22 +191,34 @@ export default function VistaCampoView() {
                         <button onClick={() => goToStep('evidence')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
-                        <h2 className="text-2xl font-bold text-slate-800">Validación de Ubicación</h2>
+                        <h2 className="text-2xl font-bold text-slate-800">Validación de Ubicación {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
                     <div className="h-[450px] w-full rounded-2xl overflow-hidden border-2 border-slate-100 mb-6 shadow-inner">
                         <MapSection
                             selectedProject={selectedProject}
-                            onLocationChange={(lat, lng) => setSelectedProject(prev => ({ ...prev, latitud_modificada: lat, longitud_modificada: lng }))}
+                            onLocationChange={(lat, lng) => {
+                                if (!isReadOnly) {
+                                    setSelectedProject(prev => ({ ...prev, latitud_modificada: lat, longitud_modificada: lng }));
+                                }
+                            }}
                         />
                     </div>
-                    <button
-                        onClick={handleFinish}
-                        disabled={saving}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
-                    >
-                        {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
-                        {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
-                    </button>
+                    {!isReadOnly && (
+                        <button
+                            onClick={handleFinish}
+                            disabled={saving}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
+                        >
+                            {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                            {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
+                        </button>
+                    )}
+                    {isReadOnly && (
+                        <div className="p-4 bg-blue-50 text-blue-700 rounded-xl flex items-center gap-3 border border-blue-100">
+                            <Info size={24} />
+                            <p className="font-bold uppercase tracking-tight">Estás en modo de visualización de auditoría.</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
