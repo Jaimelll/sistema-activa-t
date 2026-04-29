@@ -3,10 +3,11 @@
 
 import { useState } from 'react';
 
-export default function DynamicForm({ questions = [], onUpdate }) {
+export default function DynamicForm({ questions = [], onUpdate, disabled = false }) {
   const [answers, setAnswers] = useState({});
 
   const handleChange = (id, value) => {
+    if (disabled) return;
     const newAnswers = { ...answers, [id]: value };
     setAnswers(newAnswers);
     onUpdate?.(newAnswers);
@@ -32,15 +33,17 @@ export default function DynamicForm({ questions = [], onUpdate }) {
             <div className="flex gap-4">
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handleChange(q.id, true)}
-                className={`flex-1 py-4 rounded-xl text-xs font-black transition ${answers[q.id] === true ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500'}`}
+                className={`flex-1 py-4 rounded-xl text-xs font-black transition ${answers[q.id] === true ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-500'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 CUMPLE
               </button>
               <button
                 type="button"
+                disabled={disabled}
                 onClick={() => handleChange(q.id, false)}
-                className={`flex-1 py-4 rounded-xl text-xs font-black transition ${answers[q.id] === false ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-500'}`}
+                className={`flex-1 py-4 rounded-xl text-xs font-black transition ${answers[q.id] === false ? 'bg-red-600 text-white' : 'bg-slate-50 text-slate-500'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 NO CUMPLE
               </button>
@@ -48,7 +51,8 @@ export default function DynamicForm({ questions = [], onUpdate }) {
           )}
           {q.tipo === 'text' && (
             <textarea
-              className="w-full bg-slate-50 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={`w-full bg-slate-50 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               rows={3}
               placeholder="Escribe aquí..."
               onChange={(e) => handleChange(q.id, e.target.value)}

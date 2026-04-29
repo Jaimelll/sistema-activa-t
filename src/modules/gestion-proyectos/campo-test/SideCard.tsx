@@ -109,14 +109,16 @@ export default function SideCard({ proyecto, onStart }) {
       </div>
 
       {/* Botón Integrado */}
-      <button
-        onClick={onStart}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base font-bold py-4 mt-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 tracking-widest uppercase"
-      >
-        <ClipboardCheck size={22} />
-        INICIAR SUPERVISIÓN
-        <ChevronRight size={22} />
-      </button>
+      {!proyecto.isReadOnly && onStart && (
+        <button
+          onClick={onStart}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base font-bold py-4 mt-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 tracking-widest uppercase"
+        >
+          <ClipboardCheck size={22} />
+          INICIAR SUPERVISIÓN
+          <ChevronRight size={22} />
+        </button>
+      )}
     </div>
   );
 }

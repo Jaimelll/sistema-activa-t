@@ -4,10 +4,11 @@
 import { useState } from 'react';
 import { Camera, X, Signature, Check } from 'lucide-react';
 
-export default function EvidenceCapture({ onCapture }) {
+export default function EvidenceCapture({ onCapture, disabled = false }) {
   const [photos, setPhotos] = useState([]);
 
   const handleAddPhoto = () => {
+    if (disabled) return;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -38,8 +39,9 @@ export default function EvidenceCapture({ onCapture }) {
         <label className="block text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-wider">Evidencia Fotográfica de Campo</label>
         <button
           type="button"
+          disabled={disabled}
           onClick={handleAddPhoto}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-md transition-all font-semibold"
+          className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-md transition-all font-semibold ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <Camera size={20} /> Capturar Imagen
         </button>
@@ -49,13 +51,15 @@ export default function EvidenceCapture({ onCapture }) {
             {photos.map((photo, idx) => (
               <div key={idx} className="relative border-2 border-slate-100 rounded-xl overflow-hidden group shadow-sm hover:shadow-md transition-all">
                 <img src={photo} alt={`evidencia-${idx}`} className="w-full h-32 object-cover" />
-                <button
-                  onClick={() => handleRemovePhoto(idx)}
-                  className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
-                  title="Eliminar foto"
-                >
-                  <X size={16} />
-                </button>
+                {!disabled && (
+                  <button
+                    onClick={() => handleRemovePhoto(idx)}
+                    className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
+                    title="Eliminar foto"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
