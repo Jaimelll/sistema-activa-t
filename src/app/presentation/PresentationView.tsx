@@ -26,7 +26,7 @@ const PBI_DATA: Record<number, number> = {
     2008: 9.1, 2009: 1.1, 2010: 8.5, 2011: 6.5, 2012: 6.3,
     2013: 5.9, 2014: 2.4, 2015: 3.3, 2016: 4.0, 2017: 2.5,
     2018: 4.0, 2019: 2.2, 2020: -11.0, 2021: 13.6, 2022: 2.7,
-    2023: -0.6, 2024: 2.5, 2025: 3.4
+    2023: -0.6, 2024: 2.5, 2025: 3.4, 2026: 3.2
 };
 
 const fmt = (v: number) =>
@@ -106,9 +106,10 @@ export default function PresentationView({
         years.forEach(year => {
             const scenarios = Array.from(new Set(finanzasData.filter(d => d.año === year).map(d => d.escenario || 'Real')));
             scenarios.forEach(escenario => {
+                if (year === 2026 && escenario === 'Proyectado') return;
                 const items = finanzasData.filter(d => d.año === year && d.escenario === escenario && d.rubro !== 'Saldos en Bancos');
                 if (items.length > 0) {
-                    const row: any = { year: year === 2026 && escenario === 'Proyectado' ? '2026 Proyectado' : year.toString(), escenario };
+                    const row: any = { year: year.toString(), escenario };
                     items.forEach(i => { row[i.rubro] = i.monto; });
                     rows.push(row);
                 }
@@ -122,6 +123,7 @@ export default function PresentationView({
         years.forEach(year => {
             const scenarios = Array.from(new Set(finanzasData.filter(d => d.año === year).map(d => d.escenario || 'Real')));
             scenarios.forEach(escenario => {
+                if (year === 2026 && escenario === 'Proyectado') return;
                 const items = finanzasData.filter(d => d.año === year && d.escenario === escenario);
                 if (items.length > 0) {
                     let ingresos = 0, egresos = 0;
@@ -130,7 +132,7 @@ export default function PresentationView({
                         else if (['G. Operativos', 'Proyectos', 'Becas'].includes(i.rubro)) egresos += i.monto;
                     });
                     if (ingresos > 0 || egresos > 0) {
-                        rows.push({ year: year === 2026 && escenario === 'Proyectado' ? '2026 Proyectado' : year.toString(), Ingresos: ingresos, Egresos: egresos });
+                        rows.push({ year: year.toString(), Ingresos: ingresos, Egresos: egresos });
                     }
                 }
             });

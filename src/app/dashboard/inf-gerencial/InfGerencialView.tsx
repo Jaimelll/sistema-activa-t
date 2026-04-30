@@ -56,7 +56,7 @@ const PBI_DATA: Record<number, number> = {
     2008: 9.1, 2009: 1.1, 2010: 8.5, 2011: 6.5, 2012: 6.3,
     2013: 5.9, 2014: 2.4, 2015: 3.3, 2016: 4.0, 2017: 2.5,
     2018: 4.0, 2019: 2.2, 2020: -11.0, 2021: 13.6, 2022: 2.7,
-    2023: -0.6, 2024: 2.5, 2025: 3.4
+    2023: -0.6, 2024: 2.5, 2025: 3.4, 2026: 3.2
 };
 
 const formatCurrency = (value: number) => {
@@ -204,10 +204,13 @@ export default function InfGerencialView({
             const scenarios = Array.from(new Set(finanzasData.filter(d => d.año === year).map(d => d.escenario || 'Real')));
             
             scenarios.forEach(escenario => {
+                // Filtro: Eliminar '2026 Proyectado'
+                if (year === 2026 && escenario === 'Proyectado') return;
+
                 const yearItems = finanzasData.filter(d => d.año === year && d.escenario === escenario && d.rubro !== 'Saldos en Bancos');
                 if (yearItems.length > 0) {
                     const row: any = { 
-                        year: year === 2026 && escenario === 'Proyectado' ? '2026 Proyectado' : year.toString(),
+                        year: year.toString(),
                         displayYear: year,
                         escenario 
                     };
@@ -225,7 +228,7 @@ export default function InfGerencialView({
 
     const historicalSaldos = useMemo(() => {
         return finanzasData
-            .filter(d => d.rubro === 'Saldos en Bancos' && d.año >= 2024)
+            .filter(d => d.rubro === 'Saldos en Bancos' && d.año >= 2024 && !(d.año === 2026 && d.escenario === 'Proyectado'))
             .sort((a, b) => {
                 if (a.año !== b.año) return a.año - b.año;
                 return (a.escenario === 'Proyectado' ? 1 : -1);
@@ -240,10 +243,13 @@ export default function InfGerencialView({
             const scenarios = Array.from(new Set(finanzasData.filter(d => d.año === year).map(d => d.escenario || 'Real')));
             
             scenarios.forEach(escenario => {
+                // Filtro: Eliminar '2026 Proyectado'
+                if (year === 2026 && escenario === 'Proyectado') return;
+
                 const yearItems = finanzasData.filter(d => d.año === year && d.escenario === escenario);
                 if (yearItems.length > 0) {
                     const row: any = { 
-                        year: year === 2026 && escenario === 'Proyectado' ? '2026 Proyectado' : year.toString()
+                        year: year.toString()
                     };
                     let ingresos = 0;
                     let egresos = 0;
@@ -608,7 +614,7 @@ export default function InfGerencialView({
                     {historicalSaldos.map((item) => (
                         <div key={`${item.año}-${item.escenario}`} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
                             <span className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">
-                                {item.año === 2026 && item.escenario === 'Proyectado' ? '2026 Proyectado' : item.año}
+                                {item.año}
                             </span>
                             <span className="text-lg font-bold text-slate-800 tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
                         </div>
