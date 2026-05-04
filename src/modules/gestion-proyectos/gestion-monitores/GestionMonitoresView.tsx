@@ -12,6 +12,7 @@ import {
     Clock,
     LayoutDashboard,
     ChevronRight,
+    ChevronLeft,
     Eye
 } from 'lucide-react';
 import Link from 'next/link';
@@ -47,6 +48,8 @@ interface ChecklistItem {
     tipo: string;
 }
 
+const PAGE_SIZE = 5;
+
 export default function GestionMonitoresView() {
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [monitores, setMonitores] = useState<Monitor[]>([]);
@@ -58,6 +61,7 @@ export default function GestionMonitoresView() {
     const [errorFetch, setErrorFetch] = useState<any>(null);
     const [projectSearch, setProjectSearch] = useState('');
     const [showProjectList, setShowProjectList] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const [formData, setFormData] = useState({
         id_proyecto: '',
@@ -292,6 +296,9 @@ export default function GestionMonitoresView() {
                                 <ClipboardList className="text-blue-600" size={18} />
                                 Planes Programados
                             </h2>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {planes.length} registros
+                            </span>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -306,7 +313,9 @@ export default function GestionMonitoresView() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {planes.map((plan) => (
+                                    {planes
+                                        .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+                                        .map((plan) => (
                                         <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
                                             <td className="px-8 py-5 min-w-[450px]">
                                                 <div className="text-sm font-bold text-slate-800 leading-tight">
@@ -353,6 +362,46 @@ export default function GestionMonitoresView() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Paginación */}
+                        {planes.length > PAGE_SIZE && (
+                            <div className="px-8 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <span className="text-[11px] text-slate-400 font-medium">
+                                    Página {currentPage} de {Math.ceil(planes.length / PAGE_SIZE)}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        title="Página anterior"
+                                    >
+                                        <ChevronLeft size={18} />
+                                    </button>
+                                    {Array.from({ length: Math.ceil(planes.length / PAGE_SIZE) }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                                                page === currentPage
+                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                : 'text-slate-500 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(planes.length / PAGE_SIZE), p + 1))}
+                                        disabled={currentPage === Math.ceil(planes.length / PAGE_SIZE)}
+                                        className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                                        title="Página siguiente"
+                                    >
+                                        <ChevronRight size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
