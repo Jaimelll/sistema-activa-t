@@ -110,19 +110,29 @@ export async function getMisPlanesSupervision() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: monitorData } = await supabase
-    .from('monitores')
-    .select('id')
-    .eq('correo', user.email)
-    .single();
+  const ADMIN_EMAIL = 'jduran@fondoempleo.com.pe';
+  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
-  if (!monitorData) return [];
-
-  const { data: planes, error } = await supabase
+  let query = supabase
     .from('plan_supervision')
     .select('*')
-    .eq('id_supervisor', monitorData.id)
     .order('fecha_programada', { ascending: false });
+
+  // Si NO es el admin especial, filtramos por su monitor_id
+  if (!isAdmin) {
+    const { data: monitorData } = await supabase
+      .from('monitores')
+      .select('id')
+      .eq('correo', user.email)
+      .single();
+
+    // Si no existe en la tabla monitores y no es admin, no tiene planes asignados
+    if (!monitorData) return [];
+
+    query = query.eq('id_supervisor', monitorData.id);
+  }
+
+  const { data: planes, error } = await query;
 
   if (error || !planes) return [];
 
