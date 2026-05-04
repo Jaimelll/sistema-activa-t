@@ -32,7 +32,7 @@ const PBI_DATA: Record<number, number> = {
     2008: 9.1, 2009: 1.1, 2010: 8.5, 2011: 6.5, 2012: 6.3,
     2013: 5.9, 2014: 2.4, 2015: 3.3, 2016: 4.0, 2017: 2.5,
     2018: 4.0, 2019: 2.2, 2020: -11.0, 2021: 13.6, 2022: 2.7,
-    2023: -0.6, 2024: 2.5, 2025: 3.4, 2026: 3.2
+    2023: -0.6, 2024: 2.5, 2025: 3.4
 };
 
 const fmt = (v: any) =>
@@ -47,18 +47,19 @@ const fmtM1 = (v: any) => {
 };
 const fmtPBI = (v: any) => {
     const val = Number(v);
-    return (val != null && val !== 0) ? `${val.toFixed(1)}%` : '';
+    if (v == null || isNaN(val) || val === 0) return '';
+    return `${val.toFixed(1)}%`;
 };
 
 // ─── Títulos ──────────────────────────────────────────────────────────────────
 const CHART_TITLES: Record<string, string> = {
-    'evolucion-aportes':      'Evolución de Aportes vs PBI 1998-2026',
-    'distribucion-aportes':   'Distribución de Aportantes 2021–2026',
-    'distribucion-sector':    'Distribución por Sector 2021-2026',
-    'evolucion-financiera':   'Evolución Financiera 2024-2026',
-    'ingresos-egresos':       'Ingresos vs Egresos 2024-2026',
-    'poi-comparativo':        'POI 2024-2026 (Presupuesto vs Ejecutado)',
-    'presupuesto-mensual':    'Presupuesto Mensual Proyectado 2026',
+    'evolucion-aportes': 'Evolución de Aportes (1998-2026) vs PBI (1998-2025)',
+    'distribucion-aportes': 'Distribución de Aportantes 2021–2026',
+    'distribucion-sector': 'Distribución por Sector 2021-2026',
+    'evolucion-financiera': 'Evolución Financiera 2024-2026',
+    'ingresos-egresos': 'Ingresos vs Egresos 2024-2026',
+    'poi-comparativo': 'POI 2024-2026 (Presupuesto vs Ejecutado)',
+    'presupuesto-mensual': 'Presupuesto Mensual Proyectado 2026',
 };
 
 export default function PresentationView({
@@ -79,21 +80,26 @@ export default function PresentationView({
     const title = CHART_TITLES[chartId] || '';
 
     // ── Preparación de Datos ───────────────────────────────────────────────────
-    const last5Years = useMemo(() => 
+    const last5Years = useMemo(() =>
         Array.from(new Set(initialData.map(d => d.anio))).sort().filter(y => y >= 2021),
-    [initialData]);
+        [initialData]);
 
     const lineData = useMemo(() => {
         const map = new Map<number, number>();
         initialData.forEach(d => map.set(d.anio, (map.get(d.anio) || 0) + d.monto));
-        return Array.from(map.entries()).sort((a, b) => a[0] - b[0]).map(([anio, total]) => ({
-            anio: String(anio), total, pbi: PBI_DATA[anio] ?? null
-        }));
+        return Array.from(map.entries()).sort((a, b) => a[0] - b[0]).map(([anio, total]) => {
+            const item: Record<string, any> = { anio: String(anio), total };
+            const pbiVal = PBI_DATA[anio];
+            if (pbiVal !== undefined) {
+                item.pbi = pbiVal;
+            }
+            return item;
+        });
     }, [initialData]);
 
-    const annualTotalData = useMemo(() => 
+    const annualTotalData = useMemo(() =>
         [...last5Years].reverse().map(y => ({ year: String(y), total: annualTotals[y] || 0 })),
-    [last5Years, annualTotals]);
+        [last5Years, annualTotals]);
 
     const sectorData = useMemo(() => {
         const map = new Map<string, number>();
@@ -102,7 +108,7 @@ export default function PresentationView({
     }, [initialData, last5Years]);
 
     const yearsFinanzas = [2024, 2025, 2026];
-    
+
     const groupedFinanzas = useMemo(() => {
         const rows: any[] = [];
         yearsFinanzas.forEach(year => {
@@ -144,15 +150,15 @@ export default function PresentationView({
         return rows;
     }, [finanzasData]);
 
-    const mappedMensual = useMemo(() => 
+    const mappedMensual = useMemo(() =>
         presupuestoMensual.map(item => ({
             ...item, mes_nombre: MESES_CORTOS[(item.mes || 1) - 1] || '?'
         })),
-    [presupuestoMensual]);
+        [presupuestoMensual]);
 
-    const poiFiltered = useMemo(() => 
+    const poiFiltered = useMemo(() =>
         presupuestoComparativo.filter((d: any) => (d.año || d.anio) >= 2024),
-    [presupuestoComparativo]);
+        [presupuestoComparativo]);
 
     // ── Renderizado ────────────────────────────────────────────────────────────
     return (
@@ -174,7 +180,7 @@ export default function PresentationView({
                                         <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} />
                                         <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM1} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
                                         <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={v => v === 0 ? '' : `${v}%`} width={100} domain={[0, (dataMax: number) => Math.max(15, dataMax * 1.25)]} />
-                                        <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} formatter={(value: any, name: string) => name === 'pbi' ? [`${value}%`, 'Crecimiento PBI'] : [fmt(value), 'Aportes Totales']} />
+                                        <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} formatter={(value: any, name: string) => name === 'pbi' ? (value != null ? [`${value}%`, 'Crecimiento PBI'] : null) : [fmt(value), 'Aportes Totales']} />
                                         <Legend verticalAlign="bottom" align="center" iconSize={40} wrapperStyle={{ paddingTop: '50px', fontWeight: '900', fontSize: '20px' }} />
                                         <Line yAxisId="left" type="monotone" dataKey="total" name="Aportes Totales (S/)" stroke="#2563eb" strokeWidth={6} dot={{ r: 6, fill: '#fff' }} activeDot={{ r: 12 }}>
                                             <LabelList dataKey="total" position="top" formatter={fmtM1} fill="#000000" fontSize={18} fontWeight="800" offset={15} />

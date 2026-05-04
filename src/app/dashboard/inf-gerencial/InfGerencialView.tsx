@@ -56,7 +56,7 @@ const PBI_DATA: Record<number, number> = {
     2008: 9.1, 2009: 1.1, 2010: 8.5, 2011: 6.5, 2012: 6.3,
     2013: 5.9, 2014: 2.4, 2015: 3.3, 2016: 4.0, 2017: 2.5,
     2018: 4.0, 2019: 2.2, 2020: -11.0, 2021: 13.6, 2022: 2.7,
-    2023: -0.6, 2024: 2.5, 2025: 3.4, 2026: 3.2
+    2023: -0.6, 2024: 2.5, 2025: 3.4
 };
 
 const formatCurrency = (value: number) => {
@@ -334,11 +334,14 @@ export default function InfGerencialView({
         sectorFiltered.forEach(d => yearGroups.set(d.anio, (yearGroups.get(d.anio) || 0) + d.monto));
         return Array.from(yearGroups.entries())
             .sort((a, b) => a[0] - b[0])
-            .map(([anio, total]) => ({
-                anio: String(anio),
-                total,
-                pbi: PBI_DATA[anio] ?? null
-            }));
+            .map(([anio, total]) => {
+                const item: Record<string, any> = { anio: String(anio), total };
+                const pbiVal = PBI_DATA[anio];
+                if (pbiVal !== undefined) {
+                    item.pbi = pbiVal;
+                }
+                return item;
+            });
     }, [initialData, selectedSector]);
 
     const pieData = useMemo(() => {
@@ -420,7 +423,7 @@ export default function InfGerencialView({
             {/* Evolución de Aportes vs PBI Line Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes vs PBI 1998-2026</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026) vs PBI (1998-2025)</h3>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-aportes" />
                     </div>
@@ -445,10 +448,7 @@ export default function InfGerencialView({
                                 <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => v === 0 ? '' : `${v}%`} />
                                 <Tooltip 
                                     contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
-                                    formatter={(value: number, name: string) => {
-                                        if (name === 'pbi') return [`${value}%`, 'Crecimiento PBI'];
-                                        return [formatCurrency(value), 'Aportes Totales'];
-                                    }}
+                                    formatter={(value: any, name: string) => name === 'pbi' ? (value != null ? [`${value}%`, 'Crecimiento PBI'] : null) : [formatCurrency(value), 'Aportes Totales']}
                                 />
                                 <Line yAxisId="left" type="monotone" dataKey="total" name="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 4, fill: '#fff' }} activeDot={{ r: 8 }} />
                                 <Line yAxisId="right" type="monotone" dataKey="pbi" name="pbi" stroke="#dc2626" strokeWidth={2} dot={{ r: 3, fill: '#fff', stroke: '#dc2626' }} activeDot={{ r: 6 }} connectNulls />
