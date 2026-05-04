@@ -279,6 +279,11 @@ export default function InfGerencialView({
         return allYears.filter(y => y >= 2021);
     }, [initialData]);
 
+    const last3Years = useMemo(() => {
+        const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
+        return allYears.filter(y => y >= 2024);
+    }, [initialData]);
+
     const yearRange = last5Years.length > 0
         ? `${last5Years[0]} - ${last5Years[last5Years.length - 1]}`
         : '';
@@ -291,6 +296,14 @@ export default function InfGerencialView({
         });
     }, [initialData, last5Years, selectedSector]);
 
+    const baseData3Y = useMemo(() => {
+        return initialData.filter(d => {
+            const inYear = last3Years.includes(d.anio);
+            const inSector = selectedSector === 'all' || d.seccion_desc === selectedSector;
+            return inYear && inSector;
+        });
+    }, [initialData, last3Years, selectedSector]);
+
     const empresaSuggestions = useMemo(() => {
         if (!searchTerm.trim()) return [];
         const term = searchTerm.toLowerCase();
@@ -298,35 +311,35 @@ export default function InfGerencialView({
         return names.filter(n => n.toLowerCase().includes(term)).slice(0, 8);
     }, [baseData, searchTerm]);
 
-    const top10Companies = useMemo(() => {
+    const top20Companies = useMemo(() => {
         const totals = new Map<string, number>();
         baseData.forEach(d => totals.set(d.razon_social, (totals.get(d.razon_social) || 0) + d.monto));
         return Array.from(totals.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10)
+            .slice(0, 20)
             .map(e => e[0]);
     }, [baseData]);
 
-    const top10CompaniesPerYear = useMemo(() => {
+    const top20CompaniesPerYear = useMemo(() => {
         const result: Record<number, { name: string, monto: number }[]> = {};
-        last5Years.forEach(year => {
-            const yearData = baseData.filter(d => d.anio === year);
+        last3Years.forEach(year => {
+            const yearData = baseData3Y.filter(d => d.anio === year);
             const totals = new Map<string, number>();
             yearData.forEach(d => totals.set(d.razon_social, (totals.get(d.razon_social) || 0) + d.monto));
             result[year] = Array.from(totals.entries())
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 10)
+                .slice(0, 20)
                 .map(e => ({ name: e[0], monto: e[1] }));
         });
         return result;
-    }, [baseData, last5Years]);
+    }, [baseData3Y, last3Years]);
 
     const annualTotalData = useMemo(() => {
-        return [...last5Years].reverse().map(year => ({
+        return [...last3Years].reverse().map(year => ({
             year: year.toString(),
             total: annualTotals[year] || 0
         }));
-    }, [last5Years, annualTotals]);
+    }, [last3Years, annualTotals]);
 
     const lineData = useMemo(() => {
         const sectorFiltered = initialData.filter(d => selectedSector === 'all' || d.seccion_desc === selectedSector);
@@ -346,15 +359,15 @@ export default function InfGerencialView({
 
     const pieData = useMemo(() => {
         const groups = new Map<string, number>();
-        baseData.forEach(d => groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto));
+        baseData3Y.forEach(d => groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto));
         return Array.from(groups.entries())
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 8);
-    }, [baseData]);
+    }, [baseData3Y]);
 
     const totalLast5 = useMemo(() => baseData.reduce((s, d) => s + d.monto, 0), [baseData]);
-    const topCompanyName = top10Companies[0] || 'N/A';
+    const topCompanyName = top20Companies[0] || 'N/A';
     const totalEmpresas = useMemo(() => new Set(baseData.map(d => d.ruc)).size, [baseData]);
 
     const fmt = (v: number) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
@@ -424,6 +437,7 @@ export default function InfGerencialView({
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026) vs PBI (1998-2025)</h3>
+                    <p className="text-sm font-semibold text-slate-500 mt-1">Aportes 2026: Información actualizada a la fecha</p>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-aportes" />
                     </div>
@@ -477,8 +491,9 @@ export default function InfGerencialView({
             {/* Bottom Row: Stacked Bar + Sector Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8 text-center relative">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2021 – 2026</h3>
+                    <div className="mb-4 text-center relative">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2024 – 2026</h3>
+                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
                         <div className="absolute top-0 right-0">
                             <PresentationButton chartId="distribucion-aportes" />
                         </div>
@@ -498,38 +513,33 @@ export default function InfGerencialView({
                                         if (active && payload && payload.length) {
                                             const year = Number(label);
                                             const yearTotal = annualTotals[year] || 0;
-                                            const top10 = top10CompaniesPerYear[year] || [];
+                                            const top20 = top20CompaniesPerYear[year] || [];
                                             
                                             // Si hay búsqueda activa, resaltar esa empresa si está en el top 10
                                             return (
-                                                <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-50 min-w-[320px] animate-in fade-in zoom-in duration-200">
-                                                    <div className="mb-4 border-b pb-3">
-                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">Resumen del Año</p>
-                                                        <p className="text-lg font-black text-slate-900">
-                                                            Total Aportes {label}:
-                                                        </p>
-                                                        <p className="text-xl font-black text-blue-700">
-                                                            {formatCurrency(yearTotal)}
-                                                        </p>
+                                                <div className="bg-white p-3 rounded-[1.5rem] shadow-2xl border border-slate-100 w-[300px] animate-in fade-in zoom-in duration-200">
+                                                    <div className="mb-2 border-b pb-2">
+                                                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">Resumen del Año</p>
+                                                        <p className="text-sm font-black text-slate-900">Total Aportes {label}:</p>
+                                                        <p className="text-base font-black text-blue-700">{formatCurrency(yearTotal)}</p>
                                                     </div>
-                                                    
-                                                    <div className="space-y-2.5">
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Top 10 Aportantes</p>
-                                                        {top10.map((item: any, index: number) => (
-                                                            <div key={index} className={`flex justify-between items-center gap-4 p-1.5 rounded-lg transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
-                                                                <div className="flex items-center gap-2 max-w-[200px]">
-                                                                    <span className="text-[10px] font-bold text-slate-400 w-4">{index + 1}.</span>
-                                                                    <span className={`text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-500'}`}>
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Top 20 Aportantes</p>
+                                                    <div className="overflow-y-auto max-h-[340px] space-y-0">
+                                                        {top20.map((item: any, index: number) => (
+                                                            <div key={index} className={`flex justify-between items-center gap-2 py-0.5 px-1 rounded transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
+                                                                <div className="flex items-center gap-1 min-w-0">
+                                                                    <span className="text-[8px] font-bold text-slate-400 w-3 shrink-0">{index + 1}.</span>
+                                                                    <span className={`text-[8px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-500'}`}>
                                                                         {item.name}
                                                                     </span>
                                                                 </div>
-                                                                <span className={`text-xs font-bold tabular-nums ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-700'}`}>
+                                                                <span className={`text-[8px] font-bold tabular-nums shrink-0 ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-700'}`}>
                                                                     {formatCurrency(item.monto)}
                                                                 </span>
                                                             </div>
                                                         ))}
-                                                        {top10.length === 0 && (
-                                                            <p className="text-[10px] font-bold text-slate-400 italic">No hay datos para este año</p>
+                                                        {top20.length === 0 && (
+                                                            <p className="text-[9px] font-bold text-slate-400 italic">No hay datos para este año</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -552,8 +562,9 @@ export default function InfGerencialView({
 
                 {/* Sector Bar Chart */}
                 <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div className="mb-8 text-center relative">
-                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector 2021-2026</h3>
+                    <div className="mb-4 text-center relative">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector 2024-2026</h3>
+                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
                         <div className="absolute top-0 right-0">
                             <PresentationButton chartId="distribucion-sector" />
                         </div>
@@ -578,8 +589,9 @@ export default function InfGerencialView({
 
             {/* Financial Evolution Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-6 text-center relative">
+                <div className="mb-4 text-center relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución Financiera 2024-2026</h3>
+                    <p className="text-xs text-amber-600 font-semibold mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-financiera" />
                     </div>
@@ -626,8 +638,9 @@ export default function InfGerencialView({
 
             {/* Ingresos vs Egresos */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
-                <div className="mb-6 relative">
+                <div className="mb-4 relative">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">Ingresos vs Egresos 2024-2026</h3>
+                    <p className="text-xs text-amber-600 font-semibold mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="ingresos-egresos" />
                     </div>
