@@ -53,13 +53,21 @@ const fmtPBI = (v: any) => {
 
 // ─── Títulos ──────────────────────────────────────────────────────────────────
 const CHART_TITLES: Record<string, string> = {
-    'evolucion-aportes': 'Evolución de Aportes (1998-2026) vs PBI (1998-2025)',
-    'distribucion-aportes': 'Distribución de Aportantes 2021–2026',
-    'distribucion-sector': 'Distribución por Sector 2021-2026',
+    'evolucion-aportes':    'Evolución de Aportes (1998-2026) vs PBI (1998-2025)',
+    'distribucion-aportes': 'Distribución de Aportantes 2024–2026',
+    'distribucion-sector':  'Distribución por Sector 2024-2026',
     'evolucion-financiera': 'Evolución Financiera 2024-2026',
-    'ingresos-egresos': 'Ingresos vs Egresos 2024-2026',
-    'poi-comparativo': 'POI 2024-2026 (Presupuesto vs Ejecutado)',
-    'presupuesto-mensual': 'Presupuesto Mensual Proyectado 2026',
+    'ingresos-egresos':     'Ingresos vs Egresos 2024-2026',
+    'poi-comparativo':      'POI 2024-2026 (Presupuesto vs Ejecutado)',
+    'presupuesto-mensual':  'Presupuesto Mensual Proyectado 2026',
+};
+
+const CHART_NOTES: Record<string, string> = {
+    'evolucion-aportes':    'Aportes 2026: Información actualizada a la fecha',
+    'distribucion-aportes': 'Datos 2026: Cifras preliminares al cierre de abril',
+    'distribucion-sector':  'Datos 2026: Cifras preliminares al cierre de abril',
+    'evolucion-financiera': 'Datos 2026: Cifras preliminares al cierre de abril',
+    'ingresos-egresos':     'Datos 2026: Cifras preliminares al cierre de abril',
 };
 
 export default function PresentationView({
@@ -80,6 +88,10 @@ export default function PresentationView({
     const title = CHART_TITLES[chartId] || '';
 
     // ── Preparación de Datos ───────────────────────────────────────────────────
+    const last3Years = useMemo(() =>
+        Array.from(new Set(initialData.map(d => d.anio))).sort().filter(y => y >= 2024),
+        [initialData]);
+
     const last5Years = useMemo(() =>
         Array.from(new Set(initialData.map(d => d.anio))).sort().filter(y => y >= 2021),
         [initialData]);
@@ -98,14 +110,14 @@ export default function PresentationView({
     }, [initialData]);
 
     const annualTotalData = useMemo(() =>
-        [...last5Years].reverse().map(y => ({ year: String(y), total: annualTotals[y] || 0 })),
-        [last5Years, annualTotals]);
+        [...last3Years].reverse().map(y => ({ year: String(y), total: annualTotals[y] || 0 })),
+        [last3Years, annualTotals]);
 
     const sectorData = useMemo(() => {
         const map = new Map<string, number>();
-        initialData.filter(d => last5Years.includes(d.anio)).forEach(d => map.set(d.seccion_desc, (map.get(d.seccion_desc) || 0) + d.monto));
+        initialData.filter(d => last3Years.includes(d.anio)).forEach(d => map.set(d.seccion_desc, (map.get(d.seccion_desc) || 0) + d.monto));
         return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
-    }, [initialData, last5Years]);
+    }, [initialData, last3Years]);
 
     const yearsFinanzas = [2024, 2025, 2026];
 
@@ -164,9 +176,16 @@ export default function PresentationView({
     return (
         <div style={{ width: '100vw', height: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', padding: '60px 80px 40px', boxSizing: 'border-box', overflow: 'hidden' }}>
             {title && (
-                <h2 style={{ margin: '0 0 32px', fontSize: '32px', fontWeight: '900', color: '#1e293b', letterSpacing: '-1px', fontFamily: 'sans-serif', textAlign: 'center' }}>
-                    {title}
-                </h2>
+                <div style={{ margin: '0 0 8px', textAlign: 'center' }}>
+                    <h2 style={{ margin: '0 0 6px', fontSize: '32px', fontWeight: '900', color: '#1e293b', letterSpacing: '-1px', fontFamily: 'sans-serif' }}>
+                        {title}
+                    </h2>
+                    {CHART_NOTES[chartId] && (
+                        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#d97706', fontFamily: 'sans-serif', letterSpacing: '0.01em' }}>
+                            {CHART_NOTES[chartId]}
+                        </p>
+                    )}
+                </div>
             )}
 
             <div style={{ flex: 1, width: '100%', minHeight: 0 }}>
