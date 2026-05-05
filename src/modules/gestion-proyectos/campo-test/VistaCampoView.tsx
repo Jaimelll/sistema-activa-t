@@ -32,11 +32,7 @@ export default function VistaCampoView() {
     const isReadOnly = (searchParams.get('readOnly') === 'true') || (userEmail === 'erizabal@fondoempleo.com.pe');
     const planId = searchParams.get('id');
 
-    const containerStyle = {
-        position: 'fixed', top: 0, right: 0, bottom: 0, left: '288px',
-        overflowY: 'auto', backgroundColor: '#f8fafc', zIndex: 10,
-        padding: '20px',
-    };
+    const containerClass = "w-full max-w-4xl mx-auto ml-0 lg:ml-72 p-4 pb-12";
 
     useEffect(() => {
         async function load() {
@@ -128,19 +124,19 @@ export default function VistaCampoView() {
         }
     };
 
-    if (loading) return <div style={containerStyle}>Cargando...</div>;
-    if (error) return <div style={containerStyle} className="text-red-600 p-4">{error}</div>;
-    if (!selectedProject) return <div style={containerStyle}>Sin proyecto</div>;
+    if (loading) return <div className={containerClass}>Cargando...</div>;
+    if (error) return <div className={`${containerClass} text-red-600 p-4`}>{error}</div>;
+    if (!selectedProject) return <div className={containerClass}>Sin proyecto</div>;
     if (step === 'success') return (
-        <div style={containerStyle} className="flex flex-col items-center justify-center">
+        <div className={`${containerClass} flex flex-col items-center justify-center`}>
             <CheckCircle2 className="text-green-600 mb-4" size={80} />
             <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-6 py-2 rounded">Finalizar</button>
         </div>
     );
 
     return (
-        <div style={containerStyle}>
-            <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-100 p-4 mb-8 flex items-center justify-between z-40">
+        <div className={containerClass}>
+            <header className="bg-white/80 backdrop-blur-md border border-slate-100 p-4 rounded-2xl mb-8 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
                     <Link 
                         href="/dashboard/campo"
@@ -165,8 +161,8 @@ export default function VistaCampoView() {
             </header>
 
             {step === 'info' && (
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-full">
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                         <h2 className="text-2xl font-bold mb-6 text-slate-800 border-b border-slate-100 pb-4">Información General</h2>
                         <SideCard 
                             proyecto={selectedProject} 
@@ -184,7 +180,7 @@ export default function VistaCampoView() {
             )}
 
             {step === 'form' && (
-                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-full bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
                         <button onClick={() => goToStep('info')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
@@ -196,7 +192,7 @@ export default function VistaCampoView() {
                         onUpdate={setAnswers} 
                         disabled={isReadOnly} 
                     />
-                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4">
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4 relative z-20">
                         <button onClick={() => goToStep('info')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
                             <ArrowLeft size={20} /> Atrás
                         </button>
@@ -209,15 +205,20 @@ export default function VistaCampoView() {
             )}
 
             {step === 'evidence' && (
-                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-full bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
                         <button onClick={() => goToStep('form')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
                         <h2 className="text-2xl font-bold text-slate-800">Registro de Evidencias {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
-                    <EvidenceCapture onCapture={setEvidence} disabled={isReadOnly} />
-                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4">
+                    <EvidenceCapture 
+                        onCapture={setEvidence} 
+                        disabled={isReadOnly} 
+                        planId={selectedProject?.id}
+                        initialPhotos={evidence.photos}
+                    />
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4 relative z-20">
                         <button onClick={() => goToStep('form')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
                             <ArrowLeft size={20} /> Atrás
                         </button>
@@ -230,7 +231,7 @@ export default function VistaCampoView() {
             )}
 
             {step === 'map' && (
-                <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <div className="w-full bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-4">
                         <button onClick={() => goToStep('evidence')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
@@ -248,17 +249,22 @@ export default function VistaCampoView() {
                         />
                     </div>
                     {!isReadOnly && (
-                        <button
-                            onClick={handleFinish}
-                            disabled={saving}
-                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
-                        >
-                            {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
-                            {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
-                        </button>
+                        <div className="mt-8 pt-6 border-t border-slate-100 relative z-20">
+                            <button onClick={() => goToStep('evidence')} className="mb-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                                <ArrowLeft size={20} /> Atrás
+                            </button>
+                            <button
+                                onClick={handleFinish}
+                                disabled={saving}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
+                            >
+                                {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                                {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
+                            </button>
+                        </div>
                     )}
                     {isReadOnly && (
-                        <div className="space-y-6">
+                        <div className="space-y-6 mt-8 pt-6 border-t border-slate-100 relative z-20">
                             <div className="p-4 bg-blue-50 text-blue-700 rounded-xl flex items-center gap-3 border border-blue-100 shadow-sm">
                                 <Info size={24} />
                                 <p className="font-bold uppercase tracking-tight text-sm">Estás en modo de visualización de auditoría.</p>

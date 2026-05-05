@@ -11,7 +11,7 @@ import { getModulosVisibles } from '@/config/permissions';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
@@ -59,6 +59,14 @@ export function Sidebar() {
                 <Menu className="w-6 h-6" />
             </button>
 
+            {/* Backdrop for mobile */}
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
             <div className={clsx(
                 "fixed inset-y-0 left-0 bg-primary w-72 text-white transition-transform duration-300 transform z-40 flex flex-col",
                 isOpen ? "translate-x-0" : "-translate-x-full",
@@ -89,6 +97,7 @@ export function Sidebar() {
                                             ? "bg-accent text-white"
                                             : "text-gray-300 hover:bg-primary-light hover:text-white"
                                     )}
+                                    onClick={() => setIsOpen(false)}
                                 >
                                     <Icon className="w-5 h-5" />
                                     <span className="font-medium">{item.name}</span>

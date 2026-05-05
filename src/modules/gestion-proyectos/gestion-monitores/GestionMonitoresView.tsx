@@ -55,7 +55,7 @@ interface ChecklistItem {
     tipo: string;
 }
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 3;
 
 export default function GestionMonitoresView() {
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
@@ -412,11 +412,11 @@ export default function GestionMonitoresView() {
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                        <th className="px-8 py-5">Proyecto</th>
-                                        <th className="px-8 py-5">Monitor</th>
-                                        <th className="px-8 py-5">Fecha</th>
-                                        <th className="px-8 py-5">Estado</th>
-                                        <th className="px-8 py-5 text-center">Acciones</th>
+                                        <th className="px-4 md:px-6 py-3 md:py-4">Proyecto</th>
+                                        <th className="px-4 md:px-6 py-3 md:py-4">Monitor</th>
+                                        <th className="px-4 md:px-6 py-3 md:py-4">Fecha</th>
+                                        <th className="px-4 md:px-6 py-3 md:py-4">Estado</th>
+                                        <th className="px-4 md:px-6 py-3 md:py-4 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
@@ -424,27 +424,27 @@ export default function GestionMonitoresView() {
                                         .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
                                         .map((plan) => (
                                         <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-8 py-5 min-w-[450px]">
+                                            <td className="px-4 md:px-6 py-3 md:py-4 min-w-[250px] md:min-w-[450px]">
                                                 <div className="text-sm font-bold text-slate-800 leading-tight">
                                                     [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}] | {plan.proyecto?.nombre || 'S/N'}
                                                 </div>
-                                                <div className="text-[11px] text-slate-500 mt-2 italic leading-relaxed">
+                                                <div className="text-[11px] text-slate-500 mt-1.5 italic leading-relaxed">
                                                     {plan.proyecto?.nombre ? 'Información completa del proyecto disponible en modo auditoría.' : 'Sin descripción adicional'}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5">
+                                            <td className="px-4 md:px-6 py-3 md:py-4">
                                                 <div className="flex items-center gap-2 text-sm text-slate-600">
                                                     <User size={14} className="text-slate-400" />
                                                     {plan.monitor?.nombre || 'No asignado'}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5 text-sm text-slate-600 font-medium">
+                                            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-slate-600 font-medium">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar size={14} className="text-slate-400" />
                                                     {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-5">
+                                            <td className="px-4 md:px-6 py-3 md:py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                                                     plan.estado === 'pendiente' 
                                                     ? 'bg-amber-50 text-amber-600 border-amber-100' 
@@ -454,7 +454,7 @@ export default function GestionMonitoresView() {
                                                     {plan.estado}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-5 text-center">
+                                            <td className="px-4 md:px-6 py-3 md:py-4 text-center">
                                                 <div className="flex items-center justify-center gap-1">
                                                     <Link 
                                                         href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
@@ -492,7 +492,7 @@ export default function GestionMonitoresView() {
 
                         {/* Paginación */}
                         {planes.length > PAGE_SIZE && (
-                            <div className="px-8 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                            <div className="relative z-20 px-8 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
                                 <span className="text-[11px] text-slate-400 font-medium">
                                     Página {currentPage} de {Math.ceil(planes.length / PAGE_SIZE)}
                                 </span>
