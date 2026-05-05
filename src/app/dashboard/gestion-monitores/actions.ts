@@ -157,8 +157,14 @@ export async function eliminarPlanSupervision(planId: string | number) {
         }
 
         if (plan.estado !== 'pendiente' && plan.estado !== 'ejecutado') {
-            return { success: false, error: 'Solo se pueden eliminar planes en estado PENDIENTE o EJECUTADO (Auditoría).' };
+            return { success: false, error: 'Solo se pueden eliminar planes en estado PENDIENTE o EJECUTADO.' };
         }
+
+        // Borrado en cascada: Eliminar primero los registros en supervisiones_registro
+        await supabaseAdmin
+            .from('supervisiones_registro')
+            .delete()
+            .eq('id_plan', planId);
 
         const { data: deletedData, error } = await supabaseAdmin
             .from('plan_supervision')

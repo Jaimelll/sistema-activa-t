@@ -473,7 +473,7 @@ export default function GestionMonitoresView() {
                                                     >
                                                         <Eye size={18} className="group-hover:scale-110 transition-transform" />
                                                     </Link>
-                                                    {canManagePlans && plan.estado === 'pendiente' && (
+                                                    {canManagePlans && (
                                                         <>
                                                             <button
                                                                 onClick={() => handleEditPlan(plan)}
