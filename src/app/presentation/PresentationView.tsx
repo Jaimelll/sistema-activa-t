@@ -19,11 +19,11 @@ interface AporteFlat {
 
 // ─── Paletas y Formateadores ──────────────────────────────────────────────────
 const COLORS_FINANZAS: Record<string, string> = {
-    'Aportes': '#dc2626',
+    'Aportes': '#2563eb',
     'Intereses': '#94a3b8',
     'G. Operativos': '#86efac',
     'Proyectos': '#facc15',
-    'Becas': '#0ea5e9',
+    'Becas': '#dc2626',
 };
 const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 const PBI_DATA: Record<number, number> = {
@@ -115,8 +115,15 @@ export default function PresentationView({
 
     const sectorData = useMemo(() => {
         const map = new Map<string, number>();
-        initialData.filter(d => last3Years.includes(d.anio)).forEach(d => map.set(d.seccion_desc, (map.get(d.seccion_desc) || 0) + d.monto));
-        return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
+        let total = 0;
+        initialData.filter(d => last3Years.includes(d.anio)).forEach(d => {
+            map.set(d.seccion_desc, (map.get(d.seccion_desc) || 0) + d.monto);
+            total += d.monto;
+        });
+        return Array.from(map.entries())
+            .map(([name, value]) => ({ name, value, percent: total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%' }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 8);
     }, [initialData, last3Years]);
 
     const yearsFinanzas = [2024, 2025, 2026];
@@ -229,7 +236,7 @@ export default function PresentationView({
                                         <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 18 }} width={340} />
                                         <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} formatter={(v: any) => [fmt(v), 'Monto']} />
                                         <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[0, 8, 8, 0]} barSize={40}>
-                                            <LabelList dataKey="value" position="right" formatter={fmtM1} fill="#000000" fontSize={18} fontWeight="800" offset={20} />
+                                            <LabelList dataKey="percent" position="right" fill="#000000" fontSize={18} fontWeight="800" offset={20} />
                                         </Bar>
                                     </BarChart>
                                 );
@@ -256,10 +263,10 @@ export default function PresentationView({
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
                                         <Tooltip formatter={(v: any) => fmt(v)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
                                         <Legend verticalAlign="bottom" align="center" iconSize={40} wrapperStyle={{ paddingTop: '60px', fontSize: '20px', fontWeight: '900' }} iconType="circle" />
-                                        <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#dc2626" radius={[4, 4, 0, 0]}>
+                                        <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#2563eb" radius={[4, 4, 0, 0]}>
                                             <LabelList dataKey="Ingresos" position="top" formatter={fmtM1} fill="#000000" fontSize={18} fontWeight="800" offset={15} />
                                         </Bar>
-                                        <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#2563eb" radius={[4, 4, 0, 0]}>
+                                        <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#dc2626" radius={[4, 4, 0, 0]}>
                                             <LabelList dataKey="Egresos" position="top" formatter={fmtM1} fill="#000000" fontSize={18} fontWeight="800" offset={15} />
                                         </Bar>
                                     </BarChart>

@@ -40,11 +40,11 @@ const VIBRANT_PALETTE = [
 ];
 
 const COLORS_FINANZAS = {
-    'Aportes': '#dc2626',       // Rojo
+    'Aportes': '#2563eb',       // Azul
     'Intereses': '#94a3b8',     // Plomo/Gris
     'G. Operativos': '#86efac', // Verde claro
     'Proyectos': '#facc15',     // Amarillo
-    'Becas': '#0ea5e9',         // Celeste
+    'Becas': '#dc2626',         // Rojo
 };
 
 const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
@@ -359,9 +359,13 @@ export default function InfGerencialView({
 
     const pieData = useMemo(() => {
         const groups = new Map<string, number>();
-        baseData3Y.forEach(d => groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto));
+        let total = 0;
+        baseData3Y.forEach(d => {
+            groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto);
+            total += d.monto;
+        });
         return Array.from(groups.entries())
-            .map(([name, value]) => ({ name, value }))
+            .map(([name, value]) => ({ name, value, percent: total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%' }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 8);
     }, [baseData3Y]);
@@ -580,7 +584,9 @@ export default function InfGerencialView({
                                 <XAxis type="number" hide />
                                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 9 : 10 }} width={isMobile ? 110 : 150} tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val} />
                                 <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} />
-                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} animationDuration={1000} />
+                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} animationDuration={1000}>
+                                    <LabelList dataKey="percent" position="right" fill="#1e293b" fontSize={11} fontWeight={600} />
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -647,11 +653,11 @@ export default function InfGerencialView({
                 </div>
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
                     <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#dc2626' }} />
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#2563eb' }} />
                         <span className="text-sm font-bold text-slate-600">Ingresos (Aportes + Intereses)</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#2563eb' }} />
+                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: '#dc2626' }} />
                         <span className="text-sm font-bold text-slate-600">Egresos (G. Operativos + Proyectos + Becas)</span>
                     </div>
                 </div>
@@ -662,8 +668,8 @@ export default function InfGerencialView({
                             <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} tickFormatter={formatCompactCurrency} width={85} />
                             <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }} />
-                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#dc2626" radius={[4, 4, 0, 0]} maxBarSize={60} />
-                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                            <Bar dataKey="Ingresos" name="Ingresos (Aportes + Intereses)" fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={60} />
+                            <Bar dataKey="Egresos" name="Egresos (G. Operativos + Proyectos + Becas)" fill="#dc2626" radius={[4, 4, 0, 0]} maxBarSize={60} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
