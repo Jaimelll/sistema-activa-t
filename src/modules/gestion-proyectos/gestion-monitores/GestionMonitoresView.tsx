@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
     Plus, 
     Trash2, 
@@ -13,14 +13,21 @@ import {
     LayoutDashboard,
     ChevronRight,
     ChevronLeft,
-    Eye
+    Eye,
+    Pencil,
+    X,
+    AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { SUPER_ADMIN } from '@/config/permissions';
 import { 
     getProyectosList, 
     getMonitoresList, 
     getPlanesSupervision, 
-    crearPlanSupervision 
+    crearPlanSupervision,
+    actualizarPlanSupervision,
+    eliminarPlanSupervision
 } from './actions';
 
 interface Proyecto {
@@ -63,6 +70,18 @@ export default function GestionMonitoresView() {
     const [showProjectList, setShowProjectList] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
+    // Edit mode state
+    const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+    // Delete confirmation modal
+    const [deleteModal, setDeleteModal] = useState<{ open: boolean; planId: string | null }>({ open: false, planId: null });
+    const [deleting, setDeleting] = useState(false);
+    // User email for permissions
+    const [userEmail, setUserEmail] = useState('');
+    // Toast notifications
+    const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' }[]>([]);
+
+    const formRef = useRef<HTMLFormElement>(null);
+
     const [formData, setFormData] = useState({
         id_proyecto: '',
         id_supervisor: '',
@@ -72,9 +91,24 @@ export default function GestionMonitoresView() {
         { id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }
     ]);
 
+    // Toast helper
+    const showToast = (message: string, type: 'success' | 'error') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    };
+
+    // Permission check
+    const canManagePlans = userEmail === SUPER_ADMIN || userEmail === 'erizabal@fondoempleo.com.pe';
+
     useEffect(() => {
         async function loadInitialData() {
             try {
+                // Load user email
+                const supabase = createClient();
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user?.email) setUserEmail(user.email.toLowerCase());
+
                 const [proyData, planData, monData] = await Promise.all([
                     getProyectosList(),
                     getPlanesSupervision(),
@@ -93,6 +127,13 @@ export default function GestionMonitoresView() {
         loadInitialData();
     }, []);
 
+    const resetForm = () => {
+        setFormData({ id_proyecto: '', id_supervisor: '', fecha_programada: '' });
+        setProjectSearch('');
+        setChecklist([{ id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }]);
+        setEditingPlanId(null);
+    };
+
     const addQuestion = () => {
         setChecklist([...checklist, { id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }]);
     };
@@ -105,30 +146,82 @@ export default function GestionMonitoresView() {
         setChecklist(checklist.map(q => q.id === id ? { ...q, [field]: value } : q));
     };
 
+    const handleEditPlan = (plan: Plan) => {
+        // Populate form with plan data
+        setEditingPlanId(plan.id);
+        setFormData({
+            id_proyecto: plan.proyecto?.id?.toString() || '',
+            id_supervisor: (plan as any).id_supervisor || '',
+            fecha_programada: plan.fecha_programada?.split('T')[0] || plan.fecha_programada || '',
+        });
+        const projLabel = plan.proyecto ? `[${plan.proyecto.id}] | [${plan.proyecto.codigo_proyecto}] | ${plan.proyecto.nombre}` : '';
+        setProjectSearch(projLabel);
+        // Load checklist if available
+        const planAny = plan as any;
+        if (planAny.checklist_preguntas && Array.isArray(planAny.checklist_preguntas)) {
+            setChecklist(planAny.checklist_preguntas.map((q: any) => ({
+                id: q.id || Math.random().toString(36).substr(2, 9),
+                pregunta: q.pregunta || '',
+                tipo: q.tipo || 'cumple_no_cumple'
+            })));
+        } else {
+            setChecklist([{ id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }]);
+        }
+        // Scroll to form
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const handleDeletePlan = async () => {
+        if (!deleteModal.planId) return;
+        try {
+            setDeleting(true);
+            await eliminarPlanSupervision(deleteModal.planId);
+            const updatedPlanes = await getPlanesSupervision();
+            setPlanes(updatedPlanes || []);
+            setDeleteModal({ open: false, planId: null });
+            showToast('Plan eliminado exitosamente', 'success');
+        } catch (err: any) {
+            showToast('Error al eliminar: ' + err.message, 'error');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.id_proyecto || !formData.id_supervisor || !formData.fecha_programada) {
-            alert('Por favor complete todos los campos básicos');
+            showToast('Por favor complete todos los campos básicos', 'error');
             return;
         }
         try {
             setSaving(true);
             const checklistJSON = checklist.map(q => ({ id: q.id, pregunta: q.pregunta, tipo: q.tipo }));
-            await crearPlanSupervision({
-                id_proyecto: Number(formData.id_proyecto),
-                id_supervisor: formData.id_supervisor,
-                fecha_programada: formData.fecha_programada,
-                checklist_preguntas: checklistJSON
-            });
-            setFormData({ id_proyecto: '', id_supervisor: '', fecha_programada: '' });
-            setProjectSearch('');
-            setChecklist([{ id: Math.random().toString(36).substr(2, 9), pregunta: '', tipo: 'cumple_no_cumple' }]);
             
+            if (editingPlanId) {
+                // UPDATE mode
+                await actualizarPlanSupervision(editingPlanId, {
+                    id_proyecto: Number(formData.id_proyecto),
+                    id_supervisor: formData.id_supervisor,
+                    fecha_programada: formData.fecha_programada,
+                    checklist_preguntas: checklistJSON
+                });
+                showToast('Plan actualizado exitosamente', 'success');
+            } else {
+                // CREATE mode
+                await crearPlanSupervision({
+                    id_proyecto: Number(formData.id_proyecto),
+                    id_supervisor: formData.id_supervisor,
+                    fecha_programada: formData.fecha_programada,
+                    checklist_preguntas: checklistJSON
+                });
+                showToast('Plan de supervisión creado exitosamente', 'success');
+            }
+            
+            resetForm();
             const updatedPlanes = await getPlanesSupervision();
             setPlanes(updatedPlanes || []);
-            alert('Plan de supervisión creado exitosamente');
         } catch (err: any) {
-            alert('Error al guardar: ' + err.message);
+            showToast('Error al guardar: ' + err.message, 'error');
         } finally {
             setSaving(false);
         }
@@ -150,12 +243,15 @@ export default function GestionMonitoresView() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-7xl mx-auto">
                 {/* Formulario de Creación */}
                 <div className="w-full">
-                    <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                    <form ref={formRef} onSubmit={handleSave} className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${editingPlanId ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
+                        <div className={`p-6 border-b ${editingPlanId ? 'bg-amber-50/50 border-amber-100' : 'bg-slate-50/50 border-slate-100'}`}>
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Plus className="text-blue-600" size={18} />
-                                Nuevo Plan de Supervisión
+                                {editingPlanId ? <Pencil className="text-amber-600" size={18} /> : <Plus className="text-blue-600" size={18} />}
+                                {editingPlanId ? 'Editando Plan de Supervisión' : 'Nuevo Plan de Supervisión'}
                             </h2>
+                            {editingPlanId && (
+                                <p className="text-[11px] text-amber-600 mt-1 font-medium">Modifique los campos y presione Actualizar para guardar los cambios.</p>
+                            )}
                         </div>
                         
                         <div className="p-6 space-y-4">
@@ -275,15 +371,26 @@ export default function GestionMonitoresView() {
                             </div>
                         </div>
 
-                        <div className="p-6 bg-slate-50 border-t border-slate-100">
+                        <div className={`p-6 border-t ${editingPlanId ? 'bg-amber-50/50 border-amber-100' : 'bg-slate-50 border-slate-100'}`}>
                             <button 
                                 type="submit"
                                 disabled={saving}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                className={`w-full font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-white ${
+                                    editingPlanId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
                             >
                                 {saving ? <Clock className="animate-spin" size={18} /> : <Save size={18} />}
-                                {saving ? 'GUARDANDO...' : 'CREAR PLAN DE SUPERVISIÓN'}
+                                {saving ? 'GUARDANDO...' : (editingPlanId ? 'ACTUALIZAR PLAN DE SUPERVISIÓN' : 'CREAR PLAN DE SUPERVISIÓN')}
                             </button>
+                            {editingPlanId && (
+                                <button 
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="w-full mt-2 text-slate-500 hover:text-slate-700 font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-2 text-sm hover:bg-slate-100"
+                                >
+                                    <X size={16} /> Cancelar Edición
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
@@ -348,14 +455,34 @@ export default function GestionMonitoresView() {
                                                 </span>
                                             </td>
                                             <td className="px-8 py-5 text-center">
-                                                <Link 
-                                                    href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
-                                                    target="_blank"
-                                                    className="inline-flex items-center justify-center p-2.5 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
-                                                    title="Visualizar en modo auditoría"
-                                                >
-                                                    <Eye size={20} className="group-hover:scale-110 transition-transform" />
-                                                </Link>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Link 
+                                                        href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
+                                                        target="_blank"
+                                                        className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
+                                                        title="Visualizar en modo auditoría"
+                                                    >
+                                                        <Eye size={18} className="group-hover:scale-110 transition-transform" />
+                                                    </Link>
+                                                    {canManagePlans && plan.estado === 'pendiente' && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleEditPlan(plan)}
+                                                                className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
+                                                                title="Editar Plan"
+                                                            >
+                                                                <Pencil size={18} className="group-hover:scale-110 transition-transform" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setDeleteModal({ open: true, planId: plan.id })}
+                                                                className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group"
+                                                                title="Eliminar Plan"
+                                                            >
+                                                                <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -411,7 +538,69 @@ export default function GestionMonitoresView() {
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-            `}</style>
+                @keyframes animateIn {
+                    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .animate-in { animation: animateIn 0.2s ease-out; }
+            `}
+            </style>
+
+            {/* Delete Confirmation Modal */}
+            {deleteModal.open && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in">
+                        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
+                            <div className="p-2 bg-red-100 rounded-full">
+                                <AlertTriangle className="text-red-600" size={24} />
+                            </div>
+                            <h3 className="font-bold text-slate-800 text-lg">Confirmar Eliminación</h3>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-slate-600 text-sm leading-relaxed">
+                                ¿Está seguro de eliminar este plan de supervisión? <strong className="text-red-600">Esta acción no se puede deshacer.</strong>
+                            </p>
+                        </div>
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteModal({ open: false, planId: null })}
+                                disabled={deleting}
+                                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeletePlan}
+                                disabled={deleting}
+                                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {deleting ? <Clock className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                                {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notifications */}
+            <div className="fixed bottom-6 right-6 z-50 space-y-2">
+                {toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl border text-sm font-bold animate-in ${
+                            toast.type === 'success'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                        }`}
+                    >
+                        {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                        {toast.message}
+                        <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))} className="ml-2 opacity-50 hover:opacity-100">
+                            <X size={14} />
+                        </button>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

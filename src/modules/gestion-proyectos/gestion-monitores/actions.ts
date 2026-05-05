@@ -79,3 +79,75 @@ export async function crearPlanSupervision(payload: {
     revalidatePath('/dashboard/gestion-monitores');
     return data;
 }
+
+export async function actualizarPlanSupervision(
+    planId: string,
+    payload: {
+        id_proyecto: number;
+        id_supervisor: string;
+        fecha_programada: string;
+        checklist_preguntas: any;
+    }
+) {
+    const supabase = await createClient();
+
+    console.log('Actualizando plan:', planId, payload);
+
+    const { data, error } = await supabase
+        .from('plan_supervision')
+        .update({
+            id_proyecto: payload.id_proyecto,
+            id_supervisor: payload.id_supervisor,
+            fecha_programada: payload.fecha_programada,
+            checklist_preguntas: payload.checklist_preguntas,
+        })
+        .eq('id', planId)
+        .eq('estado', 'pendiente')
+        .select();
+
+    if (error) {
+        console.error('ERROR Supabase UPDATE:', error);
+        throw new Error(`Error al actualizar: ${error.message} (Código: ${error.code})`);
+    }
+
+    if (!data || data.length === 0) {
+        throw new Error('No se pudo actualizar. El plan no existe o ya no está en estado PENDIENTE.');
+    }
+
+    revalidatePath('/dashboard/gestion-monitores');
+    return data;
+}
+
+export async function eliminarPlanSupervision(planId: string) {
+    const supabase = await createClient();
+
+    console.log('Eliminando plan:', planId);
+
+    // Verificar que el plan esté en estado pendiente antes de eliminar
+    const { data: plan, error: fetchError } = await supabase
+        .from('plan_supervision')
+        .select('id, estado')
+        .eq('id', planId)
+        .single();
+
+    if (fetchError || !plan) {
+        throw new Error('Plan no encontrado.');
+    }
+
+    if (plan.estado !== 'pendiente') {
+        throw new Error('Solo se pueden eliminar planes en estado PENDIENTE.');
+    }
+
+    const { error } = await supabase
+        .from('plan_supervision')
+        .delete()
+        .eq('id', planId);
+
+    if (error) {
+        console.error('ERROR Supabase DELETE:', error);
+        throw new Error(`Error al eliminar: ${error.message} (Código: ${error.code})`);
+    }
+
+    revalidatePath('/dashboard/gestion-monitores');
+    return { success: true };
+}
