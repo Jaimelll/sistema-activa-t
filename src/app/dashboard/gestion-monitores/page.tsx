@@ -1,4 +1,4 @@
-import GestionMonitoresView from '@/modules/gestion-proyectos/gestion-monitores/GestionMonitoresView';
+import GestionMonitoresView from './GestionMonitoresView';
 import { createClient } from '@/utils/supabase/server';
 import { tieneAccesoModulo } from '@/config/permissions';
 import { redirect } from 'next/navigation';

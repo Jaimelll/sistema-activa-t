@@ -19,6 +19,7 @@ import {
     AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { SUPER_ADMIN } from '@/config/permissions';
 import { 
@@ -58,6 +59,7 @@ interface ChecklistItem {
 const PAGE_SIZE = 3;
 
 export default function GestionMonitoresView() {
+    const router = useRouter();
     const [proyectos, setProyectos] = useState<Proyecto[]>([]);
     const [monitores, setMonitores] = useState<Monitor[]>([]);
     const [planes, setPlanes] = useState<Plan[]>([]);
@@ -175,13 +177,20 @@ export default function GestionMonitoresView() {
         if (!deleteModal.planId) return;
         try {
             setDeleting(true);
-            await eliminarPlanSupervision(deleteModal.planId);
-            const updatedPlanes = await getPlanesSupervision();
-            setPlanes(updatedPlanes || []);
-            setDeleteModal({ open: false, planId: null });
-            showToast('Plan eliminado exitosamente', 'success');
+            const res = await eliminarPlanSupervision(deleteModal.planId);
+            
+            if (res && res.error) {
+                showToast(res.error, 'error');
+            } else {
+                showToast('Plan eliminado exitosamente', 'success');
+                // Actualizar estado local inmediatamente para Feedback UI instantáneo
+                setPlanes(prev => prev.filter(p => p.id !== deleteModal.planId));
+                setDeleteModal({ open: false, planId: null });
+                // Refrescar el componente padre de ser necesario
+                router.refresh();
+            }
         } catch (err: any) {
-            showToast('Error al eliminar: ' + err.message, 'error');
+            showToast('Error de red o servidor al eliminar: ' + (err.message || 'Error desconocido'), 'error');
         } finally {
             setDeleting(false);
         }

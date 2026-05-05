@@ -206,7 +206,15 @@ export default function PresentationView({
                                         <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} />
                                         <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM1} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
                                         <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={v => v === 0 ? '' : `${v}%`} width={100} domain={[0, (dataMax: number) => Math.max(15, dataMax * 1.25)]} />
-                                        <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} formatter={(value: any, name: string) => name === 'pbi' ? (value != null ? [`${value}%`, 'Crecimiento PBI'] : null) : [fmt(value), 'Aportes Totales']} />
+                                        <Tooltip 
+                                            contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} 
+                                            formatter={(value: any, name: string) => {
+                                                if (name === 'pbi') {
+                                                    return value != null ? [`${value}%`, 'Crecimiento PBI'] : ['', ''];
+                                                }
+                                                return [fmt(value), 'Aportes Totales'];
+                                            }} 
+                                        />
                                         <Legend verticalAlign="bottom" align="center" iconSize={40} wrapperStyle={{ paddingTop: '50px', fontWeight: '900', fontSize: '20px' }} />
                                         <Line yAxisId="left" type="monotone" dataKey="total" name="Aportes Totales (S/)" stroke="#2563eb" strokeWidth={6} dot={{ r: 6, fill: '#fff' }} activeDot={{ r: 12 }}>
                                             <LabelList dataKey="total" position="top" formatter={fmtM1} fill="#000000" fontSize={18} fontWeight="800" offset={15} />
@@ -242,7 +250,7 @@ export default function PresentationView({
                                 );
                             case 'evolucion-financiera':
                                 return (
-                                    <BarChart data={groupedFinanzas} margin={{ top: 50, right: 50, left: 20, bottom: 60 }} categoryGap="20%">
+                                    <BarChart data={groupedFinanzas} margin={{ top: 50, right: 50, left: 20, bottom: 60 }} barCategoryGap="20%">
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} dy={25} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
@@ -257,7 +265,7 @@ export default function PresentationView({
                                 );
                             case 'ingresos-egresos':
                                 return (
-                                    <BarChart data={ingresosEgresosData} margin={{ top: 50, right: 80, left: 50, bottom: 60 }} categoryGap="20%">
+                                    <BarChart data={ingresosEgresosData} margin={{ top: 50, right: 80, left: 50, bottom: 60 }} barCategoryGap="20%">
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
@@ -273,7 +281,7 @@ export default function PresentationView({
                                 );
                             case 'poi-comparativo':
                                 return (
-                                    <BarChart data={poiFiltered} margin={{ top: 50, right: 80, left: 50, bottom: 60 }} categoryGap="25%">
+                                    <BarChart data={poiFiltered} margin={{ top: 50, right: 80, left: 50, bottom: 60 }} barCategoryGap="25%">
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 20 }} tickFormatter={fmtM} width={120} domain={[0, (dataMax: number) => dataMax * 1.25]} />
@@ -289,7 +297,7 @@ export default function PresentationView({
                                 );
                             case 'presupuesto-mensual':
                                 return (
-                                    <BarChart data={mappedMensual} margin={{ top: 50, right: 40, left: 20, bottom: 60 }} categoryGap="15%">
+                                    <BarChart data={mappedMensual} margin={{ top: 50, right: 40, left: 20, bottom: 60 }} barCategoryGap="15%">
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis dataKey="mes_nombre" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 16 }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fill: '#000000', fontWeight: '900', fontSize: 18 }} tickFormatter={fmtM} width={110} domain={[0, (dataMax: number) => dataMax * 1.25]} />
