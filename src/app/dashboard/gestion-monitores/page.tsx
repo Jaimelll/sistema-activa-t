@@ -8,6 +8,9 @@ export const metadata = {
   description: 'Planificación de supervisiones de campo.',
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function GestionMonitoresPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -156,8 +156,8 @@ export async function eliminarPlanSupervision(planId: string | number) {
             return { success: false, error: 'Plan no encontrado.' };
         }
 
-        if (plan.estado !== 'pendiente') {
-            return { success: false, error: 'Solo se pueden eliminar planes en estado PENDIENTE.' };
+        if (plan.estado !== 'pendiente' && plan.estado !== 'ejecutado') {
+            return { success: false, error: 'Solo se pueden eliminar planes en estado PENDIENTE o EJECUTADO (Auditoría).' };
         }
 
         const { data: deletedData, error } = await supabaseAdmin

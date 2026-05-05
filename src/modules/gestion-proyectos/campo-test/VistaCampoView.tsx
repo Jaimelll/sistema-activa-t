@@ -11,10 +11,17 @@ const MapSection = dynamic(() => import('./MapSection'), { ssr: false, loading: 
 import SideCard from './SideCard';
 import DynamicForm from './DynamicForm';
 import EvidenceCapture from './EvidenceCapture';
-import { getPlanesSupervisionPendientes, guardarSupervision, getPlanById, getSupervisionByPlanId } from './actions';
-import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ClipboardCheck, Info } from 'lucide-react';
+import { 
+    getPlanesSupervisionPendientes, 
+    guardarSupervision, 
+    getPlanById, 
+    getSupervisionByPlanId,
+    finalizarPlanSupervision
+} from './actions';
+import { ArrowLeft, CheckCircle2, Loader2, ChevronRight, ClipboardCheck, Info, X, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function VistaCampoView() {
     const [step, setStep] = useState('info');
@@ -24,6 +31,9 @@ export default function VistaCampoView() {
     const [answers, setAnswers] = useState({});
     const [evidence, setEvidence] = useState({ photos: [] });
     const [saving, setSaving] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(false);
+    const [toasts, setToasts] = useState([]);
+    const router = useRouter();
 
     const searchParams = useSearchParams();
     const [userEmail, setUserEmail] = useState('');
@@ -56,15 +66,24 @@ export default function VistaCampoView() {
                 }
 
                 if (proyecto) {
-                    // Si es modo lectura, cargar respuestas históricas
+                    console.log('--- DIAGNÓSTICO DE CARGA ---');
+                    console.log('Plan ID:', proyecto.id);
+                    
+                    setIsLoadingData(true);
+                    const registro = await getSupervisionByPlanId(proyecto.id);
+                    setIsLoadingData(false);
+                    
+                    console.log('Registro encontrado en supervisiones_registro:', registro);
+
+                    if (registro) {
+                        setAnswers(registro.respuestas_json || {});
+                        setEvidence({ photos: registro.fotos_urls || [] });
+                        proyecto.latitud_modificada = registro.latitud;
+                        proyecto.longitud_modificada = registro.longitud;
+                        console.log('Datos inyectados en el estado local.');
+                    }
+
                     if (isReadOnly) {
-                        const registro = await getSupervisionByPlanId(proyecto.id);
-                        if (registro) {
-                            setAnswers(registro.respuestas_json || {});
-                            setEvidence({ photos: registro.fotos_urls || [] });
-                            proyecto.latitud_modificada = registro.latitud;
-                            proyecto.longitud_modificada = registro.longitud;
-                        }
                         proyecto.isReadOnly = true;
                     }
 
@@ -101,6 +120,12 @@ export default function VistaCampoView() {
     }, [planId, isReadOnly]);
 
     const goToStep = (newStep) => setStep(newStep);
+
+    const showToast = (message, type) => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    };
 
     const handleFinish = async () => {
         if (!selectedProject) return;
@@ -185,13 +210,21 @@ export default function VistaCampoView() {
                         <button onClick={() => goToStep('info')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
-                        <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión {isReadOnly && '(MODO LECTURA)'}</h2>
+                    <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
-                    <DynamicForm 
-                        questions={selectedProject?.checklist_preguntas || []} 
-                        onUpdate={setAnswers} 
-                        disabled={isReadOnly} 
-                    />
+                    {isLoadingData ? (
+                        <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-4">
+                            <Loader2 size={40} className="animate-spin text-blue-600" />
+                            <p className="font-bold animate-pulse uppercase text-xs tracking-widest">Sincronizando datos de campo...</p>
+                        </div>
+                    ) : (
+                        <DynamicForm 
+                            questions={selectedProject?.checklist_preguntas || []} 
+                            onUpdate={setAnswers} 
+                            disabled={isReadOnly}
+                            initialAnswers={answers}
+                        />
+                    )}
                     <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between gap-4 relative z-20">
                         <button onClick={() => goToStep('info')} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
                             <ArrowLeft size={20} /> Atrás
@@ -249,18 +282,59 @@ export default function VistaCampoView() {
                         />
                     </div>
                     {!isReadOnly && (
-                        <div className="mt-8 pt-6 border-t border-slate-100 relative z-20">
-                            <button onClick={() => goToStep('evidence')} className="mb-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
+                        <div className="mt-8 pt-6 border-t border-slate-100 relative z-20 space-y-4">
+                            <button onClick={() => goToStep('evidence')} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 uppercase text-sm tracking-widest">
                                 <ArrowLeft size={20} /> Atrás
                             </button>
-                            <button
-                                onClick={handleFinish}
-                                disabled={saving}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-xl shadow-xl transition-all flex items-center justify-center gap-3"
-                            >
-                                {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
-                                {saving ? 'GUARDANDO SUPERVISIÓN...' : 'FINALIZAR Y REGISTRAR'}
-                            </button>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <button
+                                    onClick={handleFinish}
+                                    disabled={saving}
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all flex items-center justify-center gap-3"
+                                >
+                                    {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                                    {saving ? 'GUARDANDO...' : 'GUARDAR AVANCE'}
+                                </button>
+
+                                <button
+                                    onClick={async () => {
+                                        if (!selectedProject) return;
+                                        try {
+                                            setSaving(true);
+                                            const lat = selectedProject.latitud_modificada ?? -12.046374;
+                                            const lng = selectedProject.longitud_modificada ?? -77.042793;
+
+                                            // Finalización integral: guarda datos y cambia estado en un solo paso
+                                            await finalizarPlanSupervision({
+                                                id_plan: selectedProject.id,
+                                                id_proyecto: selectedProject.id_proyecto,
+                                                respuestas: answers,
+                                                fotos: evidence.photos,
+                                                latitud: lat,
+                                                longitud: lng,
+                                                firma: null
+                                            });
+                                            
+                                            showToast('Supervisión finalizada correctamente', 'success');
+                                            
+                                            // Redirigir después de un breve delay para ver el toast
+                                            setTimeout(() => {
+                                                window.location.href = '/dashboard/campo';
+                                            }, 1500);
+                                        } catch (err) {
+                                            showToast('Error al finalizar: ' + err.message, 'error');
+                                        } finally {
+                                            setSaving(false);
+                                        }
+                                    }}
+                                    disabled={saving}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-tight"
+                                >
+                                    {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                                    {saving ? 'FINALIZANDO...' : 'FINALIZAR SUPERVISIÓN'}
+                                </button>
+                            </div>
                         </div>
                     )}
                     {isReadOnly && (
@@ -284,6 +358,34 @@ export default function VistaCampoView() {
                     )}
                 </div>
             )}
+            {/* Toast Notifications */}
+            <div className="fixed bottom-6 right-6 z-[9999] space-y-2">
+                {toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={`flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl border text-sm font-bold animate-in ${
+                            toast.type === 'success'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                        }`}
+                    >
+                        {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+                        {toast.message}
+                        <button onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))} className="ml-2 opacity-50 hover:opacity-100">
+                            <X size={14} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            <style jsx>{`
+                @keyframes animateIn {
+                    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .animate-in { animation: animateIn 0.2s ease-out; }
+            `}
+            </style>
         </div>
     );
 }

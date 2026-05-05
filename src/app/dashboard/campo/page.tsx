@@ -6,6 +6,9 @@ export const metadata = {
   description: 'Gestión y ejecución de planes de supervisión.',
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function CampoPage({ searchParams }: { searchParams: { id?: string } }) {
   const params = await searchParams;
   const planId = params?.id;

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
 export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
@@ -8,6 +9,11 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return [];
+  
+  console.log('--- VERIFICACIÓN DE CONEXIÓN LOCAL ---');
+  console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...');
+  console.log('Usuario:', user.email);
+  console.log('--------------------------------------');
 
   // 1. Consultar el ID del monitor en la tabla 'monitores' usando el CORREO de Auth
   // Esto resuelve el conflicto de UUIDs diferentes entre Auth y la tabla monitores.
@@ -187,14 +193,26 @@ export async function getPlanById(planId: string) {
 }
 
 export async function getSupervisionByPlanId(planId: string) {
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  console.log('--- LECTURA ADMINISTRATIVA DE REGISTRO ---');
+  console.log('PlanId:', planId);
+
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
+  );
+
+  const { data, error } = await supabaseAdmin
     .from('supervisiones_registro')
     .select('*')
     .eq('id_plan', planId)
     .single();
   
-  if (error) return null;
+  if (error) {
+    console.warn('Registro no encontrado con id_plan:', planId, error.message);
+    return null;
+  }
+  
+  console.log('Registro recuperado con éxito mediante ADMIN.');
   return data;
 }
 
@@ -203,25 +221,131 @@ export async function guardarSupervision(payload: any) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No autenticado');
 
-  const { error } = await supabase
+  // Usar cliente administrativo para saltar RLS en la inserción de evidencias
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
+  );
+
+  const { error } = await supabaseAdmin
     .from('supervisiones_registro')
     .insert({
       id_plan: payload.id_plan,
       fecha_ejecucion: new Date().toISOString(),
       latitud: payload.latitud,
       longitud: payload.longitud,
+      coordenadas_gps: `${payload.latitud}, ${payload.longitud}`,
       respuestas_json: payload.respuestas,
       fotos_urls: payload.fotos,
       firma_url: payload.firma,
+      // Opcional: podrías añadir user_id: user.id si la tabla lo requiere
     });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('Error insertando en supervisiones_registro:', error);
+    throw new Error(error.message);
+  }
 
-  await supabase
+  console.log('Guardando supervisión para plan:', payload.id_plan);
+
+  const { data: updatedData, error: updateError } = await supabaseAdmin
     .from('plan_supervision')
-    .update({ estado: 'completado' })
-    .eq('id', payload.id_plan);
+    .update({ 
+      estado: 'ejecutado'
+    })
+    .eq('id', payload.id_plan)
+    .select();
+
+  if (updateError || !updatedData || updatedData.length === 0) {
+    console.error('Error al actualizar estado del plan:', updateError?.message || '0 filas afectadas');
+    throw new Error('No se pudo actualizar el estado del plan.');
+  }
 
   revalidatePath('/dashboard/campo');
   return { success: true };
+}
+
+export async function finalizarPlanSupervision(payload: any) {
+  const { id_plan: planId } = payload;
+  console.log('--- INICIO FINALIZACIÓN INTEGRAL ---');
+  console.log('ID del Plan:', planId);
+  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No autenticado');
+
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
+  );
+
+  // 1. Insertar el registro detallado en supervisiones_registro
+  console.log('Insertando detalles en supervisiones_registro...');
+  const { error: insertError } = await supabaseAdmin
+    .from('supervisiones_registro')
+    .upsert({
+      id_plan: planId,
+      fecha_ejecucion: new Date().toISOString(),
+      latitud: payload.latitud,
+      longitud: payload.longitud,
+      coordenadas_gps: `${payload.latitud}, ${payload.longitud}`,
+      respuestas_json: payload.respuestas,
+      fotos_urls: payload.fotos,
+      firma_url: payload.firma,
+    }, { onConflict: 'id_plan' });
+
+  if (insertError) {
+    console.error('Error insertando detalles:', insertError);
+    throw new Error(`Error al guardar detalles: ${insertError.message}`);
+  }
+
+  // 2. Actualizar el estado del plan_supervision
+  console.log('Actualizando estado del plan...');
+  const { data: updatedData, error: updateError } = await supabaseAdmin
+    .from('plan_supervision')
+    .update({ 
+      estado: 'ejecutado'
+    })
+    .eq('id', planId)
+    .select();
+
+  if (updateError || !updatedData || updatedData.length === 0) {
+    console.error('Error actualizando estado:', updateError?.message);
+    throw new Error('No se pudo actualizar el estado del plan.');
+  }
+
+  console.log('Supervisión finalizada y guardada con éxito.');
+  
+  // Revalidación estándar de rutas
+  revalidatePath('/dashboard/campo');
+  revalidatePath('/dashboard/gestion-monitores');
+  
+  return { success: true };
+}
+
+export async function eliminarPlanSupervision(planId: string | number) {
+    const supabase = await createClient();
+    try {
+        const supabaseAdmin = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
+        );
+
+        // Borrar primero los registros asociados en supervisiones_registro
+        await supabaseAdmin.from('supervisiones_registro').delete().eq('id_plan', planId);
+
+        // Borrar el plan
+        const { error } = await supabaseAdmin
+            .from('plan_supervision')
+            .delete()
+            .eq('id', planId);
+
+        if (error) throw error;
+
+        revalidatePath('/dashboard/campo');
+        return { success: true };
+    } catch (e: any) {
+        console.error('Error eliminando plan:', e);
+        return { success: false, error: e.message };
+    }
 }

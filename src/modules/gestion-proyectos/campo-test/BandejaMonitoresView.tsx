@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getMisPlanesSupervision } from './actions';
-import { ClipboardList, Calendar, CheckCircle2, Clock, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { getMisPlanesSupervision, eliminarPlanSupervision } from './actions';
+import { ClipboardList, Calendar, CheckCircle2, Clock, ChevronRight, LayoutDashboard, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function BandejaMonitoresView() {
@@ -41,9 +41,14 @@ export default function BandejaMonitoresView() {
                     </h1>
                     <p className="text-slate-500 mt-2 font-medium">Selecciona un plan de la lista para iniciar el registro de campo.</p>
                 </div>
-                <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-                    <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Asignados:</span>
-                    <span className="ml-2 text-blue-600 font-black text-xl">{planes.length}</span>
+                <div className="flex flex-col items-end gap-2">
+                    <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Total Asignados:</span>
+                        <span className="ml-2 text-blue-600 font-black text-xl">{planes.length}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter italic">
+                        Última sincronización: {new Date().toLocaleTimeString()}
+                    </p>
                 </div>
             </header>
 
@@ -65,14 +70,34 @@ export default function BandejaMonitoresView() {
                                     <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100">
                                         <ClipboardList className="text-blue-600" size={24} />
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                                        plan.estado === 'completado' 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : 'bg-amber-100 text-amber-700'
-                                    }`}>
-                                        {plan.estado === 'completado' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                                        {plan.estado}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={async (e) => {
+                                                e.preventDefault();
+                                                if(confirm('¿Estás seguro de eliminar este registro de prueba?')) {
+                                                    const res = await eliminarPlanSupervision(plan.id);
+                                                    if(res.success) {
+                                                        alert('Registro eliminado correctamente');
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert('Error al eliminar: ' + res.error);
+                                                    }
+                                                }
+                                            }}
+                                            className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                            title="Eliminar registro"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
+                                            (plan.estado === 'completado' || plan.estado === 'ejecutado')
+                                            ? 'bg-green-100 text-green-700' 
+                                            : 'bg-amber-100 text-amber-700'
+                                        }`}>
+                                            {(plan.estado === 'completado' || plan.estado === 'ejecutado') ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                                            {plan.estado}
+                                        </span>
+                                    </div>
                                 </div>
                                 <h3 className="text-lg font-black text-slate-800 leading-tight line-clamp-2">
                                     {plan.proyecto?.nombre || 'Proyecto sin nombre'}
@@ -100,12 +125,12 @@ export default function BandejaMonitoresView() {
                                 <Link 
                                     href={`/dashboard/campo?id=${plan.id}`}
                                     className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
-                                        plan.estado === 'completado'
+                                        (plan.estado === 'completado' || plan.estado === 'ejecutado')
                                         ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                         : 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 group-hover:scale-[1.02]'
                                     }`}
                                 >
-                                    {plan.estado === 'completado' ? 'Supervisión Realizada' : 'Iniciar Supervisión'}
+                                    {(plan.estado === 'completado' || plan.estado === 'ejecutado') ? 'Supervisión Realizada' : 'Iniciar Supervisión'}
                                     <ChevronRight size={18} />
                                 </Link>
                             </div>

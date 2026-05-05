@@ -1,10 +1,16 @@
 // @ts-nocheck
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export default function DynamicForm({ questions = [], onUpdate, disabled = false }) {
-  const [answers, setAnswers] = useState({});
+export default function DynamicForm({ questions = [], onUpdate, disabled = false, initialAnswers = {} }) {
+  const [answers, setAnswers] = useState(initialAnswers || {});
+
+  useEffect(() => {
+    if (initialAnswers && Object.keys(initialAnswers).length > 0) {
+      setAnswers(initialAnswers);
+    }
+  }, [initialAnswers]);
 
   const handleChange = (id, value) => {
     if (disabled) return;
