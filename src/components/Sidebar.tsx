@@ -47,7 +47,11 @@ export function Sidebar() {
     const getMenuItems = (email: string | null | undefined) => {
         const modulosVisibles = getModulosVisibles(email);
         if (modulosVisibles === 'ALL') return allMenuItems;
-        return allMenuItems.filter(item => modulosVisibles.includes(item.name));
+        
+        // Comparación robusta para evitar problemas de espacios o acentos
+        return allMenuItems.filter(item => 
+            modulosVisibles.some(m => m.trim().toLowerCase() === item.name.trim().toLowerCase())
+        );
     };
 
     return (

@@ -6,28 +6,28 @@ export const SUPER_ADMIN = 'jduran@fondoempleo.com.pe';
 
 // Módulos por usuario (nombres exactos usados en el Sidebar)
 export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
-    'jduran@fondoempleo.com.pe':    'ALL',
-    'invitado@fondoempleo.com.pe':  ['Inf. Gerencial', 'Proyectos', 'Servicios'],
-    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes'],
-    'pricra@fondoempleo.com.pe':    ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Aportantes'],
-    'arojas@fondoempleo.com.pe':    ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
-    'erizabal@fondoempleo.com.pe':  ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores'],
-    'jleclere@fondoempleo.com.pe':  ['Proyectos', 'Supervisión'],
-    'jbozzo@fondoempleo.com.pe':    ['Proyectos', 'Supervisión'],
+    'jduran@fondoempleo.com.pe': 'ALL',
+    'invitado@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios'],
+    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes', 'Supervisión', 'Gestión de Monitores'],
+    'pricra@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Aportantes'],
+    'arojas@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
+    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Supervisión'],
+    'jleclere@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
+    'jbozzo@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
 };
 
 // Mapa de módulo → ruta principal (para validación en middleware)
 export const RUTA_POR_MODULO: Record<string, string> = {
-    'Inf. Gerencial':       '/dashboard/inf-gerencial',
-    'Proyectos':            '/dashboard',
-    'Servicios':            '/dashboard/servicios',
-    'Supervisión':          '/dashboard/campo',
+    'Inf. Gerencial': '/dashboard/inf-gerencial',
+    'Proyectos': '/dashboard',
+    'Servicios': '/dashboard/servicios',
+    'Supervisión': '/dashboard/campo',
     'Gestión de Monitores': '/dashboard/gestion-monitores',
-    'Documentos':           '/dashboard/documentos',
-    'Evaluación':           '/dashboard/evaluacion',
+    'Documentos': '/dashboard/documentos',
+    'Evaluación': '/dashboard/evaluacion',
     'Gestión de Proyectos': '/dashboard/gestion-proyectos',
     'Gestión de Servicios': '/dashboard/gestion-servicios',
-    'Gestión de Aportantes':'/dashboard/gestion-aportantes',
+    'Gestión de Aportantes': '/dashboard/gestion-aportantes',
 };
 
 // Rutas que siempre están permitidas sin importar el perfil

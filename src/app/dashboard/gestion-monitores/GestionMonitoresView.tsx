@@ -99,7 +99,7 @@ export default function GestionMonitoresView() {
     };
 
     // Permission check
-    const canManagePlans = userEmail === SUPER_ADMIN || userEmail === 'erizabal@fondoempleo.com.pe';
+    const canManagePlans = [SUPER_ADMIN, 'rcarbajal@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'].includes(userEmail.toLowerCase());
 
     useEffect(() => {
         async function loadInitialData() {

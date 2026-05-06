@@ -28,13 +28,12 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
     .select('*')
     .eq('estado', 'pendiente');
 
-  // Si se encuentra al monitor por correo, filtramos por su ID de supervisor
-  if (monitorData && !skipUserFilter) {
+  const GLOBAL_EMAILS = ['jduran@fondoempleo.com.pe', 'rcarbajal@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'];
+  const isGlobalUser = GLOBAL_EMAILS.includes(user.email?.toLowerCase() || '');
+
+  // Si NO es usuario global y se encuentra al monitor por correo, filtramos por su ID de supervisor
+  if (monitorData && !isGlobalUser && !skipUserFilter) {
     query = query.eq('id_supervisor', monitorData.id);
-  } else if (!skipUserFilter) {
-    // Si no se encuentra en la tabla monitores y no es modo auditoría,
-    // es probable que sea un admin o un usuario sin planes.
-    // Dejamos que la consulta continúe (si es admin verá todo por RLS o lógica previa)
   }
 
   const { data: planes, error } = await query;
@@ -116,16 +115,16 @@ export async function getMisPlanesSupervision() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const ADMIN_EMAIL = 'jduran@fondoempleo.com.pe';
-  const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const GLOBAL_EMAILS = ['jduran@fondoempleo.com.pe', 'rcarbajal@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'];
+  const isGlobalUser = GLOBAL_EMAILS.includes(user.email?.toLowerCase() || '');
 
   let query = supabase
     .from('plan_supervision')
     .select('*')
     .order('fecha_programada', { ascending: false });
 
-  // Si NO es el admin especial, filtramos por su monitor_id
-  if (!isAdmin) {
+  // Si NO es un usuario global, filtramos por su monitor_id
+  if (!isGlobalUser) {
     const { data: monitorData } = await supabase
       .from('monitores')
       .select('id')

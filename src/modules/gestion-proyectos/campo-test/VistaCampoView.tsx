@@ -55,7 +55,7 @@ export default function VistaCampoView() {
                 if (user?.email) setUserEmail(user.email.toLowerCase());
 
                 let proyecto = null;
-                const isAuditUser = user?.email?.toLowerCase() === 'erizabal@fondoempleo.com.pe' || user?.email?.toLowerCase() === 'jduran@fondoempleo.com.pe';
+                const isAuditUser = ['jduran@fondoempleo.com.pe', 'rcarbajal@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'].includes(user?.email?.toLowerCase() || '');
 
                 if (planId) {
                     proyecto = await getPlanById(planId);
