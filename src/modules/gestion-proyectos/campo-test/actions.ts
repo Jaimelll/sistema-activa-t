@@ -324,17 +324,53 @@ export async function finalizarPlanSupervision(payload: any) {
 }
 
 export async function eliminarPlanSupervision(planId: string | number) {
-    const supabase = await createClient();
+    console.log('Eliminando plan desde módulo supervisión:', planId);
+    
     try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { success: false, error: 'No autenticado' };
+
         const supabaseAdmin = createSupabaseClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
         );
 
-        // Borrar primero los registros asociados en supervisiones_registro
-        await supabaseAdmin.from('supervisiones_registro').delete().eq('id_plan', planId);
+        // 1. Obtener información de evidencias para limpiar el Storage
+        const { data: registro } = await supabaseAdmin
+            .from('supervisiones_registro')
+            .select('fotos_urls, firma_url')
+            .eq('id_plan', planId)
+            .single();
 
-        // Borrar el plan
+        if (registro) {
+            const filesToDelete: string[] = [];
+            
+            // Fotos
+            if (registro.fotos_urls && Array.isArray(registro.fotos_urls)) {
+                registro.fotos_urls.forEach((url: string) => {
+                    const parts = url.split('/evidencias_supervision/');
+                    if (parts.length > 1) filesToDelete.push(parts[1]);
+                });
+            }
+
+            // Firma
+            if (registro.firma_url) {
+                const parts = registro.firma_url.split('/evidencias_supervision/');
+                if (parts.length > 1) filesToDelete.push(parts[1]);
+            }
+
+            // Eliminar de Storage
+            if (filesToDelete.length > 0) {
+                console.log('Limpiando storage:', filesToDelete);
+                await supabaseAdmin.storage.from('evidencias_supervision').remove(filesToDelete);
+            }
+
+            // 2. Borrar registro asociado
+            await supabaseAdmin.from('supervisiones_registro').delete().eq('id_plan', planId);
+        }
+
+        // 3. Borrar el plan
         const { error } = await supabaseAdmin
             .from('plan_supervision')
             .delete()
@@ -343,6 +379,8 @@ export async function eliminarPlanSupervision(planId: string | number) {
         if (error) throw error;
 
         revalidatePath('/dashboard/campo');
+        revalidatePath('/dashboard/gestion-monitores');
+        
         return { success: true };
     } catch (e: any) {
         console.error('Error eliminando plan:', e);

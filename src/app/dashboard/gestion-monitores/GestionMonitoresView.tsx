@@ -74,8 +74,6 @@ export default function GestionMonitoresView() {
 
     // Edit mode state
     const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
-    // Delete confirmation modal
-    const [deleteModal, setDeleteModal] = useState<{ open: boolean; planId: string | null }>({ open: false, planId: null });
     const [deleting, setDeleting] = useState(false);
     // User email for permissions
     const [userEmail, setUserEmail] = useState('');
@@ -173,28 +171,6 @@ export default function GestionMonitoresView() {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    const handleDeletePlan = async () => {
-        if (!deleteModal.planId) return;
-        try {
-            setDeleting(true);
-            const res = await eliminarPlanSupervision(deleteModal.planId);
-            
-            if (res && res.error) {
-                showToast(res.error, 'error');
-            } else {
-                showToast('Plan eliminado exitosamente', 'success');
-                // Actualizar estado local inmediatamente para Feedback UI instantáneo
-                setPlanes(prev => prev.filter(p => p.id !== deleteModal.planId));
-                setDeleteModal({ open: false, planId: null });
-                // Refrescar el componente padre de ser necesario
-                router.refresh();
-            }
-        } catch (err: any) {
-            showToast('Error de red o servidor al eliminar: ' + (err.message || 'Error desconocido'), 'error');
-        } finally {
-            setDeleting(false);
-        }
-    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -473,23 +449,40 @@ export default function GestionMonitoresView() {
                                                     >
                                                         <Eye size={18} className="group-hover:scale-110 transition-transform" />
                                                     </Link>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm('¿Está seguro de eliminar este plan de supervisión? Se eliminarán también las fotos y registros asociados.')) {
+                                                                try {
+                                                                    setDeleting(true);
+                                                                    const res = await eliminarPlanSupervision(plan.id);
+                                                                    if (res.success) {
+                                                                        showToast('Plan eliminado exitosamente', 'success');
+                                                                        setPlanes(prev => prev.filter(p => p.id !== plan.id));
+                                                                        router.refresh();
+                                                                    } else {
+                                                                        showToast(res.error || 'Error al eliminar', 'error');
+                                                                    }
+                                                                } catch (err: any) {
+                                                                    showToast('Error de red: ' + err.message, 'error');
+                                                                } finally {
+                                                                    setDeleting(false);
+                                                                }
+                                                            }
+                                                        }}
+                                                        disabled={deleting}
+                                                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group disabled:opacity-30"
+                                                        title="Eliminar Plan"
+                                                    >
+                                                        <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
+                                                    </button>
                                                     {canManagePlans && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleEditPlan(plan)}
-                                                                className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
-                                                                title="Editar Plan"
-                                                            >
-                                                                <Pencil size={18} className="group-hover:scale-110 transition-transform" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setDeleteModal({ open: true, planId: plan.id })}
-                                                                className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group"
-                                                                title="Eliminar Plan"
-                                                            >
-                                                                <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-                                                            </button>
-                                                        </>
+                                                        <button
+                                                            onClick={() => handleEditPlan(plan)}
+                                                            className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
+                                                            title="Editar Plan"
+                                                        >
+                                                            <Pencil size={18} className="group-hover:scale-110 transition-transform" />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
@@ -555,41 +548,6 @@ export default function GestionMonitoresView() {
             `}
             </style>
 
-            {/* Delete Confirmation Modal */}
-            {deleteModal.open && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in">
-                        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-                            <div className="p-2 bg-red-100 rounded-full">
-                                <AlertTriangle className="text-red-600" size={24} />
-                            </div>
-                            <h3 className="font-bold text-slate-800 text-lg">Confirmar Eliminación</h3>
-                        </div>
-                        <div className="p-6">
-                            <p className="text-slate-600 text-sm leading-relaxed">
-                                ¿Está seguro de eliminar este plan de supervisión? <strong className="text-red-600">Esta acción no se puede deshacer.</strong>
-                            </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
-                            <button
-                                onClick={() => setDeleteModal({ open: false, planId: null })}
-                                disabled={deleting}
-                                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleDeletePlan}
-                                disabled={deleting}
-                                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50"
-                            >
-                                {deleting ? <Clock className="animate-spin" size={16} /> : <Trash2 size={16} />}
-                                {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Toast Notifications */}
             <div className="fixed bottom-6 right-6 z-50 space-y-2">

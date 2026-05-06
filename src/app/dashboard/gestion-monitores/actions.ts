@@ -120,74 +120,89 @@ export async function actualizarPlanSupervision(
 }
 
 export async function eliminarPlanSupervision(planId: string | number) {
-    const supabase = await createClient();
-
-    console.log('Eliminando plan:', planId);
+    console.log('Eliminando plan integral:', planId);
 
     try {
-        // Validación de Seguridad por Correo Electrónico
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user || !user.email) {
-            return { success: false, error: 'Usuario no autenticado o sesión expirada.' };
-        }
-
-        const email = user.email.toLowerCase();
-        const allowedEmails = ['jduran@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'];
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
         
-        if (!allowedEmails.includes(email)) {
-            console.warn(`Intento de eliminación no autorizado por: ${email}`);
-            return { success: false, error: 'Error de autorización: No tienes permisos para eliminar este registro.' };
+        if (!user) {
+            return { success: false, error: 'Usuario no autenticado.' };
         }
 
-        // Crear cliente con privilegios de administrador (Bypass RLS)
+        // Cliente administrativo para bypass RLS
         const supabaseAdmin = createSupabaseClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
         );
 
-        // Verificar que el plan esté en estado pendiente antes de eliminar
-        const { data: plan, error: fetchError } = await supabaseAdmin
-            .from('plan_supervision')
-            .select('id, estado')
-            .eq('id', planId)
-            .single();
-
-        if (fetchError || !plan) {
-            return { success: false, error: 'Plan no encontrado.' };
-        }
-
-        if (plan.estado !== 'pendiente' && plan.estado !== 'ejecutado') {
-            return { success: false, error: 'Solo se pueden eliminar planes en estado PENDIENTE o EJECUTADO.' };
-        }
-
-        // Borrado en cascada: Eliminar primero los registros en supervisiones_registro
-        await supabaseAdmin
+        // 1. Obtener información de evidencias para limpiar el Storage
+        const { data: registros } = await supabaseAdmin
             .from('supervisiones_registro')
-            .delete()
+            .select('fotos_urls, firma_url')
             .eq('id_plan', planId);
 
-        const { data: deletedData, error } = await supabaseAdmin
+        if (registros && registros.length > 0) {
+            const filesToDelete: string[] = [];
+            
+            for (const registro of registros) {
+                // Procesar fotos
+                if (registro.fotos_urls && Array.isArray(registro.fotos_urls)) {
+                    registro.fotos_urls.forEach((url: string) => {
+                        const parts = url.split('/evidencias_supervision/');
+                        if (parts.length > 1) filesToDelete.push(parts[1]);
+                    });
+                }
+
+                // Procesar firma
+                if (registro.firma_url) {
+                    const parts = registro.firma_url.split('/evidencias_supervision/');
+                    if (parts.length > 1) filesToDelete.push(parts[1]);
+                }
+            }
+
+            // Eliminar archivos físicos
+            if (filesToDelete.length > 0) {
+                const uniqueFiles = [...new Set(filesToDelete)];
+                console.log('Eliminando archivos físicos del Storage:', uniqueFiles);
+                const { error: storageError } = await supabaseAdmin
+                    .storage
+                    .from('evidencias_supervision')
+                    .remove(uniqueFiles);
+                
+                if (storageError) {
+                    console.error('Error al eliminar archivos de Storage:', storageError);
+                }
+            }
+
+            // 2. Eliminar el registro de supervisión
+            await supabaseAdmin
+                .from('supervisiones_registro')
+                .delete()
+                .eq('id_plan', planId);
+        }
+
+        // 3. Eliminar el plan principal
+        const { data: deletedData, error: deleteError } = await supabaseAdmin
             .from('plan_supervision')
             .delete()
             .eq('id', planId)
             .select();
 
-        console.log('Resultado DELETE Supabase:', { deletedData, error });
-
-        if (error) {
-            console.error('ERROR Supabase DELETE:', error);
-            return { success: false, error: `Error de base de datos: ${error.message} (Código: ${error.code})` };
+        if (deleteError) {
+            throw deleteError;
         }
 
         if (!deletedData || deletedData.length === 0) {
-            console.warn('DELETE ejecutado pero 0 filas afectadas. ID:', planId);
-            return { success: false, error: 'No se pudo eliminar el registro. Puede haber restricciones de permisos (RLS) bloqueando la acción silenciosamente.' };
+            return { success: false, error: 'No se encontró el plan para eliminar o ya fue eliminado.' };
         }
 
         revalidatePath('/dashboard/gestion-monitores');
+        revalidatePath('/dashboard/campo');
+        
         return { success: true };
     } catch (e: any) {
-        console.error('Excepción no controlada en eliminarPlanSupervision:', e);
-        return { success: false, error: e.message || 'Error desconocido en el servidor' };
+        console.error('Excepción en eliminarPlanSupervision:', e);
+        return { success: false, error: e.message || 'Error interno al eliminar el plan.' };
     }
 }
