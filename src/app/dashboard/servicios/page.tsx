@@ -6,6 +6,7 @@ import { ServiciosKPIs } from '@/components/servicios/ServiciosKPIs';
 import { ServiciosFilters } from '@/components/servicios/ServiciosFilters';
 import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
 import { ServiciosTable } from '@/components/servicios/ServiciosTable';
+import { PeruMapBeneficiariosChart } from '@/components/servicios/PeruMapBeneficiariosChart';
 
 export default function ServiciosPage() {
     const supabase = createClient();
@@ -79,6 +80,7 @@ export default function ServiciosPage() {
                 .select(`
                     *,
                     beneficiarios,
+                    region:region_id(id, descripcion),
                     institucion:institucion_id(descripcion),
                     eje:eje_id(descripcion),
                     linea:linea_id(descripcion),
@@ -163,6 +165,32 @@ export default function ServiciosPage() {
         });
     }, [data, activeFilters, filters.search, processState]);
 
+    const bubbleMapData = useMemo(() => {
+        const map = new Map<number, { regionId: number; regionName: string; count: number; proyectos: any[] }>();
+        filteredData.forEach(d => {
+            const regionId = d.region_id;
+            const regionName = d.region?.descripcion || 'Desconocido';
+            if (!regionId) return;
+            if (!map.has(regionId)) {
+                map.set(regionId, {
+                    regionId,
+                    regionName,
+                    count: 0,
+                    proyectos: []
+                });
+            }
+            const entry = map.get(regionId)!;
+            entry.count += (Number(d.beneficiarios) || 0);
+            entry.proyectos.push({
+                id: d.id,
+                codigo: d.nombre || '',
+                nombre: d.nombre || '',
+                institucion: d.institucion?.descripcion || ''
+            });
+        });
+        return Array.from(map.values());
+    }, [filteredData]);
+
 
     return (
         <div className="space-y-6 pb-12">
@@ -210,6 +238,10 @@ export default function ServiciosPage() {
                         grupos: filters.grupos
                     }}
                 />
+            </div>
+
+            <div className="w-full">
+                <PeruMapBeneficiariosChart data={bubbleMapData} />
             </div>
 
         </div>
