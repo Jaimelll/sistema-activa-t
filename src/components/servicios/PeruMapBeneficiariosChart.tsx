@@ -9,14 +9,14 @@ interface ProyectoBurbuja {
   id: number;
   codigo: string;
   nombre: string;
-  contacto?: string;
-  institucion?: string;
+  beneficiarios: number;
+  institucion: string;
 }
 
 interface RegionBubble {
   regionId: any;
   regionName: string;
-  count: number; // En este componente, count representa el TOTAL DE BENEFICIARIOS
+  count: number; // TOTAL DE BENEFICIARIOS
   proyectos: ProyectoBurbuja[];
 }
 
@@ -43,10 +43,8 @@ function isExcluded(name: string): boolean {
 
 function bubbleRadius(count: number, maxCount: number): number {
   if (maxCount === 0) return 0;
-  // Radio para el viewBox 600x850
   const minR = 8;
   const maxR = 40;
-  // Percepción de área proporcional (raíz cuadrada)
   return minR + (Math.sqrt(count / maxCount) * (maxR - minR));
 }
 
@@ -64,7 +62,21 @@ interface TooltipData {
 }
 
 function MapTooltip({ data }: { data: TooltipData }) {
-  const recent = [...data.proyectos].sort((a, b) => b.id - a.id).slice(0, 5); // Limit to top 5 to avoid overflow
+  // Agrupación por Institución
+  const institutions = useMemo(() => {
+    const map = new Map<string, number>();
+    data.proyectos.forEach((p) => {
+      const name = p.institucion || 'Sin Institución';
+      map.set(name, (map.get(name) || 0) + p.beneficiarios);
+    });
+
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [data.proyectos]);
+
+  const topInstitutions = institutions.slice(0, 10);
+  const remainingCount = institutions.length - 10;
 
   const transformX = data.isRightSide ? 'calc(-100% - 14px)' : '14px';
   const transformY = data.isBottomSide ? 'calc(-100% - 14px)' : '-10px';
@@ -78,40 +90,43 @@ function MapTooltip({ data }: { data: TooltipData }) {
         transform: `translate(${transformX}, ${transformY})`
       }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-[550px] max-w-[90vw] text-xs ring-1 ring-black/5">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-4 w-[450px] max-w-[90vw] text-xs ring-1 ring-black/5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
           <div className="flex flex-col">
-            <span className="font-bold text-sm text-blue-300">{data.regionName}</span>
-            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Participación: {data.participation}</span>
+            <span className="font-bold text-base text-blue-300">{data.regionName}</span>
+            <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Participación: {data.participation}</span>
           </div>
-          <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-[11px] font-extrabold shadow-sm">
-            {data.count.toLocaleString('es-PE')} benef.
-          </span>
+          <div className="text-right">
+            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[12px] font-black shadow-lg shadow-blue-500/20">
+              {data.count.toLocaleString('es-PE')} benef.
+            </span>
+          </div>
         </div>
 
-        {/* proyectos list */}
-        <div className="space-y-1.5 pr-1">
-          {recent.map((p) => (
-            <div key={p.id} className="flex gap-2 items-start border-l-2 border-blue-500/30 pl-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-blue-100 truncate">
-                  {p.codigo || `#${p.id}`}
-                </p>
-                <p className="text-sm font-semibold text-gray-300 line-clamp-1 leading-snug">
-                  {p.nombre}
-                </p>
-                {p.institucion && (
-                    <p className="text-[10px] text-yellow-200 font-bold italic line-clamp-1 mt-0.5 flex items-start gap-1">
-                        <span className="flex-shrink-0">🏢</span>
-                        <span>{p.institucion}</span>
-                    </p>
-                )}
-              </div>
+        {/* Institutions List */}
+        <div className="space-y-2 pr-1">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+            Detalle por Institución
+          </p>
+          {topInstitutions.map((inst, idx) => (
+            <div key={idx} className="flex justify-between items-center gap-4 py-1.5 px-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+              <span className="text-[11px] font-bold text-gray-200 truncate flex-1 uppercase">
+                {inst.name}
+              </span>
+              <span className="text-[11px] font-black text-blue-300 tabular-nums whitespace-nowrap">
+                {inst.count.toLocaleString('es-PE')} <span className="text-[9px] font-medium text-gray-400 ml-1">BENEFS.</span>
+              </span>
             </div>
           ))}
-          {data.proyectos.length > 5 && (
-              <p className="text-[10px] text-gray-500 italic mt-1 text-center">Y {data.proyectos.length - 5} servicios más...</p>
+          
+          {remainingCount > 0 && (
+            <div className="pt-2 text-center border-t border-white/5 mt-2">
+              <p className="text-[10px] text-gray-500 font-bold italic">
+                Y {remainingCount} instituciones más...
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -128,7 +143,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
 
   const totalBeneficiariosGlobal = useMemo(() => data.reduce((acc, b) => acc + b.count, 0), [data]);
 
-  // Mapear datos recibidos a la cartografía real
   const bubbles = useMemo(() => {
     return data
       .filter((d) => !isExcluded(d.regionName))
@@ -178,7 +192,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
     setHoveredRegion(null);
   }, []);
 
-  // Color de burbuja basado en importancia
   function bubbleColor(count: number, max: number) {
     const ratio = count / max;
     if (ratio > 0.75) return { fill: '#1d4ed8', stroke: '#93c5fd' }; 
@@ -212,7 +225,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
       </div>
 
       <div className="p-8 flex flex-col md:flex-row gap-8 items-start relative">
-        {/* SVG Map Container */}
         <div className="flex-1 flex justify-center items-center bg-blue-50/20 rounded-[2rem] p-6 border border-blue-100/50 w-full min-h-[600px]">
           <svg
             ref={svgRef}
@@ -227,7 +239,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
               </filter>
             </defs>
 
-            {/* Department Paths */}
             <g id="peru-departments" className="drop-shadow-[0_0_8px_rgba(0,0,0,0.15)]">
               {PERU_MAP_DATA.map((region, index) => {
                 const isHovered = hoveredRegion === region.id;
@@ -246,7 +257,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
               })}
             </g>
 
-            {/* Bubbles Layer */}
             <g id="bubbles">
               {[...bubbles]
                 .sort((a, b) => a.count - b.count)
@@ -263,7 +273,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
                       onMouseEnter={() => setHoveredRegion(b.geoId)}
                       onMouseLeave={handleMouseLeave}
                     >
-                      {/* Outer pulse ring */}
                       <circle
                         cx={b.coords[0]}
                         cy={b.coords[1]}
@@ -272,7 +281,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
                         opacity={isHovered ? 0.3 : 0.1}
                         className="animate-pulse duration-2000"
                       />
-                      {/* Main bubble */}
                       <circle
                         cx={b.coords[0]}
                         cy={b.coords[1]}
@@ -284,7 +292,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
                         filter={isHovered ? "url(#bubble-glow)" : ""}
                         className="transition-all duration-300"
                       />
-                      {/* Count label */}
                       {r >= 14 && (
                         <text
                           x={b.coords[0]}
@@ -311,7 +318,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
           </svg>
         </div>
 
-        {/* Legend + Region List Sidebar */}
         <div className="w-full md:w-80 shrink-0 flex flex-col bg-gray-50/50 rounded-3xl p-6 border border-gray-100 h-[600px] shadow-inner">
           <div className="flex-1 flex flex-col min-h-0">
             <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
@@ -363,7 +369,6 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
         </div>
       </div>
 
-      {/* Tooltip */}
       {tooltip && <MapTooltip data={tooltip} />}
 
       <style jsx>{`

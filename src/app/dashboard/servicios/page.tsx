@@ -7,6 +7,7 @@ import { ServiciosFilters } from '@/components/servicios/ServiciosFilters';
 import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
 import { ServiciosTable } from '@/components/servicios/ServiciosTable';
 import { PeruMapBeneficiariosChart } from '@/components/servicios/PeruMapBeneficiariosChart';
+import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInstitucionChart';
 
 export default function ServiciosPage() {
     const supabase = createClient();
@@ -185,10 +186,27 @@ export default function ServiciosPage() {
                 id: d.id,
                 codigo: d.nombre || '',
                 nombre: d.nombre || '',
+                beneficiarios: Number(d.beneficiarios) || 0,
                 institucion: d.institucion?.descripcion || ''
             });
         });
         return Array.from(map.values());
+    }, [filteredData]);
+
+    const institucionData = useMemo(() => {
+        const map = new Map<string, { name: string; beneficiaries: number; budget: number }>();
+        filteredData.forEach(d => {
+            const name = d.institucion?.descripcion || 'Sin Institución';
+            if (!map.has(name)) {
+                map.set(name, { name, beneficiaries: 0, budget: 0 });
+            }
+            const entry = map.get(name)!;
+            entry.beneficiaries += (Number(d.beneficiarios) || 0);
+            entry.budget += (Number(d.presupuesto) || 0);
+        });
+        return Array.from(map.values())
+            .sort((a, b) => b.beneficiaries - a.beneficiaries)
+            .slice(0, 15);
     }, [filteredData]);
 
 
@@ -242,6 +260,10 @@ export default function ServiciosPage() {
 
             <div className="w-full">
                 <PeruMapBeneficiariosChart data={bubbleMapData} />
+            </div>
+
+            <div className="w-full">
+                <ServiciosInstitucionChart data={institucionData} />
             </div>
 
         </div>
