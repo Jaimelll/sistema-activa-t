@@ -225,133 +225,140 @@ export default function GestionMonitoresView() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full max-w-[1600px] mx-auto items-start">
                 {/* Formulario de Creación */}
-                <div className="w-full">
+                <div className="w-full lg:col-span-4">
                     <form ref={formRef} onSubmit={handleSave} className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${editingPlanId ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
                         <div className={`p-6 border-b ${editingPlanId ? 'bg-amber-50/50 border-amber-100' : 'bg-slate-50/50 border-slate-100'}`}>
-                            <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                                {editingPlanId ? <Pencil className="text-amber-600" size={18} /> : <Plus className="text-blue-600" size={18} />}
+                            <h2 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                {editingPlanId ? <Pencil className="text-amber-600" size={16} /> : <Plus className="text-blue-600" size={16} />}
                                 {editingPlanId ? 'Editando Plan de Supervisión' : 'Nuevo Plan de Supervisión'}
                             </h2>
                             {editingPlanId && (
-                                <p className="text-[11px] text-amber-600 mt-1 font-medium">Modifique los campos y presione Actualizar para guardar los cambios.</p>
+                                <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Modifique los campos y presione Actualizar.</p>
                             )}
                         </div>
-                        
-                        <div className="p-6 space-y-4">
-                            <div className="relative">
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Proyecto</label>
+                        <div className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 gap-5">
                                 <div className="relative">
-                                    <input 
-                                        type="text"
-                                        placeholder="Buscar por ID..."
-                                        className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
-                                        value={projectSearch}
-                                        onChange={(e) => {
-                                            setProjectSearch(e.target.value);
-                                            setShowProjectList(true);
-                                        }}
-                                        onFocus={() => setShowProjectList(true)}
-                                    />
-                                    {formData.id_proyecto && (
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
-                                            <CheckCircle2 size={16} />
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Proyecto</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="text"
+                                            placeholder="Buscar por ID..."
+                                            className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all pr-10"
+                                            value={projectSearch}
+                                            onChange={(e) => {
+                                                setProjectSearch(e.target.value);
+                                                setShowProjectList(true);
+                                            }}
+                                            onFocus={() => setShowProjectList(true)}
+                                        />
+                                        {formData.id_proyecto && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                                                <CheckCircle2 size={16} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {showProjectList && projectSearch && (
+                                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                                            {proyectos
+                                                .filter(p => 
+                                                    p.id.toString().includes(projectSearch) || 
+                                                    p.nombre.toLowerCase().includes(projectSearch.toLowerCase())
+                                                )
+                                                .map(p => (
+                                                    <button
+                                                        key={p.id}
+                                                        type="button"
+                                                        className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
+                                                        onClick={() => {
+                                                            setFormData({...formData, id_proyecto: p.id.toString()});
+                                                            setProjectSearch(`[${p.id}] | [${p.codigo_proyecto}] | ${p.nombre}`);
+                                                            setShowProjectList(false);
+                                                        }}
+                                                    >
+                                                        <div className="text-[11px] font-bold text-slate-700">
+                                                            [{p.id}] | [{p.codigo_proyecto}] | {p.nombre}
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            }
                                         </div>
                                     )}
                                 </div>
-                                
-                                {showProjectList && projectSearch && (
-                                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                        {proyectos
-                                            .filter(p => 
-                                                p.id.toString().includes(projectSearch) || 
-                                                p.nombre.toLowerCase().includes(projectSearch.toLowerCase())
-                                            )
-                                            .map(p => (
-                                                <button
-                                                    key={p.id}
-                                                    type="button"
-                                                    className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-50 last:border-0 transition-colors"
-                                                    onClick={() => {
-                                                        setFormData({...formData, id_proyecto: p.id.toString()});
-                                                        setProjectSearch(`[${p.id}] | [${p.codigo_proyecto}] | ${p.nombre}`);
-                                                        setShowProjectList(false);
-                                                    }}
-                                                >
-                                                    <div className="text-[11px] font-bold text-slate-700">
-                                                        [{p.id}] | [{p.codigo_proyecto}] | {p.nombre}
-                                                    </div>
-                                                </button>
-                                            ))
-                                        }
-                                    </div>
-                                )}
-                            </div>
 
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monitor Responsable</label>
-                                <select 
-                                    className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    value={formData.id_supervisor}
-                                    onChange={(e) => setFormData({...formData, id_supervisor: e.target.value})}
-                                >
-                                    <option value="">Seleccione Monitor</option>
-                                    {monitores.map(m => (
-                                        <option key={m.id} value={m.id}>{m.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fecha Programada</label>
-                                <input 
-                                    type="date"
-                                    className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                    value={formData.fecha_programada}
-                                    onChange={(e) => setFormData({...formData, fecha_programada: e.target.value})}
-                                />
-                            </div>
-
-                            <div className="pt-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configurar Checklist</label>
-                                    <button 
-                                        type="button" 
-                                        onClick={addQuestion}
-                                        className="text-blue-600 hover:text-blue-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Monitor Responsable</label>
+                                    <select 
+                                        className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        value={formData.id_supervisor}
+                                        onChange={(e) => setFormData({...formData, id_supervisor: e.target.value})}
                                     >
-                                        <Plus size={14} /> Añadir Pregunta
-                                    </button>
+                                        <option value="">Seleccione Monitor</option>
+                                        {monitores.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nombre}</option>
+                                        ))}
+                                    </select>
                                 </div>
+                            </div>
 
-                                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {checklist.map((q, idx) => (
-                                        <div key={q.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2 relative group">
-                                            <button 
-                                                type="button"
-                                                onClick={() => removeQuestion(q.id)}
-                                                className="absolute top-2 right-2 text-slate-300 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                            <input 
-                                                type="text" 
-                                                placeholder={`Pregunta #${idx + 1}`}
-                                                className="w-full bg-transparent border-b border-slate-200 text-sm py-1 outline-none focus:border-blue-500 transition-all"
-                                                value={q.pregunta}
-                                                onChange={(e) => updateQuestion(q.id, 'pregunta', e.target.value)}
-                                            />
-                                            <select 
-                                                className="w-full bg-transparent text-[10px] text-slate-500 font-bold uppercase outline-none"
-                                                value={q.tipo}
-                                                onChange={(e) => updateQuestion(q.id, 'tipo', e.target.value)}
-                                            >
-                                                <option value="cumple_no_cumple">Cumple / No Cumple</option>
-                                                <option value="texto">Texto Libre</option>
-                                            </select>
-                                        </div>
-                                    ))}
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Fecha Programada</label>
+                                    <input 
+                                        type="date"
+                                        className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                        value={formData.fecha_programada}
+                                        onChange={(e) => setFormData({...formData, fecha_programada: e.target.value})}
+                                    />
+                                </div>
+                                <div className="pt-2">
+                                    <div className="flex items-center justify-between mb-4 border-l-2 border-blue-500 pl-3">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configurar Checklist</label>
+                                        <button 
+                                            type="button" 
+                                            onClick={addQuestion}
+                                            className="text-blue-600 hover:text-blue-700 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1"
+                                        >
+                                            <Plus size={14} /> Añadir Pregunta
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {checklist.map((q, idx) => (
+                                            <div key={q.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-3 relative group">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-slate-400 tracking-widest">PREGUNTA #{idx + 1}</span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => removeQuestion(q.id)}
+                                                        className="text-slate-300 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Escriba la pregunta aquí..."
+                                                    className="w-full bg-transparent border-b border-slate-200 text-sm py-2 outline-none focus:border-blue-500 transition-all"
+                                                    value={q.pregunta}
+                                                    onChange={(e) => updateQuestion(q.id, 'pregunta', e.target.value)}
+                                                />
+                                                <div className="mt-1">
+                                                    <select 
+                                                        className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] text-slate-500 font-bold uppercase outline-none focus:ring-1 focus:ring-blue-500"
+                                                        value={q.tipo}
+                                                        onChange={(e) => updateQuestion(q.id, 'tipo', e.target.value)}
+                                                    >
+                                                        <option value="cumple_no_cumple">CUMPLE / NO CUMPLE</option>
+                                                        <option value="texto">TEXTO LIBRE</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -360,18 +367,18 @@ export default function GestionMonitoresView() {
                             <button 
                                 type="submit"
                                 disabled={saving}
-                                className={`w-full font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-white ${
+                                className={`w-full font-bold py-3.5 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-white text-sm uppercase tracking-widest ${
                                     editingPlanId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'
                                 }`}
                             >
                                 {saving ? <Clock className="animate-spin" size={18} /> : <Save size={18} />}
-                                {saving ? 'GUARDANDO...' : (editingPlanId ? 'ACTUALIZAR PLAN DE SUPERVISIÓN' : 'CREAR PLAN DE SUPERVISIÓN')}
+                                {saving ? 'GUARDANDO...' : (editingPlanId ? 'ACTUALIZAR PLAN' : 'CREAR PLAN DE SUPERVISIÓN')}
                             </button>
                             {editingPlanId && (
                                 <button 
                                     type="button"
                                     onClick={resetForm}
-                                    className="w-full mt-2 text-slate-500 hover:text-slate-700 font-bold py-2 rounded-xl transition-all flex items-center justify-center gap-2 text-sm hover:bg-slate-100"
+                                    className="w-full mt-3 text-slate-500 hover:text-slate-700 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm hover:bg-slate-100"
                                 >
                                     <X size={16} /> Cancelar Edición
                                 </button>
@@ -381,7 +388,7 @@ export default function GestionMonitoresView() {
                 </div>
 
                 {/* Lista de Planes */}
-                <div className="w-full">
+                <div className="w-full lg:col-span-8">
                     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
