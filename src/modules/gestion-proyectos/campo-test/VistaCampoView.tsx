@@ -13,7 +13,7 @@ import DynamicForm from './DynamicForm';
 import EvidenceCapture from './EvidenceCapture';
 import { 
     getPlanesSupervisionPendientes, 
-    guardarSupervision, 
+    guardarAvanceSupervision, 
     getPlanById, 
     getSupervisionByPlanId,
     finalizarPlanSupervision
@@ -127,13 +127,13 @@ export default function VistaCampoView() {
         setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
     };
 
-    const handleFinish = async () => {
+    const handleSaveProgress = async () => {
         if (!selectedProject) return;
         try {
             setSaving(true);
             const lat = selectedProject.latitud_modificada ?? -12.046374;
             const lng = selectedProject.longitud_modificada ?? -77.042793;
-            await guardarSupervision({
+            await guardarAvanceSupervision({
                 id_plan: selectedProject.id,
                 id_proyecto: selectedProject.id_proyecto,
                 respuestas: answers,
@@ -141,9 +141,9 @@ export default function VistaCampoView() {
                 latitud: lat,
                 longitud: lng,
             });
-            setStep('success');
+            showToast('Progreso guardado correctamente', 'success');
         } catch (e) {
-            alert('Error al guardar: ' + e.message);
+            showToast('Error al guardar: ' + e.message, 'error');
         } finally {
             setSaving(false);
         }
@@ -289,11 +289,11 @@ export default function VistaCampoView() {
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <button
-                                    onClick={handleFinish}
+                                    onClick={handleSaveProgress}
                                     disabled={saving}
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all flex items-center justify-center gap-3"
+                                    className="w-full bg-white hover:bg-slate-50 text-blue-600 border-2 border-blue-600 font-bold py-4 rounded-xl text-lg shadow-sm transition-all flex items-center justify-center gap-3 uppercase"
                                 >
-                                    {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
+                                    {saving ? <Loader2 className="animate-spin" size={24} /> : <ClipboardCheck size={24} />}
                                     {saving ? 'GUARDANDO...' : 'GUARDAR AVANCE'}
                                 </button>
 

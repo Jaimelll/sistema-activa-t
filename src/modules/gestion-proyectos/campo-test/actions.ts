@@ -215,21 +215,25 @@ export async function getSupervisionByPlanId(planId: string) {
   return data;
 }
 
-export async function guardarSupervision(payload: any) {
+export async function guardarAvanceSupervision(payload: any) {
+  const { id_plan: planId } = payload;
+  console.log('--- GUARDANDO AVANCE DE SUPERVISIÓN ---');
+  console.log('ID del Plan:', planId);
+  
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No autenticado');
 
-  // Usar cliente administrativo para saltar RLS en la inserción de evidencias
   const supabaseAdmin = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY!
   );
 
-  const { error } = await supabaseAdmin
+  // Solo guardamos en registro detallado (upsert para permitir múltiples guardados)
+  const { error: insertError } = await supabaseAdmin
     .from('supervisiones_registro')
-    .insert({
-      id_plan: payload.id_plan,
+    .upsert({
+      id_plan: planId,
       fecha_ejecucion: new Date().toISOString(),
       latitud: payload.latitud,
       longitud: payload.longitud,
@@ -237,30 +241,14 @@ export async function guardarSupervision(payload: any) {
       respuestas_json: payload.respuestas,
       fotos_urls: payload.fotos,
       firma_url: payload.firma,
-      // Opcional: podrías añadir user_id: user.id si la tabla lo requiere
-    });
+    }, { onConflict: 'id_plan' });
 
-  if (error) {
-    console.error('Error insertando en supervisiones_registro:', error);
-    throw new Error(error.message);
+  if (insertError) {
+    console.error('Error guardando avance:', insertError);
+    throw new Error(`Error al guardar avance: ${insertError.message}`);
   }
 
-  console.log('Guardando supervisión para plan:', payload.id_plan);
-
-  const { data: updatedData, error: updateError } = await supabaseAdmin
-    .from('plan_supervision')
-    .update({ 
-      estado: 'ejecutado'
-    })
-    .eq('id', payload.id_plan)
-    .select();
-
-  if (updateError || !updatedData || updatedData.length === 0) {
-    console.error('Error al actualizar estado del plan:', updateError?.message || '0 filas afectadas');
-    throw new Error('No se pudo actualizar el estado del plan.');
-  }
-
-  revalidatePath('/dashboard/campo');
+  console.log('Avance guardado con éxito.');
   return { success: true };
 }
 
