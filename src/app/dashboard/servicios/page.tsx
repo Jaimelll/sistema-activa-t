@@ -5,39 +5,53 @@ import { createClient } from '@/utils/supabase/client';
 import { ServiciosKPIs } from '@/components/servicios/ServiciosKPIs';
 import { ServiciosFilters } from '@/components/servicios/ServiciosFilters';
 import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
-import { ServiciosTable } from '@/components/servicios/ServiciosTable';
 import { PeruMapBeneficiariosChart } from '@/components/servicios/PeruMapBeneficiariosChart';
 import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInstitucionChart';
 
 export default function ServiciosPage() {
     const supabase = createClient();
+
+    // ── Raw data ─────────────────────────────────────────────────────────────
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-        etapas: [] as any[],
-        ejes: [] as any[],
-        lineas: [] as any[],
-        condiciones: [] as any[],
-        modalidades: [] as any[],
-        instituciones: [] as any[],
-        grupos: [] as any[],
-        search: '',
-        enProceso: false
+
+    // ── Catalog options (for filter dropdowns) ────────────────────────────────
+    const [filterOptions, setFilterOptions] = useState<{
+        etapas: { id: number; descripcion: string }[];
+        ejes: { id: number; descripcion: string }[];
+        lineas: { id: number; descripcion: string }[];
+        condiciones: { id: number; descripcion: string }[];
+        modalidades: { id: number; descripcion: string }[];
+    }>({
+        etapas: [],
+        ejes: [],
+        lineas: [],
+        condiciones: [],
+        modalidades: [],
     });
 
-    const [activeFilters, setActiveFilters] = useState({
-        etapas: [] as number[],
-        ejes: [] as number[],
-        lineas: [] as number[],
-        condiciones: [] as number[]
-    });
+    // ── Fase catalog and mapping etapa_id → fase ──────────────────────────────
+    const [fases, setFases] = useState<string[]>([]);
+    // Maps etapa_id (number) → fase (string) for robust filtering
+    const [etapaFaseMap, setEtapaFaseMap] = useState<Record<number, string>>({});
 
+    // ── Timeline options (for ServiciosTimeline) ─────────────────────────────
+    const [timelineOptions, setTimelineOptions] = useState<any>({});
+
+    // ── Active filter state (single-select, matches Proyectos pattern) ────────
+    const [selectedFase, setSelectedFase] = useState<string>('all');       // Default: Todas las Fases
+    const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
+    const [selectedEje, setSelectedEje] = useState<string>('all');
+    const [selectedLinea, setSelectedLinea] = useState<string>('all');
+    const [selectedCondicion, setSelectedCondicion] = useState<string>('all');
+
+    // ── Initial data load ─────────────────────────────────────────────────────
     useEffect(() => {
         async function loadInitialData() {
             setLoading(true);
 
             const [
-                { data: etapas },
+                { data: etapasRaw },
                 { data: ejes },
                 { data: lineas },
                 { data: condiciones },
@@ -45,7 +59,8 @@ export default function ServiciosPage() {
                 { data: instituciones },
                 { data: grupos }
             ] = await Promise.all([
-                supabase.from('etapas').select('id, descripcion').order('id'),
+                // Fetch full etapas with `fase` field for the mapping
+                supabase.from('etapas').select('id, descripcion, fase').order('id'),
                 supabase.from('ejes').select('id, descripcion').order('id'),
                 supabase.from('lineas').select('id, descripcion').order('id'),
                 supabase.from('condicion').select('id, descripcion').order('id'),
@@ -54,28 +69,57 @@ export default function ServiciosPage() {
                 supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden')
             ]);
 
-            const mapToOptions = (arr: any[] | null) => (arr || []).map(item => ({ value: item.id, label: item.descripcion }));
+            // Build etapa_id → fase map
+            const faseMap: Record<number, string> = {};
+            const fasesSet = new Set<string>();
+            (etapasRaw || []).forEach((e: any) => {
+                if (e.fase) {
+                    faseMap[e.id] = e.fase;
+                    fasesSet.add(e.fase);
+                }
+            });
+            setEtapaFaseMap(faseMap);
+            // Preserve canonical order defined in spec
+            const FASE_ORDER = [
+                'Etapa Concursal',
+                'Acciones Preparatorias',
+                'Ejecución del Proyecto',
+                'Cierre Administrativo',
+                'Resuelto',
+                'Pre-Impacto',
+                'Impacto',
+            ];
+            const sortedFases = FASE_ORDER.filter(f => fasesSet.has(f));
+            // Append any DB fases not in the canonical list, preserving flexibility
+            fasesSet.forEach(f => { if (!sortedFases.includes(f)) sortedFases.push(f); });
+            setFases(sortedFases);
 
-            setFilters(prev => ({
-                ...prev,
-                etapas: mapToOptions(etapas),
+            // Catalog options for filters
+            setFilterOptions({
+                etapas: (etapasRaw || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                ejes: (ejes || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                lineas: (lineas || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                condiciones: (condiciones || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                modalidades: (modalidades || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+            });
+
+            // Timeline options (legacy shape expected by ServiciosTimeline)
+            const mapToOptions = (arr: any[] | null) =>
+                (arr || []).map(item => ({ value: item.id, label: item.descripcion }));
+            setTimelineOptions({
+                etapas: mapToOptions(etapasRaw),
                 ejes: mapToOptions(ejes),
                 lineas: mapToOptions(lineas),
                 condiciones: mapToOptions(condiciones),
                 modalidades: mapToOptions(modalidades),
                 instituciones: mapToOptions(instituciones),
-                grupos: (grupos || []).map(g => ({ value: g.id, label: `${g.orden} - ${g.descripcion}` }))
-            }));
-
-            // Set all active by default
-            setActiveFilters({
-                etapas: (etapas || []).map(e => e.id),
-                ejes: (ejes || []).map(e => e.id),
-                lineas: (lineas || []).map(e => e.id),
-                condiciones: (condiciones || []).map(e => e.id)
+                grupos: (grupos || []).map((g: any) => ({
+                    value: g.id,
+                    label: `${g.orden} - ${g.descripcion}`
+                })),
             });
 
-            // Fetch Servicios with relations
+            // Fetch becas with all relations
             const { data: servicios, error } = await supabase
                 .from('becas_nueva')
                 .select(`
@@ -88,7 +132,7 @@ export default function ServiciosPage() {
                     etapa:etapa_id(descripcion),
                     condicion:condicion_id(descripcion),
                     avances:avance_beca(fecha, etapa_id),
-                    grupo:grupo_id(descripcion, orden) 
+                    grupo:grupo_id(descripcion, orden)
                 `)
                 .order('id', { ascending: true });
 
@@ -96,76 +140,73 @@ export default function ServiciosPage() {
                 console.error('Error fetching servicios:', error);
             } else {
                 // Pre-process dates (Unpivot logic)
-                const processed = (servicios || []).map(b => {
+                const processed = (servicios || []).map((b: any) => {
                     const inicio = b.avances?.find((a: any) => a.etapa_id === 1)?.fecha;
                     const fin = b.avances?.find((a: any) => a.etapa_id === 10)?.fecha;
-                    return {
-                        ...b,
-                        fecha_inicio: inicio,
-                        fecha_fin: fin
-                    };
+                    return { ...b, fecha_inicio: inicio, fecha_fin: fin };
                 });
                 setData(processed);
             }
+
             setLoading(false);
         }
 
         loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const [processState, setProcessState] = useState<'Todos' | 'En proceso'>('Todos');
+    // ── Available filter options (only IDs present in loaded becas data) ────────
+    const availableFilterOptions = useMemo(() => {
+        // While data is still loading, show full catalog so selects aren't empty
+        if (data.length === 0) return filterOptions;
 
-    // Dynamic Filter Options
-    const availableFilters = useMemo(() => {
-        const etapas = new Map();
-        const ejes = new Map();
-        const lineas = new Map();
-        const condiciones = new Map();
-
-        data.forEach(item => {
-            if (item.etapa) etapas.set(item.etapa_id, item.etapa.descripcion);
-            if (item.eje) ejes.set(item.eje_id, item.eje.descripcion);
-            if (item.linea) lineas.set(item.linea_id, item.linea.descripcion);
-            if (item.condicion) condiciones.set(item.condicion_id, item.condicion.descripcion);
-        });
+        const usedEtapaIds   = new Set(data.map(d => d.etapa_id).filter(Boolean));
+        const usedEjeIds     = new Set(data.map(d => d.eje_id).filter(Boolean));
+        const usedLineaIds   = new Set(data.map(d => d.linea_id).filter(Boolean));
+        const usedCondIds    = new Set(data.map(d => d.condicion_id).filter(Boolean));
 
         return {
-            etapas: Array.from(etapas.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
-            ejes: Array.from(ejes.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
-            lineas: Array.from(lineas.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
-            condiciones: Array.from(condiciones.entries()).map(([id, desc]) => ({ id, descripcion: desc })),
+            etapas:     filterOptions.etapas.filter(e => usedEtapaIds.has(e.id)),
+            ejes:       filterOptions.ejes.filter(e => usedEjeIds.has(e.id)),
+            lineas:     filterOptions.lineas.filter(e => usedLineaIds.has(e.id)),
+            condiciones: filterOptions.condiciones.filter(e => usedCondIds.has(e.id)),
+            modalidades: filterOptions.modalidades,
         };
-    }, [data]);
+    }, [data, filterOptions]);
 
-    // Initial Filter Setup: Seleccionar todos por defecto
-    useEffect(() => {
-        if (data.length > 0 && activeFilters.etapas.length === 0) {
-            setActiveFilters({
-                etapas: availableFilters.etapas.map(o => o.id),
-                ejes: availableFilters.ejes.map(o => o.id),
-                lineas: availableFilters.lineas.map(o => o.id),
-                condiciones: availableFilters.condiciones.map(o => o.id),
-            });
-        }
-    }, [data, availableFilters]);
-
-    // Filter Logic
+    // ── Filtering Logic ───────────────────────────────────────────────────────
     const filteredData = useMemo(() => {
         return data.filter(item => {
-            const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
-            const matchEje = activeFilters.ejes.includes(item.eje_id);
-            const matchLinea = activeFilters.lineas.includes(item.linea_id);
-            const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
-            const matchSearch = !filters.search ||
-                item.nombre.toLowerCase().includes(filters.search.toLowerCase()) ||
-                item.documento?.toLowerCase().includes(filters.search.toLowerCase());
+            // 1. Fase filter — map item.etapa_id through the etapaFaseMap
+            const matchFase =
+                selectedFase === 'all' ||
+                etapaFaseMap[item.etapa_id] === selectedFase;
 
-            const matchProcess = processState === 'Todos' || [6, 8].includes(item.etapa_id);
+            // 2. Etapa filter
+            const matchEtapa =
+                selectedEtapa === 'all' ||
+                String(item.etapa_id) === selectedEtapa;
 
-            return matchEtapa && matchEje && matchLinea && matchCondicion && matchSearch && matchProcess;
+            // 3. Eje filter
+            const matchEje =
+                selectedEje === 'all' ||
+                String(item.eje_id) === selectedEje;
+
+            // 4. Línea filter
+            const matchLinea =
+                selectedLinea === 'all' ||
+                String(item.linea_id) === selectedLinea;
+
+            // 5. Condición filter
+            const matchCondicion =
+                selectedCondicion === 'all' ||
+                String(item.condicion_id) === selectedCondicion;
+
+            return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion;
         });
-    }, [data, activeFilters, filters.search, processState]);
+    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion]);
 
+    // ── Derived chart data (reactive to filteredData) ─────────────────────────
     const bubbleMapData = useMemo(() => {
         const map = new Map<number, { regionId: number; regionName: string; count: number; proyectos: any[] }>();
         filteredData.forEach(d => {
@@ -173,12 +214,7 @@ export default function ServiciosPage() {
             const regionName = d.region?.descripcion || 'Desconocido';
             if (!regionId) return;
             if (!map.has(regionId)) {
-                map.set(regionId, {
-                    regionId,
-                    regionName,
-                    count: 0,
-                    proyectos: []
-                });
+                map.set(regionId, { regionId, regionName, count: 0, proyectos: [] });
             }
             const entry = map.get(regionId)!;
             entry.count += (Number(d.beneficiarios) || 0);
@@ -209,10 +245,13 @@ export default function ServiciosPage() {
             .slice(0, 15);
     }, [filteredData]);
 
-
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-6 pb-12">
+
+            {/* Header panel — logo + filters */}
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                {/* Logo */}
                 <div className="flex items-center gap-4 flex-shrink-0">
                     <img
                         src="/fondoempleo.jpg"
@@ -222,46 +261,42 @@ export default function ServiciosPage() {
                     />
                 </div>
 
+                {/* Filters */}
                 <div className="flex-1 w-full">
                     <ServiciosFilters
-                        options={availableFilters}
-                        active={activeFilters}
-                        setActive={setActiveFilters}
-                        search={filters.search}
-                        setSearch={(s: string) => setFilters(f => ({ ...f, search: s }))}
-                        processState={processState}
-                        setProcessState={setProcessState}
+                        fases={fases}
+                        selectedFase={selectedFase}
+                        setSelectedFase={setSelectedFase}
+                        options={availableFilterOptions}
+                        selectedEtapa={selectedEtapa}
+                        setSelectedEtapa={setSelectedEtapa}
+                        selectedEje={selectedEje}
+                        setSelectedEje={setSelectedEje}
+                        selectedLinea={selectedLinea}
+                        setSelectedLinea={setSelectedLinea}
+                        selectedCondicion={selectedCondicion}
+                        setSelectedCondicion={setSelectedCondicion}
                     />
                 </div>
             </div>
 
+            {/* KPI Cards — reactive to filteredData */}
             <ServiciosKPIs data={filteredData} />
 
+            {/* Línea de Tiempo — receives filteredData so it also respects the fase filter */}
             <div className="w-full">
                 <ServiciosTimeline
-                    data={data.filter(item => {
-                        const matchEtapa = activeFilters.etapas.includes(item.etapa_id);
-                        const matchEje = activeFilters.ejes.includes(item.eje_id);
-                        const matchLinea = activeFilters.lineas.includes(item.linea_id);
-                        const matchCondicion = activeFilters.condiciones.includes(item.condicion_id);
-                        return matchEtapa && matchEje && matchLinea && matchCondicion;
-                    })}
-                    options={{
-                        etapas: filters.etapas,
-                        ejes: filters.ejes,
-                        lineas: filters.lineas,
-                        condiciones: filters.condiciones,
-                        modalidades: filters.modalidades,
-                        instituciones: filters.instituciones,
-                        grupos: filters.grupos
-                    }}
+                    data={filteredData}
+                    options={timelineOptions}
                 />
             </div>
 
+            {/* Mapa de Beneficiarios */}
             <div className="w-full">
                 <PeruMapBeneficiariosChart data={bubbleMapData} />
             </div>
 
+            {/* Distribución por Institución */}
             <div className="w-full">
                 <ServiciosInstitucionChart data={institucionData} />
             </div>
