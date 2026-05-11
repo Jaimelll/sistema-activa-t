@@ -60,51 +60,53 @@ interface TooltipData {
   y: number;
   isRightSide: boolean;
   isBottomSide: boolean;
+  isMobile: boolean;
 }
 
 function MapTooltip({ data }: { data: TooltipData }) {
   const recent = [...data.proyectos].sort((a, b) => b.id - a.id);
 
-  const transformX = data.isRightSide ? 'calc(-100% - 14px)' : '14px';
-  const transformY = data.isBottomSide ? 'calc(-100% - 14px)' : '-10px';
+  const isMobile = data.isMobile;
+  const transformX = isMobile ? '-50%' : (data.isRightSide ? 'calc(-100% - 14px)' : '14px');
+  const transformY = isMobile ? '-50%' : (data.isBottomSide ? 'calc(-100% - 14px)' : '-10px');
 
   return (
     <div
-      className="fixed z-50 pointer-events-none transition-transform duration-75"
+      className={`fixed z-[100] transition-all duration-200 ease-out ${isMobile ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{ 
         left: data.x, 
         top: data.y,
         transform: `translate(${transformX}, ${transformY})`
       }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-3 w-[550px] max-w-[90vw] text-xs ring-1 ring-black/5">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-white/20 p-2 sm:p-4 w-screen max-w-[92vw] sm:w-[550px] text-xs ring-1 ring-black/5 flex flex-col max-h-[70vh] sm:max-h-none overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
-          <span className="font-bold text-sm text-blue-300">{data.regionName}</span>
-          <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[10px] font-extrabold shadow-sm">
+        <div className="flex items-center justify-between mb-2 sm:mb-3 pb-2 sm:pb-3 border-b border-white/10 shrink-0">
+          <span className="font-bold text-xs sm:text-base text-blue-300">{data.regionName}</span>
+          <span className="bg-blue-500 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-black shadow-lg shadow-blue-500/20">
             {data.count} proy.
           </span>
         </div>
 
         {/* proyectos list */}
-        <div className="space-y-1.5 pr-1">
+        <div className="space-y-2 pr-1 overflow-y-auto custom-scrollbar flex-1">
           {recent.map((p) => (
-            <div key={p.id} className="flex gap-2 items-start border-l-2 border-blue-500/30 pl-2">
+            <div key={p.id} className="flex gap-2 items-start border-l-2 border-blue-500/30 pl-2 py-0.5 sm:py-1">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-blue-100 truncate">
+                <p className="text-[11px] sm:text-sm font-bold text-blue-100 truncate">
                   {p.codigo || `#${p.id}`}
                 </p>
-                <p className="text-sm font-semibold text-gray-300 line-clamp-2 leading-snug">
+                <p className="text-[11px] sm:text-sm font-semibold text-gray-300 line-clamp-2 leading-snug">
                   {p.nombre}
                 </p>
                 {p.institucion && (
-                    <p className="text-xs text-yellow-200 font-bold italic line-clamp-1 mt-1 flex items-start gap-1">
+                    <p className="text-[10px] sm:text-xs text-yellow-200 font-bold italic line-clamp-1 mt-1 flex items-start gap-1">
                         <span className="flex-shrink-0 mt-0.5">🏢</span>
                         <span>{p.institucion}</span>
                     </p>
                 )}
                 {p.contacto && (
-                    <p className="text-xs text-blue-200 line-clamp-2 mt-1 flex items-start gap-1">
+                    <p className="text-[10px] sm:text-xs text-blue-200 line-clamp-2 mt-1 flex items-start gap-1">
                         <span className="flex-shrink-0 mt-0.5">👤</span>
                         <span className="italic">{p.contacto}</span>
                     </p>
@@ -149,6 +151,7 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent, region: RegionBubble) => {
+      const isMobile = window.innerWidth < 768;
       const isRightSide = e.clientX > window.innerWidth / 2;
       const isBottomSide = e.clientY > window.innerHeight - 350;
 
@@ -156,10 +159,11 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
         regionName: region.regionName,
         count: region.count,
         proyectos: region.proyectos,
-        x: e.clientX,
-        y: e.clientY,
-        isRightSide,
-        isBottomSide
+        x: isMobile ? window.innerWidth / 2 : e.clientX,
+        y: isMobile ? window.innerHeight / 2 : e.clientY,
+        isRightSide: isMobile ? false : isRightSide,
+        isBottomSide: isMobile ? false : isBottomSide,
+        isMobile
       });
     },
     []

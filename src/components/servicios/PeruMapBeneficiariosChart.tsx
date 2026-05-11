@@ -59,6 +59,7 @@ interface TooltipData {
   y: number;
   isRightSide: boolean;
   isBottomSide: boolean;
+  isMobile: boolean;
 }
 
 function MapTooltip({ data }: { data: TooltipData }) {
@@ -78,52 +79,53 @@ function MapTooltip({ data }: { data: TooltipData }) {
   const topInstitutions = institutions.slice(0, 10);
   const remainingCount = institutions.length - 10;
 
-  const transformX = data.isRightSide ? 'calc(-100% - 14px)' : '14px';
-  const transformY = data.isBottomSide ? 'calc(-100% - 14px)' : '-10px';
+  const isMobile = data.isMobile;
+  const transformX = isMobile ? '-50%' : (data.isRightSide ? 'calc(-100% - 14px)' : '14px');
+  const transformY = isMobile ? '-50%' : (data.isBottomSide ? 'calc(-100% - 14px)' : '-10px');
 
   return (
     <div
-      className="fixed z-50 pointer-events-none transition-transform duration-75"
+      className={`fixed z-[100] transition-all duration-200 ease-out ${isMobile ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{ 
         left: data.x, 
         top: data.y,
         transform: `translate(${transformX}, ${transformY})`
       }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-xl shadow-2xl border border-white/20 p-4 w-[450px] max-w-[90vw] text-xs ring-1 ring-black/5">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-[1.5rem] sm:rounded-xl shadow-2xl border border-white/20 p-3 sm:p-5 w-screen max-w-[92vw] sm:w-[450px] text-xs ring-1 ring-black/5 flex flex-col max-h-[75vh] sm:max-h-none overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between mb-2 sm:mb-4 pb-2 sm:pb-4 border-b border-white/10 shrink-0">
           <div className="flex flex-col">
-            <span className="font-bold text-base text-blue-300">{data.regionName}</span>
-            <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Participación: {data.participation}</span>
+            <span className="font-bold text-sm sm:text-lg text-blue-300">{data.regionName}</span>
+            <span className="text-[8px] sm:text-[10px] text-gray-400 font-black uppercase tracking-widest">Participación: {data.participation}</span>
           </div>
           <div className="text-right">
-            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-[12px] font-black shadow-lg shadow-blue-500/20">
-              {data.count.toLocaleString('es-PE')} benef.
+            <span className="bg-blue-600 text-white px-2 sm:px-4 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-[13px] font-black shadow-lg shadow-blue-500/20 whitespace-nowrap">
+              {data.count.toLocaleString('es-PE')} <span className="text-[8px] sm:text-[10px] opacity-80">BENEFS.</span>
             </span>
           </div>
         </div>
 
         {/* Institutions List */}
-        <div className="space-y-2 pr-1">
-          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+        <div className="space-y-1.5 sm:space-y-2 pr-1 overflow-y-auto custom-scrollbar flex-1">
+          <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 sm:mb-2 flex items-center gap-2">
+            <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full"></span>
             Detalle por Institución
           </p>
           {topInstitutions.map((inst, idx) => (
-            <div key={idx} className="flex justify-between items-center gap-4 py-1.5 px-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-              <span className="text-[11px] font-bold text-gray-200 truncate flex-1 uppercase">
+            <div key={idx} className="flex justify-between items-center gap-3 sm:gap-4 py-1 sm:py-2 px-2 sm:px-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+              <span className="text-[10px] sm:text-[11px] font-bold text-gray-200 truncate flex-1 uppercase">
                 {inst.name}
               </span>
-              <span className="text-[11px] font-black text-blue-300 tabular-nums whitespace-nowrap">
-                {inst.count.toLocaleString('es-PE')} <span className="text-[9px] font-medium text-gray-400 ml-1">BENEFS.</span>
+              <span className="text-[10px] sm:text-[11px] font-black text-blue-300 tabular-nums whitespace-nowrap">
+                {inst.count.toLocaleString('es-PE')} <span className="text-[8px] font-medium text-gray-400 ml-0.5 sm:ml-1">BENEFS.</span>
               </span>
             </div>
           ))}
           
           {remainingCount > 0 && (
-            <div className="pt-2 text-center border-t border-white/5 mt-2">
-              <p className="text-[10px] text-gray-500 font-bold italic">
+            <div className="pt-2 text-center border-t border-white/5 mt-2 shrink-0">
+              <p className="text-[9px] sm:text-[10px] text-gray-500 font-bold italic">
                 Y {remainingCount} instituciones más...
               </p>
             </div>
@@ -166,6 +168,7 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent, region: RegionBubble) => {
+      const isMobile = window.innerWidth < 768;
       const isRightSide = e.clientX > window.innerWidth / 2;
       const isBottomSide = e.clientY > window.innerHeight - 350;
 
@@ -178,10 +181,11 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
         count: region.count,
         participation,
         proyectos: region.proyectos,
-        x: e.clientX,
-        y: e.clientY,
-        isRightSide,
-        isBottomSide
+        x: isMobile ? window.innerWidth / 2 : e.clientX,
+        y: isMobile ? window.innerHeight / 2 : e.clientY,
+        isRightSide: isMobile ? false : isRightSide,
+        isBottomSide: isMobile ? false : isBottomSide,
+        isMobile
       });
     },
     [totalBeneficiariosGlobal]
