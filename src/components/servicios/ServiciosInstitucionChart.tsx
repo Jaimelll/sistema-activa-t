@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList
 } from 'recharts';
@@ -8,6 +9,7 @@ interface InstitucionData {
     name: string;
     beneficiaries: number;
     budget: number;
+    fullLabel?: string;
 }
 
 interface ServiciosInstitucionChartProps {
@@ -46,6 +48,21 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartProps) {
+    const chartData = useMemo(() => {
+        return data.map(item => {
+            const average = item.beneficiaries > 0 ? item.budget / item.beneficiaries : 0;
+            const formattedAverage = new Intl.NumberFormat('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(average);
+
+            return {
+                ...item,
+                fullLabel: `${item.beneficiaries.toLocaleString('es-PE')} - Prom. S/ ${formattedAverage}`
+            };
+        });
+    }, [data]);
+
     return (
         <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
             <div className="mb-8 text-center relative">
@@ -57,9 +74,9 @@ export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartPro
             <div className="h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                        data={data}
+                        data={chartData}
                         layout="vertical"
-                        margin={{ top: 5, right: 60, left: 40, bottom: 5 }}
+                        margin={{ top: 5, right: 250, left: 40, bottom: 5 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                         <XAxis type="number" hide />
@@ -82,12 +99,25 @@ export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartPro
                             animationDuration={1000}
                         >
                             <LabelList 
-                                dataKey="beneficiaries" 
+                                dataKey="fullLabel" 
                                 position="right" 
-                                fill="#1e293b" 
-                                fontSize={11} 
-                                fontWeight={700}
-                                formatter={(val: number) => val.toLocaleString('es-PE')}
+                                content={(props: any) => {
+                                    const { x, y, width, height, value } = props;
+                                    return (
+                                        <text 
+                                            x={x + width} 
+                                            y={y + height / 2} 
+                                            dx={10}
+                                            dy={4}
+                                            fill="#1e293b" 
+                                            fontSize={11} 
+                                            fontWeight={700}
+                                            textAnchor="start"
+                                        >
+                                            {value}
+                                        </text>
+                                    );
+                                }}
                             />
                         </Bar>
                     </BarChart>
