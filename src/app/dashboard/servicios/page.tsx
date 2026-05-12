@@ -22,12 +22,16 @@ export default function ServiciosPage() {
         lineas: { id: number; descripcion: string }[];
         condiciones: { id: number; descripcion: string }[];
         modalidades: { id: number; descripcion: string }[];
+        instituciones: { id: number; descripcion: string }[];
+        tiposEstudio: { id: number; descripcion: string }[];
     }>({
         etapas: [],
         ejes: [],
         lineas: [],
         condiciones: [],
         modalidades: [],
+        instituciones: [],
+        tiposEstudio: [],
     });
 
     // ── Fase catalog and mapping etapa_id → fase ──────────────────────────────
@@ -44,6 +48,8 @@ export default function ServiciosPage() {
     const [selectedEje, setSelectedEje] = useState<string>('all');
     const [selectedLinea, setSelectedLinea] = useState<string>('all');
     const [selectedCondicion, setSelectedCondicion] = useState<string>('all');
+    const [selectedInstitucion, setSelectedInstitucion] = useState<string>('all');
+    const [selectedTipoEstudio, setSelectedTipoEstudio] = useState<string>('all');
 
     // ── Initial data load ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -63,24 +69,43 @@ export default function ServiciosPage() {
                 { data: formatos },
                 { data: empresas }
             ] = await Promise.all([
-                // Fetch full etapas with `fase` field for the mapping
-                supabase.from('etapas').select('id, descripcion, fase').order('id'),
-                supabase.from('ejes').select('id, descripcion').order('id'),
-                supabase.from('lineas').select('id, descripcion').order('id'),
-                supabase.from('condicion').select('id, descripcion').order('id'),
-                supabase.from('modalidades').select('id, descripcion').order('id'),
-                supabase.from('institucion').select('id, descripcion').order('id'),
-                supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden'),
-                supabase.from('tipo_estudio').select('id, descripcion').order('id'),
-                supabase.from('naturaleza_ie').select('id, descripcion').order('id'),
-                supabase.from('formato').select('id, descripcion').order('id'),
-                supabase.from('empresas').select('ruc, razon_social').order('razon_social')
+                // Fetch catalogs ensuring they have associated becas
+                supabase.from('etapas').select('id, descripcion, fase, becas_nueva!inner(id)').order('id'),
+                supabase.from('ejes').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('lineas').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('condicion').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('modalidades').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('institucion').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('grupo').select('id, descripcion, orden, becas_nueva!inner(id)').eq('tipo', 1).order('orden'),
+                supabase.from('tipo_estudio').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('naturaleza_ie').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('formato').select('id, descripcion, becas_nueva!inner(id)').order('id'),
+                supabase.from('empresas').select('ruc, razon_social, becas_nueva!inner(id)').order('razon_social')
             ]);
+
+            // Deduplicate (since inner join might return multiple rows per item)
+            const dedup = (arr: any[] | null) => {
+                if (!arr) return [];
+                const map = new Map();
+                arr.forEach(item => map.set(item.id || item.ruc, item));
+                return Array.from(map.values());
+            };
+            const dedupEtapas = dedup(etapasRaw);
+            const dedupEjes = dedup(ejes);
+            const dedupLineas = dedup(lineas);
+            const dedupCondiciones = dedup(condiciones);
+            const dedupModalidades = dedup(modalidades);
+            const dedupInstituciones = dedup(instituciones);
+            const dedupGrupos = dedup(grupos);
+            const dedupTiposEstudio = dedup(tiposEstudio);
+            const dedupNaturalezasIE = dedup(naturalezasIE);
+            const dedupFormatos = dedup(formatos);
+            const dedupEmpresas = dedup(empresas);
 
             // Build etapa_id → fase map
             const faseMap: Record<number, string> = {};
             const fasesSet = new Set<string>();
-            (etapasRaw || []).forEach((e: any) => {
+            dedupEtapas.forEach((e: any) => {
                 if (e.fase) {
                     faseMap[e.id] = e.fase;
                     fasesSet.add(e.fase);
@@ -104,31 +129,33 @@ export default function ServiciosPage() {
 
             // Catalog options for filters
             setFilterOptions({
-                etapas: (etapasRaw || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
-                ejes: (ejes || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
-                lineas: (lineas || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
-                condiciones: (condiciones || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
-                modalidades: (modalidades || []).map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                etapas: dedupEtapas.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                ejes: dedupEjes.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                lineas: dedupLineas.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                condiciones: dedupCondiciones.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                modalidades: dedupModalidades.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                instituciones: dedupInstituciones.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                tiposEstudio: dedupTiposEstudio.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
             });
 
             // Timeline options (legacy shape expected by ServiciosTimeline)
             const mapToOptions = (arr: any[] | null) =>
-                (arr || []).map(item => ({ value: item.id, label: item.descripcion }));
+                (arr || []).map(item => ({ value: item.id || item.ruc, label: item.descripcion || `${item.ruc} - ${item.razon_social}` }));
             setTimelineOptions({
-                etapas: mapToOptions(etapasRaw),
-                ejes: mapToOptions(ejes),
-                lineas: mapToOptions(lineas),
-                condiciones: mapToOptions(condiciones),
-                modalidades: mapToOptions(modalidades),
-                instituciones: mapToOptions(instituciones),
-                grupos: (grupos || []).map((g: any) => ({
+                etapas: mapToOptions(dedupEtapas),
+                ejes: mapToOptions(dedupEjes),
+                lineas: mapToOptions(dedupLineas),
+                condiciones: mapToOptions(dedupCondiciones),
+                modalidades: mapToOptions(dedupModalidades),
+                instituciones: mapToOptions(dedupInstituciones),
+                grupos: dedupGrupos.map((g: any) => ({
                     value: g.id,
                     label: `${g.orden} - ${g.descripcion}`
                 })),
-                tiposEstudio: mapToOptions(tiposEstudio),
-                naturalezasIE: mapToOptions(naturalezasIE),
-                formatos: mapToOptions(formatos),
-                empresas: (empresas || []).map((e: any) => ({
+                tiposEstudio: mapToOptions(dedupTiposEstudio),
+                naturalezasIE: mapToOptions(dedupNaturalezasIE),
+                formatos: mapToOptions(dedupFormatos),
+                empresas: dedupEmpresas.map((e: any) => ({
                     value: e.ruc,
                     label: `${e.ruc} - ${e.razon_social}`
                 }))
@@ -170,24 +197,42 @@ export default function ServiciosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Available filter options (only IDs present in loaded becas data) ────────
+    // ── Cascading Filtering Logic (Smart Selection) ───────────────────────────
     const availableFilterOptions = useMemo(() => {
-        // While data is still loading, show full catalog so selects aren't empty
         if (data.length === 0) return filterOptions;
 
-        const usedEtapaIds   = new Set(data.map(d => d.etapa_id).filter(Boolean));
-        const usedEjeIds     = new Set(data.map(d => d.eje_id).filter(Boolean));
-        const usedLineaIds   = new Set(data.map(d => d.linea_id).filter(Boolean));
-        const usedCondIds    = new Set(data.map(d => d.condicion_id).filter(Boolean));
+        // Helper to get matching data for all filters EXCEPT the one we are calculating
+        const getFilteredSubset = (excludeKey: string) => {
+            return data.filter(item => {
+                const matchFase = excludeKey === 'fase' || selectedFase === 'all' || etapaFaseMap[item.etapa_id] === selectedFase;
+                const matchEtapa = excludeKey === 'etapa' || selectedEtapa === 'all' || String(item.etapa_id) === selectedEtapa;
+                const matchEje = excludeKey === 'eje' || selectedEje === 'all' || String(item.eje_id) === selectedEje;
+                const matchLinea = excludeKey === 'linea' || selectedLinea === 'all' || String(item.linea_id) === selectedLinea;
+                const matchCondicion = excludeKey === 'condicion' || selectedCondicion === 'all' || String(item.condicion_id) === selectedCondicion;
+                const matchInstitucion = excludeKey === 'institucion' || selectedInstitucion === 'all' || String(item.institucion_id) === selectedInstitucion;
+                const matchTipoEstudio = excludeKey === 'tipoEstudio' || selectedTipoEstudio === 'all' || String(item.tipo_estudio_id) === selectedTipoEstudio;
+                
+                return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio;
+            });
+        };
+
+        const usedInSubset = (subset: any[], key: string) => new Set(subset.map(d => d[key]).filter(Boolean));
+
+        // Note: For 'fase', it's slightly different as it depends on etapa_id
+        const subsetForFase = getFilteredSubset('fase');
+        const usedFases = new Set(subsetForFase.map(d => etapaFaseMap[d.etapa_id]).filter(Boolean));
 
         return {
-            etapas:     filterOptions.etapas.filter(e => usedEtapaIds.has(e.id)),
-            ejes:       filterOptions.ejes.filter(e => usedEjeIds.has(e.id)),
-            lineas:     filterOptions.lineas.filter(e => usedLineaIds.has(e.id)),
-            condiciones: filterOptions.condiciones.filter(e => usedCondIds.has(e.id)),
+            fases: fases.filter(f => usedFases.has(f)),
+            etapas: filterOptions.etapas.filter(e => usedInSubset(getFilteredSubset('etapa'), 'etapa_id').has(e.id)),
+            ejes: filterOptions.ejes.filter(e => usedInSubset(getFilteredSubset('eje'), 'eje_id').has(e.id)),
+            lineas: filterOptions.lineas.filter(l => usedInSubset(getFilteredSubset('linea'), 'linea_id').has(l.id)),
+            condiciones: filterOptions.condiciones.filter(c => usedInSubset(getFilteredSubset('condicion'), 'condicion_id').has(c.id)),
+            instituciones: filterOptions.instituciones.filter(i => usedInSubset(getFilteredSubset('institucion'), 'institucion_id').has(i.id)),
+            tiposEstudio: filterOptions.tiposEstudio.filter(t => usedInSubset(getFilteredSubset('tipoEstudio'), 'tipo_estudio_id').has(t.id)),
             modalidades: filterOptions.modalidades,
         };
-    }, [data, filterOptions]);
+    }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, etapaFaseMap, fases]);
 
     // ── Filtering Logic ───────────────────────────────────────────────────────
     const filteredData = useMemo(() => {
@@ -217,9 +262,19 @@ export default function ServiciosPage() {
                 selectedCondicion === 'all' ||
                 String(item.condicion_id) === selectedCondicion;
 
-            return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion;
+            // 6. Institución filter
+            const matchInstitucion =
+                selectedInstitucion === 'all' ||
+                String(item.institucion_id) === selectedInstitucion;
+
+            // 7. Tipo de Estudio filter
+            const matchTipoEstudio =
+                selectedTipoEstudio === 'all' ||
+                String(item.tipo_estudio_id) === selectedTipoEstudio;
+
+            return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio;
         });
-    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion]);
+    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio]);
 
     // ── Derived chart data (reactive to filteredData) ─────────────────────────
     const bubbleMapData = useMemo(() => {
@@ -279,7 +334,7 @@ export default function ServiciosPage() {
                 {/* Filters */}
                 <div className="flex-1 w-full">
                     <ServiciosFilters
-                        fases={fases}
+                        fases={availableFilterOptions.fases || []}
                         selectedFase={selectedFase}
                         setSelectedFase={setSelectedFase}
                         options={availableFilterOptions}
@@ -291,6 +346,10 @@ export default function ServiciosPage() {
                         setSelectedLinea={setSelectedLinea}
                         selectedCondicion={selectedCondicion}
                         setSelectedCondicion={setSelectedCondicion}
+                        selectedInstitucion={selectedInstitucion}
+                        setSelectedInstitucion={setSelectedInstitucion}
+                        selectedTipoEstudio={selectedTipoEstudio}
+                        setSelectedTipoEstudio={setSelectedTipoEstudio}
                     />
                 </div>
             </div>

@@ -519,48 +519,49 @@ export default function InfGerencialView({
                                             const yearTotal = annualTotals[year] || 0;
                                             const top20 = top20CompaniesPerYear[year] || [];
                                             
-                                            // Si hay búsqueda activa, resaltar esa empresa si está en el top 10
                                             return (
-                                                <div className="bg-white p-5 rounded-[2rem] shadow-2xl border border-slate-100 w-[600px] animate-in fade-in zoom-in duration-200">
-                                                    <div className="mb-4 border-b pb-3">
-                                                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">Resumen del Año</p>
-                                                        <p className="text-lg font-black text-slate-900">Total Aportes {label}:</p>
-                                                        <p className="text-xl font-black text-blue-700">{formatCurrency(yearTotal)}</p>
+                                                <div className="bg-white p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl border border-slate-100 w-[85vw] md:w-[600px] max-h-[80vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                                                    <div className="mb-3 md:mb-4 border-b pb-2 md:pb-3 shrink-0">
+                                                        <p className="text-[9px] md:text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">Resumen del Año</p>
+                                                        <p className="text-base md:text-lg font-black text-slate-900">Total Aportes {label}:</p>
+                                                        <p className="text-lg md:text-xl font-black text-blue-700">{formatCurrency(yearTotal)}</p>
                                                     </div>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Top 20 Aportantes</p>
+                                                    <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 md:mb-3 shrink-0">Top 20 Aportantes</p>
                                                     
-                                                    <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-                                                        {/* Columna 1: 1-10 */}
-                                                        <div className="space-y-0.5">
-                                                            {top20.slice(0, 10).map((item: any, index: number) => (
-                                                                <div key={index} className={`flex justify-between items-center gap-2 py-1 px-2 rounded transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
-                                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                                        <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{index + 1}.</span>
-                                                                        <span className={`text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-600'}`}>
-                                                                            {item.name}
+                                                    <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+                                                            {/* Columna 1: 1-10 (En móvil es lista continua) */}
+                                                            <div className="space-y-0.5">
+                                                                {top20.slice(0, 10).map((item: any, index: number) => (
+                                                                    <div key={index} className={`flex justify-between items-center gap-2 py-1 px-2 rounded transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
+                                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-400 w-4 shrink-0">{index + 1}.</span>
+                                                                            <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-600'}`}>
+                                                                                {item.name}
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className={`text-[9px] md:text-[10px] font-bold tabular-nums shrink-0 ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-800'}`}>
+                                                                            {formatCurrency(item.monto)}
                                                                         </span>
                                                                     </div>
-                                                                    <span className={`text-[10px] font-bold tabular-nums shrink-0 ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-800'}`}>
-                                                                        {formatCurrency(item.monto)}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                        {/* Columna 2: 11-20 */}
-                                                        <div className="space-y-0.5">
-                                                            {top20.slice(10, 20).map((item: any, index: number) => (
-                                                                <div key={index + 10} className={`flex justify-between items-center gap-2 py-1 px-2 rounded transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
-                                                                    <div className="flex items-center gap-1.5 min-w-0">
-                                                                        <span className="text-[10px] font-bold text-slate-400 w-4 shrink-0">{index + 11}.</span>
-                                                                        <span className={`text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-600'}`}>
-                                                                            {item.name}
+                                                                ))}
+                                                            </div>
+                                                            {/* Columna 2: 11-20 (En móvil sigue debajo) */}
+                                                            <div className="space-y-0.5">
+                                                                {top20.slice(10, 20).map((item: any, index: number) => (
+                                                                    <div key={index + 10} className={`flex justify-between items-center gap-2 py-1 px-2 rounded transition-colors ${highlightedEmpresa === item.name ? 'bg-blue-50 ring-1 ring-blue-100' : ''}`}>
+                                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                                            <span className="text-[9px] md:text-[10px] font-bold text-slate-400 w-4 shrink-0">{index + 11}.</span>
+                                                                            <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight truncate ${highlightedEmpresa === item.name ? 'text-blue-700' : 'text-slate-600'}`}>
+                                                                                {item.name}
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className={`text-[9px] md:text-[10px] font-bold tabular-nums shrink-0 ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-800'}`}>
+                                                                            {formatCurrency(item.monto)}
                                                                         </span>
                                                                     </div>
-                                                                    <span className={`text-[10px] font-bold tabular-nums shrink-0 ${highlightedEmpresa === item.name ? 'text-blue-800' : 'text-slate-800'}`}>
-                                                                        {formatCurrency(item.monto)}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     
@@ -572,6 +573,8 @@ export default function InfGerencialView({
                                         }
                                         return null;
                                     }}
+                                    wrapperStyle={{ zIndex: 1000 }}
+                                    trigger={isMobile ? "click" : "hover"}
                                 />
                                 <Bar 
                                     dataKey="total" 

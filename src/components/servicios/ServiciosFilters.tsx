@@ -10,6 +10,8 @@ interface ServiciosFiltersProps {
         lineas: { id: number; descripcion: string }[];
         condiciones: { id: number; descripcion: string }[];
         modalidades?: { id: number; descripcion: string }[];
+        instituciones?: { id: number; descripcion: string }[];
+        tiposEstudio?: { id: number; descripcion: string }[];
     };
     selectedEtapa: string;
     setSelectedEtapa: (v: string) => void;
@@ -19,6 +21,10 @@ interface ServiciosFiltersProps {
     setSelectedLinea: (v: string) => void;
     selectedCondicion: string;
     setSelectedCondicion: (v: string) => void;
+    selectedInstitucion: string;
+    setSelectedInstitucion: (v: string) => void;
+    selectedTipoEstudio: string;
+    setSelectedTipoEstudio: (v: string) => void;
 }
 
 export function ServiciosFilters({
@@ -34,6 +40,10 @@ export function ServiciosFilters({
     setSelectedLinea,
     selectedCondicion,
     setSelectedCondicion,
+    selectedInstitucion,
+    setSelectedInstitucion,
+    selectedTipoEstudio,
+    setSelectedTipoEstudio,
 }: ServiciosFiltersProps) {
     return (
         <div className="flex flex-col gap-3 w-full">
@@ -45,7 +55,7 @@ export function ServiciosFilters({
             </div>
 
             {/* Filter Grid — identical layout to ProyectosServiciosTable */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
 
                 {/* Fase — blue capsule, priority position */}
                 <div className="space-y-1">
@@ -63,6 +73,48 @@ export function ServiciosFilters({
                                 {fase}
                             </option>
                         ))}
+                    </select>
+                </div>
+
+                {/* Institución */}
+                <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                        Institución
+                    </label>
+                    <select
+                        className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white text-gray-700 cursor-pointer"
+                        value={selectedInstitucion}
+                        onChange={(e) => setSelectedInstitucion(e.target.value)}
+                    >
+                        <option value="all">Todas las Instituciones</option>
+                        {(options.instituciones || [])
+                            .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+                            .map((item) => (
+                                <option key={item.id} value={String(item.id)}>
+                                    {item.descripcion}
+                                </option>
+                            ))}
+                    </select>
+                </div>
+
+                {/* Tipo de Estudio */}
+                <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                        Tipo Estudio
+                    </label>
+                    <select
+                        className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white text-gray-700 cursor-pointer"
+                        value={selectedTipoEstudio}
+                        onChange={(e) => setSelectedTipoEstudio(e.target.value)}
+                    >
+                        <option value="all">Todos los Tipos</option>
+                        {(options.tiposEstudio || [])
+                            .sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+                            .map((item) => (
+                                <option key={item.id} value={String(item.id)}>
+                                    {item.descripcion}
+                                </option>
+                            ))}
                     </select>
                 </div>
 
@@ -109,7 +161,7 @@ export function ServiciosFilters({
                 </div>
 
                 {/* Línea — prefixed with L{id} matching Proyectos format */}
-                <div className="space-y-1 lg:col-span-2">
+                <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
                         Línea
                     </label>

@@ -10,7 +10,7 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function getServiciosGestionData(filters?: { eje?: string; linea?: string; etapa?: string; modalidad?: string; condicion?: string; searchTerm?: string }) {
+export async function getServiciosGestionData(filters?: { eje?: string; linea?: string; etapa?: string; modalidad?: string; condicion?: string; searchTerm?: string; institucion_id?: string; tipo_estudio_id?: string }) {
   const supabase = getSupabase();
 
   let query = supabase
@@ -36,6 +36,8 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
   if (filters?.etapa && filters.etapa !== 'all') query = query.eq('etapa_id', filters.etapa);
   if (filters?.modalidad && filters.modalidad !== 'all') query = query.eq('modalidad_id', filters.modalidad);
   if (filters?.condicion && filters.condicion !== 'all') query = query.eq('condicion_id', filters.condicion);
+  if (filters?.institucion_id && filters.institucion_id !== 'all') query = query.eq('institucion_id', filters.institucion_id);
+  if (filters?.tipo_estudio_id && filters.tipo_estudio_id !== 'all') query = query.eq('tipo_estudio_id', filters.tipo_estudio_id);
 
   const { data, error } = await query;
 
@@ -207,22 +209,27 @@ export async function getCondiciones() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('condicion')
-    .select('id, descripcion')
+    .select('id, descripcion, becas_nueva!inner(id)')
     .order('id', { ascending: true });
 
   if (error) return [];
-  return data.map(item => ({ value: item.id, label: item.descripcion }));
+  // Use a Map to deduplicate if the join returns multiple rows per condition (though !inner with distinct usually works better)
+  // Actually, Postgrest join with !inner will return the same condition multiple times if it has multiple becas unless we handle it.
+  // A better way is to use the count filter or just deduplicate in JS if the list is small.
+  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
+  return unique;
 }
 
 export async function getInstitucionesBeca() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('institucion')
-    .select('id, descripcion')
-    .order('id', { ascending: true });
+    .select('id, descripcion, becas_nueva!inner(id)')
+    .order('descripcion', { ascending: true });
 
   if (error) return [];
-  return data.map(item => ({ value: item.id, label: item.descripcion }));
+  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
+  return unique;
 }
 
 export async function getGrupos() {
@@ -274,11 +281,12 @@ export async function getTiposEstudio() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('tipo_estudio')
-    .select('id, descripcion')
+    .select('id, descripcion, becas_nueva!inner(id)')
     .order('id', { ascending: true });
 
   if (error) return [];
-  return data.map(item => ({ value: item.id, label: item.descripcion }));
+  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
+  return unique;
 }
 
 export async function getNaturalezasIE() {
