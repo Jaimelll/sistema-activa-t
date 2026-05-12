@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, Cell, LabelList
@@ -519,8 +520,8 @@ export default function InfGerencialView({
                                             const yearTotal = annualTotals[year] || 0;
                                             const top20 = top20CompaniesPerYear[year] || [];
                                             
-                                            return (
-                                                <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2.5rem] shadow-2xl border border-slate-100 w-[90vw] md:w-[650px] max-h-[85vh] md:max-h-[80vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                                            const tooltipUI = (
+                                                <div className={`bg-white rounded-2xl md:rounded-[2.5rem] shadow-2xl border border-slate-100 flex flex-col animate-in fade-in zoom-in duration-200 pointer-events-auto ${isMobile ? 'w-[90vw] max-w-[90vw] p-4 max-h-[60vh]' : 'w-[650px] p-6 max-h-[80vh]'}`}>
                                                     <div className="mb-4 border-b border-slate-100 pb-3 shrink-0">
                                                         <div className="flex justify-between items-start mb-1">
                                                             <div>
@@ -536,9 +537,9 @@ export default function InfGerencialView({
 
                                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 shrink-0">Top 20 Aportantes</p>
                                                     
-                                                    {/* Lista de Aportantes con scroll interno en móvil */}
-                                                    <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar max-h-[50vh] md:max-h-none">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-1">
+                                                    {/* Lista de Aportantes con scroll interno activo */}
+                                                    <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                                                        <div className={`grid gap-x-10 gap-y-1 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
                                                             {/* Columna 1 o Lista completa en móvil */}
                                                             <div className="space-y-1">
                                                                 {top20.slice(0, isMobile ? 20 : 10).map((item: any, index: number) => (
@@ -580,8 +581,8 @@ export default function InfGerencialView({
                                                         <p className="text-sm font-bold text-slate-400 italic text-center py-8">No hay datos de aportantes para este periodo</p>
                                                     )}
 
-                                                    {isMobile && (
-                                                        <div className="mt-4 pt-3 border-t border-slate-50 text-center shrink-0">
+                                                    {isMobile && top20.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-100 text-center shrink-0">
                                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                                                                 Desliza para ver más
@@ -590,10 +591,22 @@ export default function InfGerencialView({
                                                     )}
                                                 </div>
                                             );
+
+                                            // On mobile, render centered using a portal to escape any Recharts transformations
+                                            if (isMobile && typeof document !== 'undefined') {
+                                                return createPortal(
+                                                    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none px-4">
+                                                        {tooltipUI}
+                                                    </div>,
+                                                    document.body
+                                                );
+                                            }
+
+                                            return tooltipUI;
                                         }
                                         return null;
                                     }}
-                                    wrapperStyle={{ zIndex: 1000, outline: 'none' }}
+                                    wrapperStyle={{ zIndex: 1000, outline: 'none', visibility: isMobile ? 'hidden' : 'visible' }}
                                     trigger={isMobile ? "click" : "hover"}
                                     cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                                 />
