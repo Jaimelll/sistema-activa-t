@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { X, Save, Plus, History, Edit2, Trash2 } from "lucide-react";
 import { 
     addAvanceServicio, 
@@ -21,6 +21,10 @@ interface ServicioModalProps {
         instituciones: any[];
         condiciones: any[];
         grupos: any[];
+        tiposEstudio: any[];
+        naturalezasIE: any[];
+        formatos: any[];
+        empresas: any[];
     };
     isReadOnly?: boolean;
 }
@@ -39,11 +43,23 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         grupo_id: "",
         presupuesto: 0,
         avance: 0,
-        beneficiarios: 0
+        beneficiarios: 0,
+        // Nuevos campos
+        provincia_procedencia: "",
+        distrito_procedencia: "",
+        celular: "",
+        correo_electronico: "",
+        tipo_estudio_id: "",
+        naturaleza_ie_id: "",
+        especialidad: "",
+        formato_id: "",
+        fecha_nacimiento: "",
+        sexo: "",
+        empresa_id: ""
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showAvances, setShowAvances] = useState(false);
+    const [activeTab, setActiveTab] = useState<'general' | 'becario' | 'avances'>('general');
     const [editingAvance, setEditingAvance] = useState<any>(null);
     const [newAvance, setNewAvance] = useState({
         etapa_id: "",
@@ -66,9 +82,21 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 grupo_id: servicio.grupo_id || "",
                 presupuesto: servicio.presupuesto || 0,
                 avance: servicio.avance || 0,
-                beneficiarios: servicio.beneficiarios || 0
+                beneficiarios: servicio.beneficiarios || 0,
+                // Nuevos campos
+                provincia_procedencia: servicio.provincia_procedencia || "",
+                distrito_procedencia: servicio.distrito_procedencia || "",
+                celular: servicio.celular || "",
+                correo_electronico: servicio.correo_electronico || "",
+                tipo_estudio_id: servicio.tipo_estudio_id || "",
+                naturaleza_ie_id: servicio.naturaleza_ie_id || "",
+                especialidad: servicio.especialidad || "",
+                formato_id: servicio.formato_id || "",
+                fecha_nacimiento: servicio.fecha_nacimiento || "",
+                sexo: servicio.sexo || "",
+                empresa_id: servicio.empresa_id || ""
             });
-            setShowAvances(false);
+            setActiveTab('general');
             setEditingAvance(null);
         } else {
             setFormData({
@@ -84,15 +112,28 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 grupo_id: "",
                 presupuesto: 0,
                 avance: 0,
-                beneficiarios: 0
+                beneficiarios: 0,
+                // Nuevos campos
+                provincia_procedencia: "",
+                distrito_procedencia: "",
+                celular: "",
+                correo_electronico: "",
+                tipo_estudio_id: "",
+                naturaleza_ie_id: "",
+                especialidad: "",
+                formato_id: "",
+                fecha_nacimiento: "",
+                sexo: "",
+                empresa_id: ""
             });
+            setActiveTab('general');
             setEditingAvance(null);
         }
     }, [servicio, isOpen]);
 
     if (!isOpen) return null;
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         setFormData((prev: any) => ({
             ...prev,
@@ -100,15 +141,29 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         try {
             setIsSubmitting(true);
             const cleanedData = { ...formData };
-            const fkFields = ['eje_id', 'linea_id', 'etapa_id', 'institucion_id', 'modalidad_id', 'condicion_id', 'grupo_id'];
+            const fkFields = [
+                'eje_id', 'linea_id', 'etapa_id', 'institucion_id', 'modalidad_id', 'condicion_id', 'grupo_id',
+                'tipo_estudio_id', 'naturaleza_ie_id', 'formato_id'
+            ];
             fkFields.forEach(field => {
                 if (cleanedData[field] === "") cleanedData[field] = null;
+                else if (cleanedData[field] !== null) cleanedData[field] = Number(cleanedData[field]);
             });
+
+            // Casting explícito para BIGINT
+            if (cleanedData.empresa_id) {
+                cleanedData.empresa_id = String(cleanedData.empresa_id);
+            } else {
+                cleanedData.empresa_id = null;
+            }
+
+            // Casting para DATE
+            if (cleanedData.fecha_nacimiento === "") cleanedData.fecha_nacimiento = null;
 
             await onSave(cleanedData);
             onClose();
@@ -204,28 +259,35 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 </div>
 
                 {/* Tabs */}
-                {servicio && (
-                    <div className="flex border-b border-gray-100 bg-gray-50/50">
+                <div className="flex border-b border-gray-100 bg-gray-50/50">
+                    <button 
+                        onClick={() => setActiveTab('general')}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${activeTab === 'general' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Save className="w-4 h-4" />
+                        Datos Generales
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('becario')}
+                        className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${activeTab === 'becario' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <Plus className="w-4 h-4" />
+                        Información del Becario
+                    </button>
+                    {servicio && (
                         <button 
-                            onClick={() => setShowAvances(false)}
-                            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${!showAvances ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
+                            onClick={() => setActiveTab('avances')}
+                            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${activeTab === 'avances' ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
                         >
-                            <Save className="w-4 h-4" />
-                            Datos Generales
-                        </button>
-                        <button 
-                            onClick={() => setShowAvances(true)}
-                            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all ${showAvances ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <Plus className="w-4 h-4" />
+                            <History className="w-4 h-4" />
                             Gestión de Avances
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto p-6">
-                    {!showAvances ? (
+                    {activeTab === 'general' ? (
                         <form id="servicio-form" onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="md:col-span-2 space-y-1">
@@ -272,7 +334,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="institucion_id"
                                         value={formData.institucion_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Institución</option>
@@ -286,7 +348,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="eje_id"
                                         value={formData.eje_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Eje</option>
@@ -300,7 +362,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="linea_id"
                                         value={formData.linea_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Línea</option>
@@ -314,7 +376,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="modalidad_id"
                                         value={formData.modalidad_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Modalidad</option>
@@ -328,7 +390,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="condicion_id"
                                         value={formData.condicion_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Condición</option>
@@ -342,7 +404,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="grupo_id"
                                         value={formData.grupo_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Grupo</option>
@@ -356,7 +418,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="etapa_id"
                                         value={formData.etapa_id || ""}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     >
                                         <option value="">Seleccione Etapa</option>
@@ -372,7 +434,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         step="0.01"
                                         value={formData.presupuesto}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     />
                                 </div>
@@ -385,7 +447,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         step="0.01"
                                         value={formData.avance}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly || !!servicio} 
                                     />
                                     {servicio && <p className="text-[9px] text-blue-500 font-bold px-1 uppercase mt-1">Se actualiza vía Gestión de Avances</p>}
@@ -398,9 +460,175 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         name="beneficiarios"
                                         value={formData.beneficiarios}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
                                     />
+                                </div>
+                            </div>
+                        </form>
+                    ) : activeTab === 'becario' ? (
+                        <form id="becario-form" onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            {/* Grupo: Ubicación y Contacto */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] border-b border-blue-100 pb-2 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                                    Ubicación y Contacto
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Provincia de Procedencia</label>
+                                        <input
+                                            name="provincia_procedencia"
+                                            value={formData.provincia_procedencia}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            placeholder="Ej: Lima, Cusco..."
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Distrito de Procedencia</label>
+                                        <input
+                                            name="distrito_procedencia"
+                                            value={formData.distrito_procedencia}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            placeholder="Ej: Miraflores, Wanchaq..."
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Celular</label>
+                                        <input
+                                            type="tel"
+                                            name="celular"
+                                            value={formData.celular}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            placeholder="999 999 999"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Correo Electrónico</label>
+                                        <input
+                                            type="email"
+                                            name="correo_electronico"
+                                            value={formData.correo_electronico}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            placeholder="ejemplo@correo.com"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Grupo: Perfil Académico */}
+                            <div className="space-y-4">
+                                <h4 className="text-xs font-black text-emerald-600 uppercase tracking-[0.2em] border-b border-emerald-100 pb-2 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+                                    Perfil Académico
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tipo de Estudio</label>
+                                        <select
+                                            name="tipo_estudio_id"
+                                            value={formData.tipo_estudio_id || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">Seleccione Tipo</option>
+                                            {options.tiposEstudio.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Naturaleza IE</label>
+                                        <select
+                                            name="naturaleza_ie_id"
+                                            value={formData.naturaleza_ie_id || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">Seleccione Naturaleza</option>
+                                            {options.naturalezasIE.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Especialidad / Carrera</label>
+                                        <input
+                                            name="especialidad"
+                                            value={formData.especialidad}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            placeholder="Nombre de la especialidad"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Formato de Estudio</label>
+                                        <select
+                                            name="formato_id"
+                                            value={formData.formato_id || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">Seleccione Formato</option>
+                                            {options.formatos.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Grupo: Información Personal */}
+                            <div className="space-y-4 pb-4">
+                                <h4 className="text-xs font-black text-amber-600 uppercase tracking-[0.2em] border-b border-amber-100 pb-2 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-amber-600 rounded-full" />
+                                    Información Personal y Laboral
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Fecha de Nacimiento</label>
+                                        <input
+                                            type="date"
+                                            name="fecha_nacimiento"
+                                            value={formData.fecha_nacimiento}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sexo</label>
+                                        <select
+                                            name="sexo"
+                                            value={formData.sexo || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">Seleccione Sexo</option>
+                                            <option value="Masculino">Masculino</option>
+                                            <option value="Femenino">Femenino</option>
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-1">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Empresa Vinculada</label>
+                                        <select
+                                            name="empresa_id"
+                                            value={formData.empresa_id || ""}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                            disabled={isReadOnly}
+                                        >
+                                            <option value="">Seleccione Empresa</option>
+                                            {options.empresas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -563,7 +791,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 )}
 
                 {/* Footer General */}
-                {!showAvances && (
+                {activeTab !== 'avances' && (
                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
                         <button
                             type="button"
@@ -575,7 +803,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                         {!isReadOnly && (
                             <button
                                 type="submit"
-                                form="servicio-form"
+                                form={activeTab === 'general' ? 'servicio-form' : 'becario-form'}
                                 disabled={isSubmitting}
                                 className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20"
                             >

@@ -5,7 +5,16 @@ import {
     getModalidades, 
     getEtapasList 
 } from "../actions";
-import { getServiciosGestionData, getCondiciones, getInstitucionesBeca, getGrupos } from "./actions";
+import { 
+    getServiciosGestionData, 
+    getCondiciones, 
+    getInstitucionesBeca, 
+    getGrupos,
+    getTiposEstudio,
+    getNaturalezasIE,
+    getFormatos,
+    getEmpresas
+} from "./actions";
 import GestionServiciosTable from "@/components/servicios/GestionServiciosTable";
 import { FolderHeart } from "lucide-react";
 
@@ -22,7 +31,11 @@ export default async function GestionServiciosPage() {
         instituciones, 
         condiciones,
         etapasList,
-        grupos
+        grupos,
+        tiposEstudio,
+        naturalezasIE,
+        formatos,
+        empresas
     ] = await Promise.all([
         getServiciosGestionData(),
         getLineas(),
@@ -32,7 +45,11 @@ export default async function GestionServiciosPage() {
         getInstitucionesBeca(),
         getCondiciones(),
         getEtapasList(),
-        getGrupos()
+        getGrupos(),
+        getTiposEstudio(),
+        getNaturalezasIE(),
+        getFormatos(),
+        getEmpresas()
     ]);
 
     return (
@@ -63,6 +80,10 @@ export default async function GestionServiciosPage() {
                     instituciones={instituciones}
                     condiciones={condiciones}
                     grupos={grupos}
+                    tiposEstudio={tiposEstudio}
+                    naturalezasIE={naturalezasIE}
+                    formatos={formatos}
+                    empresas={empresas}
                 />
             </div>
         </div>

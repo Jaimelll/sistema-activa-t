@@ -57,7 +57,11 @@ export default function ServiciosPage() {
                 { data: condiciones },
                 { data: modalidades },
                 { data: instituciones },
-                { data: grupos }
+                { data: grupos },
+                { data: tiposEstudio },
+                { data: naturalezasIE },
+                { data: formatos },
+                { data: empresas }
             ] = await Promise.all([
                 // Fetch full etapas with `fase` field for the mapping
                 supabase.from('etapas').select('id, descripcion, fase').order('id'),
@@ -66,7 +70,11 @@ export default function ServiciosPage() {
                 supabase.from('condicion').select('id, descripcion').order('id'),
                 supabase.from('modalidades').select('id, descripcion').order('id'),
                 supabase.from('institucion').select('id, descripcion').order('id'),
-                supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden')
+                supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden'),
+                supabase.from('tipo_estudio').select('id, descripcion').order('id'),
+                supabase.from('naturaleza_ie').select('id, descripcion').order('id'),
+                supabase.from('formato').select('id, descripcion').order('id'),
+                supabase.from('empresas').select('ruc, razon_social').order('razon_social')
             ]);
 
             // Build etapa_id → fase map
@@ -117,6 +125,13 @@ export default function ServiciosPage() {
                     value: g.id,
                     label: `${g.orden} - ${g.descripcion}`
                 })),
+                tiposEstudio: mapToOptions(tiposEstudio),
+                naturalezasIE: mapToOptions(naturalezasIE),
+                formatos: mapToOptions(formatos),
+                empresas: (empresas || []).map((e: any) => ({
+                    value: e.ruc,
+                    label: `${e.ruc} - ${e.razon_social}`
+                }))
             });
 
             // Fetch becas with all relations

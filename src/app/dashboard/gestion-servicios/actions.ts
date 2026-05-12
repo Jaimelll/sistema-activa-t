@@ -270,3 +270,47 @@ export async function getServicioCompletoById(id: number) {
   return data;
 }
 
+export async function getTiposEstudio() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('tipo_estudio')
+    .select('id, descripcion')
+    .order('id', { ascending: true });
+
+  if (error) return [];
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
+}
+
+export async function getNaturalezasIE() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('naturaleza_ie')
+    .select('id, descripcion')
+    .order('id', { ascending: true });
+
+  if (error) return [];
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
+}
+
+export async function getFormatos() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('formato')
+    .select('id, descripcion')
+    .order('id', { ascending: true });
+
+  if (error) return [];
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
+}
+
+export async function getEmpresas() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('empresas')
+    .select('ruc, razon_social')
+    .order('razon_social', { ascending: true });
+
+  if (error) return [];
+  return data.map(item => ({ value: item.ruc, label: `${item.ruc} - ${item.razon_social}` }));
+}
+
