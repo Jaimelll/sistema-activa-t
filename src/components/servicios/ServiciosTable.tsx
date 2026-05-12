@@ -34,7 +34,7 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
         return `${d.getUTCDate().toString().padStart(2, '0')}/${(d.getUTCMonth() + 1).toString().padStart(2, '0')}/${d.getUTCFullYear()}`;
     };
 
-    const COLS = 9;
+    const COLS = 10;
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-500">
@@ -45,6 +45,7 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
                             <th className="px-4 py-3">ID</th>
                             <th className="px-4 py-3 min-w-[200px]">Nombre de Servicio</th>
                             <th className="px-4 py-3">Institución</th>
+                            <th className="px-4 py-3 min-w-[150px]">Carrera / Especialidad</th>
                             <th className="px-4 py-3">Estado</th>
                             <th className="px-4 py-3 text-right">Presupuesto</th>
                             <th className="px-4 py-3 text-right">Avance</th>
@@ -116,6 +117,11 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
                                         </td>
                                         <td className="px-4 py-3 text-gray-600 font-medium whitespace-nowrap">
                                             {item.institucion?.descripcion || '-'}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="text-xs font-bold text-slate-700 line-clamp-2 max-w-[180px] leading-tight uppercase italic" title={item.especialidad}>
+                                                {item.especialidad || '-'}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3">
                                             <span

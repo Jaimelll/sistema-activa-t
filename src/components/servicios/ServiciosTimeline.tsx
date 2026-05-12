@@ -320,6 +320,11 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                             {fmtMoney(d.totalBudget)}
                         </span>
                     </TooltipRow>
+                    <TooltipRow label="Promedio por Beneficiario">
+                        <span className="font-bold text-emerald-600 px-2 bg-emerald-50 rounded border border-emerald-100 italic">
+                            {fmtMoney(d.totalBeneficiarios > 0 ? (d.totalBudget / d.totalBeneficiarios) : 0)}
+                        </span>
+                    </TooltipRow>
                     <TooltipRow label="Avance total">
                         <span className="font-black tabular-nums px-2 bg-slate-50 rounded border border-slate-100" style={{ color: stageColor }}>
                             {fmtMoney(d.totalAvance)}
