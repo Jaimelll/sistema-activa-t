@@ -45,6 +45,12 @@ export default function DocumentoModal({ isOpen, onClose, onSuccess, documento }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!documento && !file) {
+            setError("Debes seleccionar un archivo PDF");
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
@@ -140,7 +146,6 @@ export default function DocumentoModal({ isOpen, onClose, onSuccess, documento }
                             <input
                                 type="file"
                                 accept=".pdf"
-                                required={!documento}
                                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                                 className="hidden"
                                 id="pdf-upload"
@@ -153,7 +158,7 @@ export default function DocumentoModal({ isOpen, onClose, onSuccess, documento }
                                 <span className="text-sm font-medium text-gray-600 group-hover:text-accent">
                                     {file ? file.name : (documento ? "Haga clic para reemplazar el archivo" : "Seleccione un archivo PDF")}
                                 </span>
-                                <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">Máximo 15 MB • Formato PDF únicamente</span>
+                                <span className="text-[10px] text-gray-400 mt-1 uppercase tracking-tighter">Máximo 20 MB • Formato PDF únicamente</span>
                             </label>
                         </div>
                     </div>

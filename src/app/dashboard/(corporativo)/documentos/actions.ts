@@ -31,12 +31,9 @@ const BUCKET_NAME = "documentos_gerenciales";
 function sanitizeFileName(fileName: string): string {
     return fileName
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remove accents
-        .replace(/ñ/g, "n")
-        .replace(/Ñ/g, "N")
-        .replace(/\s+/g, "_")
-        .toLowerCase()
-        .replace(/[^a-z0-9._-]/g, ""); // Keep only allowed chars
+        .replace(/[\u0300-\u036f]/g, "") // quita tildes
+        .replace(/[^a-zA-Z0-9._-]/g, "_") // reemplaza espacios y especiales por _
+        .toLowerCase();
 }
 
 export async function getDocumentos(search?: string) {
@@ -77,13 +74,17 @@ export async function createDocumento(formData: FormData) {
             return { success: false, error: "Debe subir un archivo PDF." };
         }
 
-        // Limit size to 15MB
-        if (file.size > 15 * 1024 * 1024) {
-            return { success: false, error: "El archivo excede el límite de 15 MB." };
+        // Limit size to 20MB
+        if (file.size > 20 * 1024 * 1024) {
+            return { success: false, error: "El archivo excede el límite de 20 MB." };
         }
 
-        const sanitizedOriginalName = sanitizeFileName(file.name);
-        const fileName = `${Date.now()}_${sanitizedOriginalName}`;
+        const sanitizedFileName = sanitizeFileName(file.name);
+        const fileName = `${Date.now()}_${sanitizedFileName}`;
+        
+        console.log("FILE NAME:", file.name);
+        console.log("FILE PATH FINAL:", fileName);
+
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(fileName, file, { 
@@ -149,13 +150,17 @@ export async function updateDocumento(id: string, formData: FormData) {
         };
 
         if (file && file.size > 0) {
-            // Limit size to 15MB
-            if (file.size > 15 * 1024 * 1024) {
-                return { success: false, error: "El nuevo archivo excede los 15 MB." };
+            // Limit size to 20MB
+            if (file.size > 20 * 1024 * 1024) {
+                return { success: false, error: "El nuevo archivo excede los 20 MB." };
             }
 
-            const sanitizedOriginalName = sanitizeFileName(file.name);
-            const fileName = `${Date.now()}_${sanitizedOriginalName}`;
+            const sanitizedFileName = sanitizeFileName(file.name);
+            const fileName = `${Date.now()}_${sanitizedFileName}`;
+            
+            console.log("FILE NAME:", file.name);
+            console.log("FILE PATH FINAL:", fileName);
+
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from(BUCKET_NAME)
                 .upload(fileName, file, { 
