@@ -14,6 +14,8 @@ export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
     'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Supervisión'],
     'jleclere@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
     'jbozzo@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
+    'emoya@fondoempleo.com.pe': ['Servicios', 'Gestión de Servicios'],
+    'hmeza@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Evaluación'],
 };
 
 // Mapa de módulo → ruta principal (para validación en middleware)
@@ -62,6 +64,13 @@ export function getModulosVisibles(email: string | null | undefined): string[] |
     const permisos = MODULOS_POR_USUARIO[norm];
     if (!permisos) return []; // usuario no conocido → sin acceso
     return permisos;
+}
+
+/** Devuelve true si el usuario puede realizar acciones de evaluación */
+export function puedeRealizarAccionesEvaluacion(email: string | null | undefined): boolean {
+    const norm = getNormalizedEmail(email);
+    if (norm === 'hmeza@fondoempleo.com.pe') return false;
+    return true; // jduran y otros permitidos por defecto (u otra lógica futura)
 }
 
 /** Devuelve true si la ruta pathname está permitida para el usuario */
