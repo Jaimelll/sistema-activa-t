@@ -58,14 +58,30 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         empresa_id: ""
     });
 
+    const formatCurrency = (value: number | string) => {
+        const num = Number(value);
+        if (isNaN(num)) return "S/ 0.00";
+        return new Intl.NumberFormat('es-PE', {
+            style: 'currency',
+            currency: 'PEN',
+            minimumFractionDigits: 2
+        }).format(num);
+    };
+
+    const [isPresupuestoFocused, setIsPresupuestoFocused] = useState(false);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState<'general' | 'becario' | 'avances'>('general');
     const [editingAvance, setEditingAvance] = useState<any>(null);
     const [newAvance, setNewAvance] = useState({
         etapa_id: "",
         fecha: new Date().toISOString().split('T')[0],
-        sustento: ""
+        sustento: "",
+        monto: 0
     });
+
+    const [isMontoAvanceFocused, setIsMontoAvanceFocused] = useState(false);
+    const [isMontoEditFocused, setIsMontoEditFocused] = useState(false);
 
     useEffect(() => {
         if (servicio) {
@@ -93,7 +109,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 especialidad: servicio.especialidad || "",
                 formato_id: servicio.formato_id || "",
                 fecha_nacimiento: servicio.fecha_nacimiento || "",
-                sexo: servicio.sexo || "",
+                sexo: servicio.sexo === "Masculino" ? "M" : (servicio.sexo === "Femenino" ? "F" : (servicio.sexo || "")),
                 empresa_id: servicio.empresa_id || ""
             });
             setActiveTab('general');
@@ -164,6 +180,9 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
 
             // Casting para DATE
             if (cleanedData.fecha_nacimiento === "") cleanedData.fecha_nacimiento = null;
+            
+            // Validación y normalización de sexo
+            if (cleanedData.sexo === "") cleanedData.sexo = null;
 
             await onSave(cleanedData);
             onClose();
@@ -177,21 +196,22 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
 
     const handleAddAvance = async () => {
         if (!servicio) return;
-        if (!newAvance.etapa_id) {
-            alert("Seleccione una etapa para el avance");
-            return;
-        }
+        
+        // Si no selecciona etapa, usamos la actual del servicio
+        const finalEtapaId = newAvance.etapa_id || servicio.etapa_id;
+
         try {
             setIsSubmitting(true);
             await addAvanceServicio(servicio.id, {
                 ...newAvance,
-                etapa_id: Number(newAvance.etapa_id)
+                etapa_id: Number(finalEtapaId)
             });
             alert("Avance registrado correctamente");
             setNewAvance({
                 etapa_id: "",
                 fecha: new Date().toISOString().split('T')[0],
-                sustento: ""
+                sustento: "",
+                monto: 0
             });
             onClose(); 
         } catch (error) {
@@ -209,7 +229,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             await updateAvanceServicio(editingAvance.id, {
                 etapa_id: Number(editingAvance.etapa_id),
                 fecha: editingAvance.fecha,
-                sustento: editingAvance.sustento
+                sustento: editingAvance.sustento,
+                monto: Number(editingAvance.monto) || 0
             });
             alert("Avance actualizado correctamente");
             setEditingAvance(null);
@@ -429,12 +450,19 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presupuesto (S/)</label>
                                     <input
-                                        type="number"
+                                        type="text"
                                         name="presupuesto"
-                                        step="0.01"
-                                        value={formData.presupuesto}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
+                                        value={isPresupuestoFocused ? formData.presupuesto : formatCurrency(formData.presupuesto)}
+                                        onFocus={() => setIsPresupuestoFocused(true)}
+                                        onBlur={() => setIsPresupuestoFocused(false)}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            setFormData((prev: any) => ({
+                                                ...prev,
+                                                presupuesto: val === "" ? 0 : Number(val)
+                                            }));
+                                        }}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm font-bold text-slate-700"
                                         disabled={isReadOnly}
                                     />
                                 </div>
@@ -612,8 +640,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                             disabled={isReadOnly}
                                         >
                                             <option value="">Seleccione Sexo</option>
-                                            <option value="Masculino">Masculino</option>
-                                            <option value="Femenino">Femenino</option>
+                                            <option value="M">Masculino</option>
+                                            <option value="F">Femenino</option>
                                         </select>
                                     </div>
                                     <div className="md:col-span-2 space-y-1">
@@ -664,6 +692,21 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                 />
                                             </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                                <input
+                                                    type="text"
+                                                    value={isMontoAvanceFocused ? newAvance.monto : formatCurrency(newAvance.monto)}
+                                                    onFocus={() => setIsMontoAvanceFocused(true)}
+                                                    onBlur={() => setIsMontoAvanceFocused(false)}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        setNewAvance({...newAvance, monto: val === "" ? 0 : Number(val)});
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:outline-none"
+                                                    placeholder="S/. 0.00"
+                                                />
+                                            </div>
                                             <div className="space-y-1 md:col-span-2">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
                                                 <input
@@ -706,7 +749,14 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                         })()}
                                                     </span>
                                                     <span className="text-xs font-bold text-gray-800">{options.etapas.find(o => Number(o.value) === Number(av.etapa_id))?.label || `Etapa ${av.etapa_id}`}</span>
-                                                    <p className="text-[9px] text-gray-400 italic mt-0.5">{av.sustento || '-'}</p>
+                                                    <div className="flex items-center gap-3 mt-0.5">
+                                                        <p className="text-[9px] text-gray-400 italic">{av.sustento || '-'}</p>
+                                                        {av.monto > 0 && (
+                                                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                                                {formatCurrency(av.monto)}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 {!isReadOnly && (
                                                     <div className="flex items-center gap-1 border-l pl-3 border-gray-100">
@@ -764,6 +814,20 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                        value={editingAvance.fecha}
                                        onChange={(e) => setEditingAvance({...editingAvance, fecha: e.target.value})}
                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                   />
+                               </div>
+                               <div className="space-y-1">
+                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                   <input
+                                       type="text"
+                                       value={isMontoEditFocused ? editingAvance.monto : formatCurrency(editingAvance.monto)}
+                                       onFocus={() => setIsMontoEditFocused(true)}
+                                       onBlur={() => setIsMontoEditFocused(false)}
+                                       onChange={(e) => {
+                                           const val = e.target.value.replace(/[^0-9.]/g, '');
+                                           setEditingAvance({...editingAvance, monto: val === "" ? 0 : Number(val)});
+                                       }}
+                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:outline-none"
                                    />
                                </div>
                                <div className="space-y-1">

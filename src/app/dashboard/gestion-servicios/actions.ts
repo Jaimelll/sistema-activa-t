@@ -51,6 +51,15 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
 
 export async function createServicio(formData: any) {
   const supabase = getSupabase();
+
+  // Safety normalization for sexo
+  if (formData.sexo) {
+    if (formData.sexo === 'Masculino') formData.sexo = 'M';
+    else if (formData.sexo === 'Femenino') formData.sexo = 'F';
+  } else {
+    formData.sexo = null;
+  }
+
   const { data, error } = await supabase
     .from('becas_nueva')
     .insert([formData])
@@ -67,6 +76,15 @@ export async function createServicio(formData: any) {
 
 export async function updateServicio(id: any, formData: any) {
   const supabase = getSupabase();
+
+  // Safety normalization for sexo
+  if (formData.sexo) {
+    if (formData.sexo === 'Masculino') formData.sexo = 'M';
+    else if (formData.sexo === 'Femenino') formData.sexo = 'F';
+  } else {
+    formData.sexo = null;
+  }
+
   const { data, error } = await supabase
     .from('becas_nueva')
     .update(formData)
@@ -107,27 +125,40 @@ async function recalculateBecaAvance(becaId: any, supabase: any) {
 
   console.log(`[DEBUG] Recalculating stage for Beca ${becaId} as of ${today}`);
 
-  // Fetch only valid (past or current) advances
-  const { data: latestValid, error } = await supabase
+  // 1. Obtener TODO el historial de avances para este servicio
+  const { data: allAvances, error: fetchError } = await supabase
     .from('avance_beca')
-    .select('etapa_id')
+    .select('etapa_id, sustento, fecha, monto')
     .eq('beca_id', becaId)
-    .lte('fecha', today)
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .lte('fecha', today)                 // 2. Filtrar fecha <= hoy (ignora proyecciones)
+    .order('fecha', { ascending: false }) // 3. Ordenar por fecha descendente
+    .order('id', { ascending: false });
 
-  if (error) {
-    console.error("[DEBUG] Error fetching valid advances:", error);
+  if (fetchError) {
+    console.error("[DEBUG] Error fetching history for sync:", fetchError);
     return;
   }
 
-  if (latestValid) {
-    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${latestValid.etapa_id}`);
+  if (allAvances && allAvances.length > 0) {
+    // 4. El avance más reciente (índice 0) define la etapa actual
+    const latestAvance = allAvances[0];
+    const newEtapaId = latestAvance.etapa_id;
+
+    // 5. Asigna como sustento el texto del avance más reciente. Si está vacío, busca hacia atrás.
+    const sustentoFinal = allAvances.find((av: any) => av.sustento && av.sustento.trim() !== '')?.sustento || '';
+
+    // Calculamos el avance financiero total (solo de avances reales <= hoy)
+    const totalAvanceFinanciero = allAvances.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0);
+
+    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${newEtapaId}, Avance S/ ${totalAvanceFinanciero}`);
+    
     await supabase
       .from('becas_nueva')
-      .update({ etapa_id: latestValid.etapa_id })
+      .update({ 
+        etapa_id: newEtapaId,
+        avance: totalAvanceFinanciero,
+        sustento: sustentoFinal
+      })
       .eq('id', becaId);
   } else {
     console.log(`[DEBUG] No valid advance found for Beca ${becaId}. Stage remains unchanged.`);
@@ -143,7 +174,8 @@ export async function addAvanceServicio(becaId: any, avanceData: any) {
       beca_id: becaId,
       etapa_id: avanceData.etapa_id,
       fecha: avanceData.fecha,
-      sustento: avanceData.sustento 
+      sustento: avanceData.sustento,
+      monto: Number(avanceData.monto) || 0
     }])
     .select()
     .single();
@@ -167,7 +199,8 @@ export async function updateAvanceServicio(id: any, avanceData: any) {
     .update({
       etapa_id: avanceData.etapa_id,
       fecha: avanceData.fecha,
-      sustento: avanceData.sustento
+      sustento: avanceData.sustento,
+      monto: Number(avanceData.monto) || 0
     })
     .eq('id', id)
     .select()
