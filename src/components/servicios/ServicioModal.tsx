@@ -267,8 +267,13 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                         <div className="p-2 bg-blue-600 rounded-lg text-white">
                             <Save className="w-5 h-5" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">
-                            {isReadOnly ? 'Detalles del Servicio' : (servicio ? 'Editar Gestión de Servicio' : 'Añadir Nuevo Servicio')}
+                        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2 flex-wrap">
+                            <span>{isReadOnly ? 'Detalles del Servicio' : (servicio ? 'Editar Gestión de Servicio' : 'Añadir Nuevo Servicio')}</span>
+                            {servicio?.id && (
+                                <span className="text-gray-400 font-medium text-sm">
+                                    [ID: <span className="font-bold text-gray-900">{servicio.id}</span>]
+                                </span>
+                            )}
                         </h3>
                     </div>
                     <button 

@@ -103,34 +103,79 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         refreshDashboardData();
     }, [selectedEspecialista]);
 
-    // Filter Logic for Options (Dynamic Lists)
+    // Filter Logic for Options (Dynamic Lists) - "No Empty Results" implementation
     const availableFilters = useMemo(() => {
-        const dataForOptions = dashboardData.filter(item => {
+        // Para cada filtro, calculamos sus opciones disponibles filtrando la data con TODOS LOS DEMÁS filtros.
+        
+        // 1. Opciones de Ejes (dependen de Año, Fase, Línea, Etapa, Modalidad)
+        const dataForEjes = dashboardData.filter(item => {
             const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-
             const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
-
-            return matchYear && matchFase;
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            return matchYear && matchFase && matchLinea && matchEtapa && matchModalidad;
         });
-
-        const uniqueLineas = Array.from(new Set(dataForOptions.map(d => String(d.lineaId))));
-        const uniqueEjes = Array.from(new Set(dataForOptions.map(d => String(d.ejeId || d.eje_id || d.eje))));
-        // Store both value and label to avoid rendering objects as children
-        const uniqueEtapasSet = new Set(dataForOptions.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
-        const uniqueEtapas = Array.from(uniqueEtapasSet)
-            .map(e => JSON.parse(e))
-            .sort((a: any, b: any) => Number(a.value) - Number(b.value));
-
-        const dynamicLineas = lines
-            .filter((l: any) => uniqueLineas.includes(String(l.value)))
-            .sort((a: any, b: any) => a.label.localeCompare(b.label));
-
+        const uniqueEjes = Array.from(new Set(dataForEjes.map(d => String(d.ejeId || d.eje_id || d.eje))));
         const dynamicEjes = ejesList
             .filter((e: any) => uniqueEjes.includes(String(e.value)))
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
-        return { dynamicLineas, dynamicEjes, uniqueEtapas };
-    }, [dashboardData, selectedYear, selectedFase, lines, ejesList, selectedModalidad]);
+        // 2. Opciones de Líneas (dependen de Año, Fase, Eje, Etapa, Modalidad)
+        const dataForLineas = dashboardData.filter(item => {
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            return matchYear && matchFase && matchEje && matchEtapa && matchModalidad;
+        });
+        const uniqueLineas = Array.from(new Set(dataForLineas.map(d => String(d.lineaId))));
+        const dynamicLineas = lines
+            .filter((l: any) => uniqueLineas.includes(String(l.value)))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+
+        // 3. Opciones de Etapas (dependen de Año, Fase, Eje, Línea, Modalidad)
+        const dataForEtapas = dashboardData.filter(item => {
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            return matchYear && matchFase && matchEje && matchLinea && matchModalidad;
+        });
+        const uniqueEtapasSet = new Set(dataForEtapas.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
+        const uniqueEtapas = Array.from(uniqueEtapasSet)
+            .map(e => JSON.parse(e))
+            .sort((a: any, b: any) => Number(a.value) - Number(b.value));
+
+        // 4. Opciones de Fases (dependen de Año, Eje, Línea, Etapa, Modalidad)
+        const dataForFases = dashboardData.filter(item => {
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad;
+        });
+        const dynamicFases = Array.from(new Set(dataForFases.map(d => d.fase).filter(Boolean))).sort();
+
+        // 5. Opciones de Modalidades (dependen de Año, Fase, Eje, Línea, Etapa)
+        const dataForModalidades = dashboardData.filter(item => {
+            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
+            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            return matchYear && matchFase && matchEje && matchLinea && matchEtapa;
+        });
+        const uniqueModalidades = Array.from(new Set(dataForModalidades.map(d => String(d.modalidadId))));
+        const dynamicModalidades = modalidades
+            .filter((m: any) => uniqueModalidades.includes(String(m.value)))
+            .sort((a: any, b: any) => a.label.localeCompare(b.label));
+
+        return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades };
+    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades]);
 
     // Debug logging requested by user - REMOVED
 
@@ -342,7 +387,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             onChange={(e) => setSelectedFase(e.target.value)}
                         >
                             <option value="all" className="bg-white text-gray-900">Todas las Fases</option>
-                            {fases.map(fase => (
+                            {availableFilters.dynamicFases.map(fase => (
                                 <option key={fase} value={fase} className="bg-white text-gray-900">
                                     {fase}
                                 </option>
@@ -386,7 +431,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             onChange={(e) => setSelectedModalidad(e.target.value)}
                         >
                             <option value="all">Todas las Modalidades</option>
-                            {modalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                            {availableFilters.dynamicModalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
 
                         {/* 7. Especialista (Global) */}

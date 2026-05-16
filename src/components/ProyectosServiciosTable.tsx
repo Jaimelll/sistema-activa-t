@@ -101,11 +101,11 @@ export default function ProyectosServiciosTable({
       'ID': item.id,
       'Código Proyecto': item.codigo || '',
       'Nombre': item.nombre || '',
-      'Institución Ejecutora': item.institucion || '',
-      'Eje': item.eje || '',
-      'Línea': item.linea || '',
-      'Región': item.region || '',
-      'Etapa': item.etapa || '',
+      'Institución Ejecutora': typeof item.institucion === 'object' ? item.institucion?.nombre : (item.institucion || ''),
+      'Eje': typeof item.eje === 'object' ? item.eje?.descripcion : (item.eje || ''),
+      'Línea': typeof item.linea === 'object' ? item.linea?.descripcion : (item.linea || ''),
+      'Región': typeof item.region === 'object' ? item.region?.descripcion : (item.region || ''),
+      'Etapa': typeof item.etapa === 'object' ? item.etapa?.descripcion : (item.etapa || ''),
       'Presupuestado': Number(item.monto_fondoempleo) || 0,
       'Contrapartida': Number(item.contrapartida) || 0,
       'Avance': Number(item.avance) || 0,
@@ -322,18 +322,20 @@ export default function ProyectosServiciosTable({
                     </td>
                     <td className="px-6 py-4">
                         <div className="text-xs font-medium text-gray-600 line-clamp-2">
-                            {row.institucion}
+                            {typeof row.institucion === 'object' ? row.institucion?.nombre : (row.institucion || '-')}
                         </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-medium">{row.region}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-medium">
+                        {typeof row.region === 'object' ? row.region?.descripcion : (row.region || '-')}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx(
                         "px-2.5 py-1 text-[10px] font-extrabold rounded-full border",
-                        row.etapa === 'Lanzamiento' ? "bg-amber-50 text-amber-700 border-amber-100" :
-                        row.etapa === 'Ejecución' ? "bg-blue-50 text-blue-700 border-blue-100" :
+                        (typeof row.etapa === 'object' ? row.etapa?.descripcion : row.etapa) === 'Lanzamiento' ? "bg-amber-50 text-amber-700 border-amber-100" :
+                        (typeof row.etapa === 'object' ? row.etapa?.descripcion : row.etapa) === 'Ejecución' ? "bg-blue-50 text-blue-700 border-blue-100" :
                         "bg-gray-50 text-gray-600 border-gray-100"
                       )}>
-                        {row.etapa}
+                        {typeof row.etapa === 'object' ? row.etapa?.descripcion : (row.etapa || 'Sin Etapa')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs font-bold text-right text-gray-700">

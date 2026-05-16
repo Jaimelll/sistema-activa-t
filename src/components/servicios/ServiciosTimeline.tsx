@@ -15,16 +15,18 @@ interface ServiciosTimelineProps {
     options: any;
 }
 
-const STAGES = [
-    { id: 1, name: 'Bases', color: '#ef4444' },
-    { id: 2, name: 'Lanzamiento', color: '#f97316' },
-    { id: 3, name: 'Aprobado', color: '#eab308' },
-    { id: 4, name: 'Firma', color: '#22c55e' },
-    { id: 5, name: 'Ejecución', color: '#3b82f6' },
-    { id: 6, name: 'Ejecutado', color: '#dc2626' },
-    { id: 7, name: 'Resuelto', color: '#94a3b8' },
+const STAGE_PALETTE = [
+    '#ef4444', // Red
+    '#f97316', // Orange
+    '#eab308', // Amber
+    '#22c55e', // Green
+    '#3b82f6', // Blue
+    '#dc2626', // Red-600
+    '#94a3b8', // Slate
+    '#8b5cf6', // Violet
+    '#ec4899', // Pink
+    '#14b8a6', // Teal
 ];
-const STAGE_BY_ID = Object.fromEntries(STAGES.map(s => [s.id, s]));
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const MARGIN_DAYS = 30;
@@ -71,9 +73,17 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
     }, []);
 
     // ── BUILD CHART ROWS & DYNAMIC DOMAIN ───────────────────────────────────
-    const { chartData, usedStageIds, minTimestamp, maxTimestamp } = useMemo(() => {
+    const { chartData, usedStageIds, minTimestamp, maxTimestamp, stageById } = useMemo(() => {
+        const stagesFromProps = options?.etapas || [];
+        const stageById = Object.fromEntries(
+            stagesFromProps.map((s: any, idx: number) => [
+                Number(s.value), 
+                { name: s.label, color: STAGE_PALETTE[idx % STAGE_PALETTE.length] }
+            ])
+        );
+
         if (!data || data.length === 0) {
-            return { chartData: [], usedStageIds: [], minTimestamp: null, maxTimestamp: null };
+            return { chartData: [], usedStageIds: [], minTimestamp: null, maxTimestamp: null, stageById };
         }
 
         // Agrupar por grupo_id
@@ -127,7 +137,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             });
         });
 
-        const stageOrder = STAGES.map(s => s.id);
+        const stageOrder = Object.keys(stageById).map(Number).sort((a, b) => a - b);
         const foundStageIds = new Set<number>();
 
         let globalMin = Infinity;
@@ -277,8 +287,9 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             usedStageIds: finalUsedStageIds,
             minTimestamp: domainMin,
             maxTimestamp: domainMax,
+            stageById
         };
-    }, [data]);
+    }, [data, options.etapas]);
 
     // Datos filtrados para la tabla de detalle
     const filteredData = useMemo(() => {
@@ -302,7 +313,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
-        const stageColor = STAGE_BY_ID[d.maxStageId]?.color || '#64748b';
+        const stageColor = stageById[d.maxStageId]?.color || '#64748b';
 
         return (
             <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-200 text-[11px] min-w-[280px]" style={{ zIndex: 9999 }}>
@@ -426,7 +437,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                                 minPointSize={1}
                             />
                             {usedStageIds.map(sid => {
-                                const stage = STAGE_BY_ID[sid];
+                                const stage = stageById[sid];
                                 return (
                                     <Bar
                                         key={sid}

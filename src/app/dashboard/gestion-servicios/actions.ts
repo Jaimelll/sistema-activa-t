@@ -16,7 +16,7 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
   let query = supabase
     .from('becas_nueva')
     .select(`
-      *,
+      id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
       eje:eje_id(descripcion),
       linea:linea_id(descripcion),
       etapa:etapa_id(descripcion),
@@ -24,7 +24,7 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
       institucion:institucion_id(descripcion),
       condicion:condicion_id(descripcion),
       grupo:grupo_id(descripcion),
-      avances:avance_beca(*)
+      avances:avance_beca(id, fecha, etapa_id, sustento)
     `)
     .order('id', { ascending: true });
 
@@ -289,7 +289,7 @@ export async function getServicioCompletoById(id: number) {
   const { data, error } = await supabase
     .from('becas_nueva')
     .select(`
-      *,
+      id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
       eje:eje_id(descripcion),
       linea:linea_id(descripcion),
       etapa:etapa_id(descripcion),
@@ -297,7 +297,7 @@ export async function getServicioCompletoById(id: number) {
       institucion:institucion_id(descripcion),
       condicion:condicion_id(descripcion),
       grupo:grupo_id(descripcion),
-      avances:avance_beca(*)
+      avances:avance_beca(id, fecha, etapa_id, sustento)
     `)
     .eq('id', id)
     .single();

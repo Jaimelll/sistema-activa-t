@@ -11,11 +11,11 @@ import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInsti
 export default function ServiciosPage() {
     const supabase = createClient();
 
-    // ── Raw data ─────────────────────────────────────────────────────────────
+    // -- Raw data -------------------------------------------------------------
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // ── Catalog options (for filter dropdowns) ────────────────────────────────
+    // -- Catalog options (for filter dropdowns) --------------------------------
     const [filterOptions, setFilterOptions] = useState<{
         etapas: { id: number; descripcion: string }[];
         ejes: { id: number; descripcion: string }[];
@@ -34,15 +34,15 @@ export default function ServiciosPage() {
         tiposEstudio: [],
     });
 
-    // ── Fase catalog and mapping etapa_id → fase ──────────────────────────────
+    // -- Fase catalog and mapping etapa_id -> fase -----------------------------
     const [fases, setFases] = useState<string[]>([]);
     // Maps etapa_id (number) → fase (string) for robust filtering
     const [etapaFaseMap, setEtapaFaseMap] = useState<Record<number, string>>({});
 
-    // ── Timeline options (for ServiciosTimeline) ─────────────────────────────
+    // -- Timeline options (for ServiciosTimeline) ------------------------------
     const [timelineOptions, setTimelineOptions] = useState<any>({});
 
-    // ── Active filter state (single-select, matches Proyectos pattern) ────────
+    // -- Active filter state (single-select, matches Proyectos pattern) ---------
     const [selectedFase, setSelectedFase] = useState<string>('all');       // Default: Todas las Fases
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
     const [selectedEje, setSelectedEje] = useState<string>('all');
@@ -51,37 +51,37 @@ export default function ServiciosPage() {
     const [selectedInstitucion, setSelectedInstitucion] = useState<string>('all');
     const [selectedTipoEstudio, setSelectedTipoEstudio] = useState<string>('all');
 
-    // ── Initial data load ─────────────────────────────────────────────────────
+    // -- Initial data load -----------------------------------------------------
     useEffect(() => {
         async function loadInitialData() {
             setLoading(true);
 
-            const [
-                { data: etapasRaw },
-                { data: ejes },
-                { data: lineas },
-                { data: condiciones },
-                { data: modalidades },
-                { data: instituciones },
-                { data: grupos },
-                { data: tiposEstudio },
-                { data: naturalezasIE },
-                { data: formatos },
-                { data: empresas }
-            ] = await Promise.all([
-                // Fetch catalogs ensuring they have associated becas
-                supabase.from('etapas').select('id, descripcion, fase, becas_nueva!inner(id)').order('id'),
-                supabase.from('ejes').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('lineas').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('condicion').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('modalidades').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('institucion').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('grupo').select('id, descripcion, orden, becas_nueva!inner(id)').eq('tipo', 1).order('orden'),
-                supabase.from('tipo_estudio').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('naturaleza_ie').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('formato').select('id, descripcion, becas_nueva!inner(id)').order('id'),
-                supabase.from('empresas').select('ruc, razon_social, becas_nueva!inner(id)').order('razon_social')
+            const results = await Promise.all([
+                // Fetch full catalogs for robust mapping in modals/history
+                supabase.from('etapas').select('id, descripcion, fase').order('id'),
+                supabase.from('ejes').select('id, descripcion').order('id'),
+                supabase.from('lineas').select('id, descripcion').order('id'),
+                supabase.from('condicion').select('id, descripcion').order('id'),
+                supabase.from('modalidades').select('id, descripcion').order('id'),
+                supabase.from('institucion').select('id, descripcion').order('id'),
+                supabase.from('grupo').select('id, descripcion, orden').eq('tipo', 1).order('orden'),
+                supabase.from('tipo_estudio').select('id, descripcion').order('id'),
+                supabase.from('naturaleza_ie').select('id, descripcion').order('id'),
+                supabase.from('formato').select('id, descripcion').order('id'),
+                supabase.from('empresas').select('ruc, razon_social').order('razon_social')
             ]);
+
+            const etapasRaw = results[0].data || [];
+            const ejes = results[1].data || [];
+            const lineas = results[2].data || [];
+            const condiciones = results[3].data || [];
+            const modalidades = results[4].data || [];
+            const instituciones = results[5].data || [];
+            const grupos = results[6].data || [];
+            const tiposEstudio = results[7].data || [];
+            const naturalezasIE = results[8].data || [];
+            const formatos = results[9].data || [];
+            const empresas = results[10].data || [];
 
             // Deduplicate (since inner join might return multiple rows per item)
             const dedup = (arr: any[] | null) => {
@@ -197,7 +197,7 @@ export default function ServiciosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Cascading Filtering Logic (Smart Selection) ───────────────────────────
+    // -- Cascading Filtering Logic (Smart Selection) ---------------------------
     const availableFilterOptions = useMemo(() => {
         if (data.length === 0) return filterOptions;
 
@@ -234,7 +234,7 @@ export default function ServiciosPage() {
         };
     }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, etapaFaseMap, fases]);
 
-    // ── Filtering Logic ───────────────────────────────────────────────────────
+    // -- Filtering Logic -------------------------------------------------------
     const filteredData = useMemo(() => {
         return data.filter(item => {
             // 1. Fase filter — map item.etapa_id through the etapaFaseMap
@@ -276,7 +276,7 @@ export default function ServiciosPage() {
         });
     }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio]);
 
-    // ── Derived chart data (reactive to filteredData) ─────────────────────────
+    // -- Derived chart data (reactive to filteredData) -------------------------
     const bubbleMapData = useMemo(() => {
         const map = new Map<number, { regionId: number; regionName: string; count: number; proyectos: any[] }>();
         filteredData.forEach(d => {
@@ -319,7 +319,7 @@ export default function ServiciosPage() {
     return (
         <div className="space-y-6 pb-12">
 
-            {/* Header panel — logo + filters */}
+            {/* Header panel - logo + filters */}
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 {/* Logo */}
                 <div className="flex items-center gap-4 flex-shrink-0">
