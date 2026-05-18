@@ -12,6 +12,7 @@ interface ServiciosFiltersProps {
         modalidades?: { id: number; descripcion: string }[];
         instituciones?: { id: number; descripcion: string }[];
         tiposEstudio?: { id: number; descripcion: string }[];
+        grupos?: { id: number; descripcion: string; orden: number }[];
     };
     selectedEtapa: string;
     setSelectedEtapa: (v: string) => void;
@@ -25,6 +26,8 @@ interface ServiciosFiltersProps {
     setSelectedInstitucion: (v: string) => void;
     selectedTipoEstudio: string;
     setSelectedTipoEstudio: (v: string) => void;
+    selectedGrupo: string;
+    setSelectedGrupo: (v: string) => void;
 }
 
 export function ServiciosFilters({
@@ -44,6 +47,8 @@ export function ServiciosFilters({
     setSelectedInstitucion,
     selectedTipoEstudio,
     setSelectedTipoEstudio,
+    selectedGrupo,
+    setSelectedGrupo,
 }: ServiciosFiltersProps) {
     return (
         <div className="flex flex-col gap-3 w-full">
@@ -55,7 +60,7 @@ export function ServiciosFilters({
             </div>
 
             {/* Filter Grid — identical layout to ProyectosServiciosTable */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-3">
 
                 {/* Fase — blue capsule, priority position */}
                 <div className="space-y-1">
@@ -73,6 +78,27 @@ export function ServiciosFilters({
                                 {fase}
                             </option>
                         ))}
+                    </select>
+                </div>
+
+                {/* Grupo */}
+                <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
+                        Grupo
+                    </label>
+                    <select
+                        className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white text-gray-700 cursor-pointer font-bold"
+                        value={selectedGrupo}
+                        onChange={(e) => setSelectedGrupo(e.target.value)}
+                    >
+                        <option value="all">Todos los Grupos</option>
+                        {(options.grupos || [])
+                            .sort((a, b) => a.orden - b.orden)
+                            .map((item) => (
+                                <option key={item.id} value={String(item.id)}>
+                                    {item.orden} - {item.descripcion}
+                                </option>
+                            ))}
                     </select>
                 </div>
 

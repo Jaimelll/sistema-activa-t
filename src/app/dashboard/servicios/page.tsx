@@ -25,6 +25,7 @@ export default function ServiciosPage() {
         modalidades: { id: number; descripcion: string }[];
         instituciones: { id: number; descripcion: string }[];
         tiposEstudio: { id: number; descripcion: string }[];
+        grupos: { id: number; descripcion: string; orden: number }[];
     }>({
         etapas: [],
         ejes: [],
@@ -33,6 +34,7 @@ export default function ServiciosPage() {
         modalidades: [],
         instituciones: [],
         tiposEstudio: [],
+        grupos: [],
     });
 
     // -- Fase catalog and mapping etapa_id -> fase -----------------------------
@@ -51,6 +53,7 @@ export default function ServiciosPage() {
     const [selectedCondicion, setSelectedCondicion] = useState<string>('all');
     const [selectedInstitucion, setSelectedInstitucion] = useState<string>('all');
     const [selectedTipoEstudio, setSelectedTipoEstudio] = useState<string>('all');
+    const [selectedGrupo, setSelectedGrupo] = useState<string>('all');
 
     // -- Initial data load -----------------------------------------------------
     useEffect(() => {
@@ -128,7 +131,6 @@ export default function ServiciosPage() {
             fasesSet.forEach(f => { if (!sortedFases.includes(f)) sortedFases.push(f); });
             setFases(sortedFases);
 
-            // Catalog options for filters
             setFilterOptions({
                 etapas: dedupEtapas.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
                 ejes: dedupEjes.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
@@ -137,6 +139,7 @@ export default function ServiciosPage() {
                 modalidades: dedupModalidades.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
                 instituciones: dedupInstituciones.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
                 tiposEstudio: dedupTiposEstudio.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
+                grupos: dedupGrupos.map((g: any) => ({ id: g.id, descripcion: g.descripcion, orden: g.orden })),
             });
 
             // Timeline options (legacy shape expected by ServiciosTimeline)
@@ -214,8 +217,9 @@ export default function ServiciosPage() {
                 const matchCondicion = excludeKey === 'condicion' || selectedCondicion === 'all' || String(item.condicion_id) === selectedCondicion;
                 const matchInstitucion = excludeKey === 'institucion' || selectedInstitucion === 'all' || String(item.institucion_id) === selectedInstitucion;
                 const matchTipoEstudio = excludeKey === 'tipoEstudio' || selectedTipoEstudio === 'all' || String(item.tipo_estudio_id) === selectedTipoEstudio;
+                const matchGrupo = excludeKey === 'grupo' || selectedGrupo === 'all' || String(item.grupo_id) === selectedGrupo;
                 
-                return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio;
+                return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio && matchGrupo;
             });
         };
 
@@ -233,9 +237,10 @@ export default function ServiciosPage() {
             condiciones: filterOptions.condiciones.filter(c => usedInSubset(getFilteredSubset('condicion'), 'condicion_id').has(c.id)),
             instituciones: filterOptions.instituciones.filter(i => usedInSubset(getFilteredSubset('institucion'), 'institucion_id').has(i.id)),
             tiposEstudio: filterOptions.tiposEstudio.filter(t => usedInSubset(getFilteredSubset('tipoEstudio'), 'tipo_estudio_id').has(t.id)),
+            grupos: filterOptions.grupos.filter(g => usedInSubset(getFilteredSubset('grupo'), 'grupo_id').has(g.id)),
             modalidades: filterOptions.modalidades,
         };
-    }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, etapaFaseMap, fases]);
+    }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupo, etapaFaseMap, fases]);
 
     // -- Filtering Logic -------------------------------------------------------
     const filteredData = useMemo(() => {
@@ -275,9 +280,14 @@ export default function ServiciosPage() {
                 selectedTipoEstudio === 'all' ||
                 String(item.tipo_estudio_id) === selectedTipoEstudio;
 
-            return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio;
+            // 8. Grupo filter
+            const matchGrupo =
+                selectedGrupo === 'all' ||
+                String(item.grupo_id) === selectedGrupo;
+
+            return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio && matchGrupo;
         });
-    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio]);
+    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupo]);
 
     // -- Derived chart data (reactive to filteredData) -------------------------
     const bubbleMapData = useMemo(() => {
@@ -408,6 +418,8 @@ export default function ServiciosPage() {
                         setSelectedInstitucion={setSelectedInstitucion}
                         selectedTipoEstudio={selectedTipoEstudio}
                         setSelectedTipoEstudio={setSelectedTipoEstudio}
+                        selectedGrupo={selectedGrupo}
+                        setSelectedGrupo={setSelectedGrupo}
                     />
                 </div>
             </div>
