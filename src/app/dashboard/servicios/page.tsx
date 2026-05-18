@@ -7,6 +7,7 @@ import { ServiciosFilters } from '@/components/servicios/ServiciosFilters';
 import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
 import { PeruMapBeneficiariosChart } from '@/components/servicios/PeruMapBeneficiariosChart';
 import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInstitucionChart';
+import { ServiciosDemografiaCharts } from '@/components/servicios/ServiciosDemografiaCharts';
 
 export default function ServiciosPage() {
     const supabase = createClient();
@@ -317,6 +318,60 @@ export default function ServiciosPage() {
             .slice(0, 15);
     }, [filteredData]);
 
+    const sexoData = useMemo(() => {
+        const counts = { 'Masculino': 0, 'Femenino': 0, 'No Especificado': 0 };
+        filteredData.forEach(d => {
+            const val = d.sexo ? d.sexo.trim().toUpperCase() : null;
+            if (val === 'M' || val === 'MASCULINO') counts['Masculino'] += 1;
+            else if (val === 'F' || val === 'FEMENINO') counts['Femenino'] += 1;
+            else counts['No Especificado'] += 1;
+        });
+        return [
+            { name: 'Masculino', value: counts['Masculino'] },
+            { name: 'Femenino', value: counts['Femenino'] },
+            { name: 'No Especificado', value: counts['No Especificado'] }
+        ].filter(item => item.value > 0);
+    }, [filteredData]);
+
+    const edadesData = useMemo(() => {
+        const counts = { '< 20 años': 0, '20-25 años': 0, '26-30 años': 0, '> 30 años': 0, 'No Especificado': 0 };
+        
+        filteredData.forEach(d => {
+            if (!d.fecha_nacimiento) {
+                counts['No Especificado'] += 1;
+                return;
+            }
+            
+            const hoy = new Date();
+            const cumpleanos = new Date(d.fecha_nacimiento);
+            let edad = hoy.getFullYear() - cumpleanos.getFullYear();
+            const mes = hoy.getMonth() - cumpleanos.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < cumpleanos.getDate())) {
+                edad--;
+            }
+            
+            if (isNaN(edad)) {
+                counts['No Especificado'] += 1;
+            } else if (edad < 20) {
+                counts['< 20 años'] += 1;
+            } else if (edad >= 20 && edad <= 25) {
+                counts['20-25 años'] += 1;
+            } else if (edad >= 26 && edad <= 30) {
+                counts['26-30 años'] += 1;
+            } else {
+                counts['> 30 años'] += 1;
+            }
+        });
+
+        return [
+            { name: '< 20 años', value: counts['< 20 años'] },
+            { name: '20-25 años', value: counts['20-25 años'] },
+            { name: '26-30 años', value: counts['26-30 años'] },
+            { name: '> 30 años', value: counts['> 30 años'] },
+            { name: 'No Especificado', value: counts['No Especificado'] }
+        ].filter(item => item.value > 0);
+    }, [filteredData]);
+
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-6 pb-12">
@@ -376,6 +431,11 @@ export default function ServiciosPage() {
             {/* Distribución por Institución */}
             <div className="w-full">
                 <ServiciosInstitucionChart data={institucionData} />
+            </div>
+
+            {/* Demografía: Sexo y Edades */}
+            <div className="w-full">
+                <ServiciosDemografiaCharts sexoData={sexoData} edadesData={edadesData} />
             </div>
 
         </div>

@@ -147,6 +147,18 @@ export default function GestionServiciosTable({
     }
   };
 
+  const calcularEdad = (fechaNac: string) => {
+    if (!fechaNac) return "-";
+    const hoy = new Date();
+    const cumpleanos = new Date(fechaNac);
+    let edad = hoy.getFullYear() - cumpleanos.getFullYear();
+    const mes = hoy.getMonth() - cumpleanos.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < cumpleanos.getDate())) {
+      edad--;
+    }
+    return edad;
+  };
+
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* Top Filter Bar */}
@@ -286,8 +298,10 @@ export default function GestionServiciosTable({
               <tr>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 w-16">ID</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Grupo</th>
-                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 min-w-[300px]">Nombre del Servicio</th>
+                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 min-w-[200px]">Nombre del Servicio</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Documento</th>
+                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Sexo</th>
+                <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Edad</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500">Eje / Línea</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-right">Presupuesto</th>
                 <th className="px-6 py-4 text-[10px] uppercase font-bold text-gray-500 text-center">Avance (%)</th>
@@ -297,7 +311,7 @@ export default function GestionServiciosTable({
             <tbody className="bg-white divide-y divide-gray-100">
               {filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400 italic font-medium">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400 italic font-medium">
                     No se encontraron servicios registrados.
                   </td>
                 </tr>
@@ -318,6 +332,12 @@ export default function GestionServiciosTable({
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-gray-600 uppercase tabular-nums">
                         {row.documento}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-slate-700 uppercase">
+                        {row.sexo || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-xs font-bold text-slate-700 text-center tabular-nums">
+                        {calcularEdad(row.fecha_nacimiento)}
                     </td>
                     <td className="px-6 py-4">
                         <div className="text-[10px] font-bold text-gray-800">
