@@ -28,7 +28,6 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         etapas (descripcion, fase),
         especialista:especialistas(nombre),
         avance_tecnico,
-        check_inicio:avance_proyecto!inner(etapa_id),
         avance_proyecto (
           id,
           fecha,
@@ -36,45 +35,49 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
           sustento,
           monto
         )
-      `)
-      .eq('check_inicio.etapa_id', 1);
+      `);
 
     if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
       const yearVal = Number(filters.periodo);
       if (!isNaN(yearVal)) query = query.eq('año', yearVal);
     }
 
-    const applyFilter = (column: string, value?: string) => {
-      if (value && value !== 'all' && value !== 'todos') {
-        query = query.eq(column, value);
+    const applyFilter = (column: string, value?: string | number) => {
+      if (value === undefined || value === null) return;
+      const valString = String(value).trim();
+      const valLower = valString.toLowerCase();
+      
+      if (valLower === 'all' || valLower === 'undefined' || valLower === '' || valLower.startsWith('tod') || valString === '0') {
+        return; // Ignora los filtros vacíos o globales
       }
+      
+      query = query.eq(column, value);
     };
 
     applyFilter('eje_id', filters?.eje);
     applyFilter('linea_id', filters?.linea);
     applyFilter('modalidad_id', filters?.modalidad);
     applyFilter('especialista_id', filters?.especialistaId);
+    applyFilter('etapa_id', filters?.etapa); 
 
-    if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
-      query = query.eq('etapa_id', filters.etapa);
-    }
-
-    if (filters?.especialistaId && Number(filters.especialistaId) !== 0) {
-      query = query.eq('especialista_id', filters.especialistaId);
-    }
-
-    query = query.not('etapas.descripcion', 'ilike', 'no habilitada').order('id', { ascending: true });
+    query = query.order('id', { ascending: true });
 
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("🔥 ERROR REAL EN GET DASHBOARD:", error.message || error.details || error.hint || error);
       return [];
     }
 
     if (!data || data.length === 0) return [];
 
-    return data.map((p: any) => {
+    // Filtro seguro en el servidor para evitar el colapso del inner join
+    const proyectosValidos = data.filter((p: any) => {
+      const desc = p.etapas?.descripcion?.toLowerCase() || '';
+      return !desc.includes('no habilitada');
+    });
+
+    return proyectosValidos.map((p: any) => {
       let year = p.año ? String(p.año) : 'Unknown';
       if (year === 'Unknown' && p.fecha_inicio) {
         year = new Date(p.fecha_inicio).getFullYear().toString();
@@ -108,7 +111,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
         avance: Number(p.avance) || 0,
         contrapartida: Number(p.contrapartida) || 0,
-        monto_total: Number(p.monto_total) || 0,
+        monto_total: (Number(p.monto_fondoempleo) || 0) + (Number(p.contrapartida) || 0),
         beneficiarios: Number(p.beneficiarios) || 0,
         avance_tecnico: Number(p.avance_tecnico) || 0,
         fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
@@ -611,17 +614,14 @@ export async function getTimelineData(especialistaId?: number) {
         grupo (id, descripcion, orden),
         avance_tecnico, provincia, especialista_id, contacto,
         especialista:especialistas(nombre),
-        check_inicio:avance_proyecto!inner(etapa_id),
         avance_proyecto (id, fecha, etapa_id, sustento)
-      `)
-      .eq('check_inicio.etapa_id', 1);
+      `);
 
-    if (especialistaId && especialistaId !== 0) {
+    if (especialistaId && Number(especialistaId) !== 0 && String(especialistaId) !== 'all' && String(especialistaId) !== 'undefined') {
       query = query.eq('especialista_id', especialistaId);
     }
 
     const { data, error } = await query
-      .not('etapas.descripcion', 'ilike', 'no habilitada')
       .order('id', { ascending: true });
 
     if (error) {
@@ -629,7 +629,15 @@ export async function getTimelineData(especialistaId?: number) {
       return [];
     }
 
-    return data.map((p: any) => ({
+    if (!data || data.length === 0) return [];
+
+    // Filtro seguro en memoria para evitar colapso del inner join
+    const proyectosValidos = data.filter((p: any) => {
+      const desc = p.etapas?.descripcion?.toLowerCase() || '';
+      return !desc.includes('no habilitada');
+    });
+
+    return proyectosValidos.map((p: any) => ({
       id: p.id,
       nombre: p.nombre,
       estado: p.etapas?.descripcion || 'Activo',
@@ -650,9 +658,9 @@ export async function getTimelineData(especialistaId?: number) {
       etapa: p.etapas?.descripcion || 'Sin Etapa',
       fase: p.etapas?.fase || '',
       avance_tecnico: Number(p.avance_tecnico) || 0,
-      fecha_inicio: p.avance_proyecto.find((a: any) => a.etapa_id === 1)?.fecha || null,
-      fecha_fin: p.avance_proyecto.find((a: any) => a.etapa_id === 6)?.fecha || null,
-      avances: p.avance_proyecto.map((a: any) => ({
+      fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+      fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
+      avances: (p.avance_proyecto || []).map((a: any) => ({
         id: a.id,
         fecha: a.fecha,
         etapa_id: a.etapa_id,

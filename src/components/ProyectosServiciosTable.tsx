@@ -45,7 +45,7 @@ export default function ProyectosServiciosTable({
   fases = []
 }: ProyectosServiciosTableProps) {
   // Filters State
-  const [selectedFase, setSelectedFase] = useState('Ejecución del Proyecto'); // Default: Ejecución del Proyecto
+  const [selectedFase, setSelectedFase] = useState('En Ejecución'); // Default: En Ejecución
   const [selectedEtapa, setSelectedEtapa] = useState('all'); // Changed to 'all' to avoid blank initial state if no 'Lanzamiento' exists
   const [selectedEje, setSelectedEje] = useState('all');
   const [selectedLinea, setSelectedLinea] = useState('all');

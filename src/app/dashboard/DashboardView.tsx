@@ -42,7 +42,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedEje, setSelectedEje] = useState<any>('all');
     const [selectedEtapa, setSelectedEtapa] = useState<any>('all');
     const [selectedModalidad, setSelectedModalidad] = useState<any>('all');
-    const [selectedFase, setSelectedFase] = useState<any>("Ejecución del Proyecto");
+    const [selectedFase, setSelectedFase] = useState<any>("En Ejecución");
     const [selectedRegion, setSelectedRegion] = useState<any>(null);
     const [selectedEspecialista, setSelectedEspecialista] = useState<any>('all');
     const [dashboardData, setDashboardData] = useState(initialData);
@@ -60,20 +60,37 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]); // DEPRECATED: Using props
     // stages passed from props now
 
+    // Helper helper to check if a filter state is a global default ("All", "Todos", empty, undefined, etc.)
+    const isIgnored = (val: any) => {
+        if (val === undefined || val === null) return true;
+        const str = String(val).trim().toLowerCase();
+        return str === '' || str === 'all' || str === 'undefined' || str.startsWith('tod') || str === '0';
+    };
+
     // Main Filter Logic (Applied to Data)
     const filteredData = useMemo(() => {
-        return dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
+        const res = dashboardData.filter(item => {
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
 
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
 
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
-            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
 
             return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad;
         });
+        console.log("DEBUG CLIENT FILTERED:", {
+            totalData: dashboardData.length,
+            filteredCount: res.length,
+            selectedFase,
+            faseCounts: dashboardData.reduce((acc: any, d: any) => {
+                acc[d.fase] = (acc[d.fase] || 0) + 1;
+                return acc;
+            }, {})
+        });
+        return res;
     }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad]);
 
     // REACTIVE GLOBAL FILTER EFFECT
@@ -84,7 +101,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         }
 
         async function refreshDashboardData() {
-            const id = selectedEspecialista === 'all' ? undefined : Number(selectedEspecialista);
+            const id = isIgnored(selectedEspecialista) ? undefined : Number(selectedEspecialista);
             
             // As requested, calling specific functions reactively
             const [statsRes, timelineRes, regionRes, institucionRes] = await Promise.all([
@@ -109,11 +126,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         
         // 1. Opciones de Ejes (dependen de Año, Fase, Línea, Etapa, Modalidad)
         const dataForEjes = dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchFase && matchLinea && matchEtapa && matchModalidad;
         });
         const uniqueEjes = Array.from(new Set(dataForEjes.map(d => String(d.ejeId || d.eje_id || d.eje))));
@@ -123,11 +140,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
         // 2. Opciones de Líneas (dependen de Año, Fase, Eje, Etapa, Modalidad)
         const dataForLineas = dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchFase && matchEje && matchEtapa && matchModalidad;
         });
         const uniqueLineas = Array.from(new Set(dataForLineas.map(d => String(d.lineaId))));
@@ -137,11 +154,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
         // 3. Opciones de Etapas (dependen de Año, Fase, Eje, Línea, Modalidad)
         const dataForEtapas = dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchFase && matchEje && matchLinea && matchModalidad;
         });
         const uniqueEtapasSet = new Set(dataForEtapas.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
@@ -151,22 +168,22 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
         // 4. Opciones de Fases (dependen de Año, Eje, Línea, Etapa, Modalidad)
         const dataForFases = dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
-            const matchModalidad = selectedModalidad === 'all' || String(item.modalidadId) === String(selectedModalidad);
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad;
         });
         const dynamicFases = Array.from(new Set(dataForFases.map(d => d.fase).filter(Boolean))).sort();
 
         // 5. Opciones de Modalidades (dependen de Año, Fase, Eje, Línea, Etapa)
         const dataForModalidades = dashboardData.filter(item => {
-            const matchYear = !selectedYear || selectedYear === 'all' || String(item.año) === String(selectedYear);
-            const matchFase = !selectedFase || selectedFase === 'all' || item.fase === selectedFase;
-            const matchEje = selectedEje === 'all' || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
-            const matchLinea = selectedLinea === 'all' || String(item.lineaId) === String(selectedLinea);
-            const matchEtapa = selectedEtapa === 'all' || String(item.etapaId) === String(selectedEtapa);
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
             return matchYear && matchFase && matchEje && matchLinea && matchEtapa;
         });
         const uniqueModalidades = Array.from(new Set(dataForModalidades.map(d => String(d.modalidadId))));
