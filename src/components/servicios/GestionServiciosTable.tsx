@@ -48,6 +48,8 @@ export default function GestionServiciosTable({
   const [selectedLinea, setSelectedLinea] = useState('all');
   const [selectedModalidad, setSelectedModalidad] = useState('all');
   const [selectedCondicion, setSelectedCondicion] = useState('all');
+  const [selectedGrupo, setSelectedGrupo] = useState('all');
+  const [searchId, setSearchId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
@@ -77,9 +79,15 @@ export default function GestionServiciosTable({
       // 6. Condicion filter
       const matchesCondicion = selectedCondicion === 'all' || String(item.condicion_id) === String(selectedCondicion);
 
-      return matchesSearch && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesCondicion;
+      // 7. Grupo filter
+      const matchesGrupo = selectedGrupo === 'all' || String(item.grupo_id) === String(selectedGrupo);
+
+      // 8. Exact ID filter
+      const matchesId = !searchId || String(item.id) === String(searchId);
+
+      return matchesSearch && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesCondicion && matchesGrupo && matchesId;
     });
-  }, [initialData, searchTerm, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedCondicion]);
+  }, [initialData, searchTerm, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedCondicion, selectedGrupo, searchId]);
 
   // Excel Export
   const downloadExcel = () => {
@@ -155,6 +163,16 @@ export default function GestionServiciosTable({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
+            {/* Input de Búsqueda Exacta por ID */}
+            <div className="w-28 relative">
+                <input
+                type="number"
+                placeholder="ID Exacto..."
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                />
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
@@ -175,7 +193,24 @@ export default function GestionServiciosTable({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+          {/* Grupo Filter */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Grupo</label>
+            <select
+              className="w-full h-9 px-3 py-1 text-[11px] border border-gray-200 rounded-lg focus:outline-none font-medium"
+              value={selectedGrupo}
+              onChange={(e) => setSelectedGrupo(e.target.value)}
+            >
+              <option value="all">Todos los Grupos</option>
+              {grupos.map((g: any) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Eje Filter */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Eje</label>

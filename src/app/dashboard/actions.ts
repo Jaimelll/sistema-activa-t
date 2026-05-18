@@ -127,7 +127,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
   }
 }
 
-export async function getGestionProyectosData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string }) {
+export async function getGestionProyectosData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string; grupo_id?: string; id_exacto?: string }) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -154,6 +154,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         modalidad_id,
         institucion_ejecutora_id,
         especialista_id,
+        grupo_id,
         gestora,
         sustento,
         monto_fondoempleo,
@@ -194,6 +195,11 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
     applyFilter('linea_id', filters?.linea);
     applyFilter('modalidad_id', filters?.modalidad);
     applyFilter('especialista_id', filters?.especialistaId);
+    applyFilter('grupo_id', filters?.grupo_id);
+
+    if (filters?.id_exacto) {
+      query = query.eq('id', filters.id_exacto);
+    }
 
     if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
       query = query.eq('etapa_id', filters.etapa);
@@ -952,7 +958,7 @@ export async function getGruposProyectos() {
 
     const { data, error } = await supabase
       .from('grupo')
-      .select('id, descripcion, orden')
+      .select('id, descripcion, orden, proyectos!inner(id)')
       .eq('tipo', 2)
       .order('orden', { ascending: true });
 

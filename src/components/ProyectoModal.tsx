@@ -88,7 +88,7 @@ export default function ProyectoModal({ isOpen, onClose, onSave, proyecto, isRea
                 avance_tecnico: proyecto.avance_tecnico || 0,
                 institucion_ejecutora_id: proyecto.institucionId || "",
                 modalidad_id: proyecto.modalidadId || "",
-                grupo_id: proyecto.grupo_id || "",
+                grupo_id: proyecto.grupo_id ? String(proyecto.grupo_id) : "",
                 sustento: proyecto.sustento || "",
                 contacto: proyecto.contacto || "",
                 año: proyecto.año || new Date().getFullYear()

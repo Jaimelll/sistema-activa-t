@@ -10,7 +10,7 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-export async function getServiciosGestionData(filters?: { eje?: string; linea?: string; etapa?: string; modalidad?: string; condicion?: string; searchTerm?: string; institucion_id?: string; tipo_estudio_id?: string }) {
+export async function getServiciosGestionData(filters?: { eje?: string; linea?: string; etapa?: string; modalidad?: string; condicion?: string; searchTerm?: string; institucion_id?: string; tipo_estudio_id?: string; grupo_id?: string; id_exacto?: string }) {
   const supabase = getSupabase();
 
   let query = supabase
@@ -38,6 +38,8 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
   if (filters?.condicion && filters.condicion !== 'all') query = query.eq('condicion_id', filters.condicion);
   if (filters?.institucion_id && filters.institucion_id !== 'all') query = query.eq('institucion_id', filters.institucion_id);
   if (filters?.tipo_estudio_id && filters.tipo_estudio_id !== 'all') query = query.eq('tipo_estudio_id', filters.tipo_estudio_id);
+  if (filters?.grupo_id && filters.grupo_id !== 'all') query = query.eq('grupo_id', filters.grupo_id);
+  if (filters?.id_exacto) query = query.eq('id', filters.id_exacto);
 
   const { data, error } = await query;
 
@@ -269,7 +271,7 @@ export async function getGrupos() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('grupo')
-    .select('id, descripcion, orden')
+    .select('id, descripcion, orden, becas_nueva!inner(id)')
     .eq('tipo', 1)
     .order('orden', { ascending: true });
 
