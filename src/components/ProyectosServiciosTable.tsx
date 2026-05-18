@@ -86,10 +86,10 @@ export default function ProyectosServiciosTable({
       const matchesEspecialista = selectedEspecialista === 'all' || String(item.especialista_id) === String(selectedEspecialista);
 
       // 8. Grupo filter
-      const matchesGrupo = selectedGrupo === 'all' || String(item.grupo_id) === String(selectedGrupo);
+      const matchesGrupo = !selectedGrupo || selectedGrupo === 'all' || selectedGrupo === 'undefined' || String(item.grupo_id) === String(selectedGrupo);
 
       // 9. Exact ID filter
-      const matchesId = !searchId || String(item.id) === String(searchId);
+      const matchesId = !searchId || searchId === '' || searchId === 'undefined' || String(item.id) === String(searchId);
 
       return matchesSearch && matchesFase && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesEspecialista && matchesGrupo && matchesId;
     });

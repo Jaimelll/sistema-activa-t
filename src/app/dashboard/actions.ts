@@ -186,7 +186,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
     }
 
     const applyFilter = (column: string, value?: string) => {
-      if (value && value !== 'all' && value !== 'todos') {
+      if (value && value !== 'all' && value !== 'todos' && value !== 'undefined') {
         query = query.eq(column, value);
       }
     };
@@ -195,17 +195,20 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
     applyFilter('linea_id', filters?.linea);
     applyFilter('modalidad_id', filters?.modalidad);
     applyFilter('especialista_id', filters?.especialistaId);
-    applyFilter('grupo_id', filters?.grupo_id);
 
-    if (filters?.id_exacto) {
+    if (filters?.grupo_id && filters.grupo_id !== 'all' && filters.grupo_id !== '' && filters.grupo_id !== 'undefined') {
+      query = query.eq('grupo_id', filters.grupo_id);
+    }
+
+    if (filters?.id_exacto && filters.id_exacto !== '' && filters.id_exacto !== 'undefined') {
       query = query.eq('id', filters.id_exacto);
     }
 
-    if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos') {
+    if (filters?.etapa && filters.etapa !== 'all' && filters.etapa !== 'todos' && filters.etapa !== 'undefined') {
       query = query.eq('etapa_id', filters.etapa);
     }
 
-    if (filters?.especialistaId && Number(filters.especialistaId) !== 0) {
+    if (filters?.especialistaId && Number(filters.especialistaId) !== 0 && filters.especialistaId !== 'undefined') {
       query = query.eq('especialista_id', filters.especialistaId);
     }
 
