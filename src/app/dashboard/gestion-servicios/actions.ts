@@ -17,6 +17,7 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
     .from('becas_nueva')
     .select(`
       id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
+      provincia_procedencia, distrito_procedencia, celular, correo_electronico, tipo_estudio_id, naturaleza_ie_id, especialidad, formato_id, fecha_nacimiento, sexo, empresa_id,
       eje:eje_id(descripcion),
       linea:linea_id(descripcion),
       etapa:etapa_id(descripcion),
@@ -292,6 +293,7 @@ export async function getServicioCompletoById(id: number) {
     .from('becas_nueva')
     .select(`
       id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
+      provincia_procedencia, distrito_procedencia, celular, correo_electronico, tipo_estudio_id, naturaleza_ie_id, especialidad, formato_id, fecha_nacimiento, sexo, empresa_id,
       eje:eje_id(descripcion),
       linea:linea_id(descripcion),
       etapa:etapa_id(descripcion),

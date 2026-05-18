@@ -515,7 +515,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Provincia de Procedencia</label>
                                         <input
                                             name="provincia_procedencia"
-                                            value={formData.provincia_procedencia}
+                                            value={formData.provincia_procedencia || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             placeholder="Ej: Lima, Cusco..."
@@ -526,7 +526,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Distrito de Procedencia</label>
                                         <input
                                             name="distrito_procedencia"
-                                            value={formData.distrito_procedencia}
+                                            value={formData.distrito_procedencia || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             placeholder="Ej: Miraflores, Wanchaq..."
@@ -538,7 +538,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <input
                                             type="tel"
                                             name="celular"
-                                            value={formData.celular}
+                                            value={formData.celular || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             placeholder="999 999 999"
@@ -550,7 +550,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <input
                                             type="email"
                                             name="correo_electronico"
-                                            value={formData.correo_electronico}
+                                            value={formData.correo_electronico || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             placeholder="ejemplo@correo.com"
@@ -597,7 +597,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Especialidad / Carrera</label>
                                         <input
                                             name="especialidad"
-                                            value={formData.especialidad}
+                                            value={formData.especialidad || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             placeholder="Nombre de la especialidad"
@@ -632,7 +632,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         <input
                                             type="date"
                                             name="fecha_nacimiento"
-                                            value={formData.fecha_nacimiento}
+                                            value={formData.fecha_nacimiento || ""}
                                             onChange={handleChange}
                                             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm"
                                             disabled={isReadOnly}
