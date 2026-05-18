@@ -146,7 +146,6 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         nombre,
         codigo_proyecto,
         año,
-        fecha_inicio,
         created_at,
         eje_id,
         linea_id,
@@ -160,17 +159,16 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         monto_fondoempleo,
         avance,
         contrapartida,
-        monto_total,
         beneficiarios,
         avance_tecnico,
         provincia,
         contacto,
-        lineas:linea_id(descripcion),
-        ejes:eje_id(descripcion),
-        regiones:region_id(descripcion),
-        instituciones_ejecutoras:institucion_ejecutora_id(nombre),
-        modalidades:modalidad_id(descripcion),
-        etapas:etapa_id(descripcion, fase),
+        lineas (descripcion),
+        ejes (descripcion),
+        regiones (descripcion),
+        instituciones_ejecutoras (nombre),
+        modalidades (descripcion),
+        etapas (descripcion, fase),
         especialista:especialistas(nombre),
         avance_proyecto (
           id,
@@ -210,7 +208,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
     const { data, error } = await query;
 
     if (error) {
-      console.error("Error fetching gestion proyectos data:", error);
+      console.error("Error fetching gestion proyectos data:", error.message || error.details || error);
       return [];
     }
 
@@ -250,7 +248,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
         avance: Number(p.avance) || 0,
         contrapartida: Number(p.contrapartida) || 0,
-        monto_total: Number(p.monto_total) || 0,
+        monto_total: (Number(p.monto_fondoempleo) || 0) + (Number(p.contrapartida) || 0),
         beneficiarios: Number(p.beneficiarios) || 0,
         avance_tecnico: Number(p.avance_tecnico) || 0,
         fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,

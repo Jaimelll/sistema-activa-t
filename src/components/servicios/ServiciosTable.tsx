@@ -76,11 +76,16 @@ export function ServiciosTable({ data, loading, groupStartDate, groupEndDate, on
                                 const etapaNombre = item.etapa?.descripcion || `Etapa ${etapaId}`;
                                 const etapaColor = STAGE_COLORS[etapaId] ?? '#94a3b8';
 
-                                // Si tenemos fecha de grupo, la usamos; si no, la individual
-                                const fechaInicio = groupStartDate ? fmtDate(groupStartDate) :
-                                    (item.fecha_inicio ? new Date(item.fecha_inicio).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-');
-                                const fechaFin = groupEndDate ? fmtDate(groupEndDate) :
-                                    (item.fecha_fin ? new Date(item.fecha_fin).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) : '-');
+                                // Obtener fechas individuales para etapa 5 (Inicio / Ejecución) y etapa 6 (Fin / Ejecutado)
+                                const avanceEjecucion = item.fecha_ejecucion || item.avances?.find((a: any) => Number(a.etapa_id) === 5)?.fecha;
+                                const avanceEjecutado = item.fecha_ejecutado || item.avances?.find((a: any) => Number(a.etapa_id) === 6)?.fecha;
+
+                                const fechaInicio = avanceEjecucion 
+                                    ? new Date(avanceEjecucion).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) 
+                                    : '-';
+                                const fechaFin = avanceEjecutado 
+                                    ? new Date(avanceEjecutado).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }) 
+                                    : '-';
 
                                 return (
                                     <tr

@@ -182,10 +182,12 @@ export default function ServiciosPage() {
                 console.error('Error fetching servicios:', error);
             } else {
                 // Pre-process dates (Unpivot logic)
-                const processed = (servicios || []).map((b: any) => {
+                const processed = ((servicios || []) as any[]).map((b: any) => {
                     const inicio = b.avances?.find((a: any) => a.etapa_id === 1)?.fecha;
                     const fin = b.avances?.find((a: any) => a.etapa_id === 10)?.fecha;
-                    return { ...b, fecha_inicio: inicio, fecha_fin: fin };
+                    const fecha_ejecucion = b.avances?.find((a: any) => a.etapa_id === 5)?.fecha;
+                    const fecha_ejecutado = b.avances?.find((a: any) => a.etapa_id === 6)?.fecha;
+                    return { ...b, fecha_inicio: inicio, fecha_fin: fin, fecha_ejecucion, fecha_ejecutado };
                 });
                 setData(processed);
             }
@@ -323,6 +325,7 @@ export default function ServiciosPage() {
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                 {/* Logo */}
                 <div className="flex items-center gap-4 flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src="/fondoempleo.jpg"
                         alt="Fondoempleo"
