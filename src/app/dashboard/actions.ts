@@ -65,7 +65,6 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
     const { data, error } = await query;
 
     if (error) {
-      console.error("🔥 ERROR REAL EN GET DASHBOARD:", error.message || error.details || error.hint || error);
       return [];
     }
 

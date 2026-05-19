@@ -31,10 +31,6 @@ interface DashboardViewProps {
 }
 
 export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [], fases = [] }: DashboardViewProps) {
-    if (initialData && initialData.length > 0) {
-        console.log('PRIMER REGISTRO:', initialData[0]);
-    }
-    console.log('Verificación de Despliegue - Timestamp:', new Date().toISOString());
 
     // State for filters
     const [selectedYear, setSelectedYear] = useState<any>(''); // Default empty for 'All'
@@ -56,9 +52,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // Use passed years directly - NO LOGIC HERE
     // years prop comes from server as sorted number array or objects
 
-    // const lineas = useMemo(() => Array.from(new Set(initialData.map(d => d.linea))).sort(), [initialData]); // DEPRECATED: Using props
-    // const ejes = useMemo(() => Array.from(new Set(initialData.map(d => d.eje))).sort(), [initialData]); // DEPRECATED: Using props
-    // stages passed from props now
+
 
     // Helper helper to check if a filter state is a global default ("All", "Todos", empty, undefined, etc.)
     const isIgnored = (val: any) => {
@@ -80,15 +74,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
 
             return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad;
-        });
-        console.log("DEBUG CLIENT FILTERED:", {
-            totalData: dashboardData.length,
-            filteredCount: res.length,
-            selectedFase,
-            faseCounts: dashboardData.reduce((acc: any, d: any) => {
-                acc[d.fase] = (acc[d.fase] || 0) + 1;
-                return acc;
-            }, {})
         });
         return res;
     }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad]);
@@ -193,9 +178,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades };
     }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades]);
-
-    // Debug logging requested by user - REMOVED
-
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
@@ -465,11 +447,6 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             ))}
                         </select>
                     </div>
-
-                    {/* Reset Button - Hidden but kept structure if needed later, or integrated into logic */}
-                    {/* <div className="hidden lg:flex items-center px-2 text-gray-400">
-                        <Filter className="w-5 h-5" />
-                    </div> */}
                 </div>
             </div>
 
