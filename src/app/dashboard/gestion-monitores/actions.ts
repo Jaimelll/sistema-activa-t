@@ -61,7 +61,7 @@ export async function getPlanesSupervision() {
         if (priorityA !== priorityB) {
             return priorityA - priorityB;
         }
-        return new Date(b.fecha_programada).getTime() - new Date(a.fecha_programada).getTime();
+        return new Date(a.fecha_programada).getTime() - new Date(b.fecha_programada).getTime();
     });
 
     return sortedData;

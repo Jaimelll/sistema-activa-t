@@ -57,8 +57,8 @@ export default function BandejaMonitoresView() {
             return priorityA - priorityB;
         }
         
-        // Orden secundario: fecha (más reciente a más antiguo)
-        return new Date(b.fecha_programada).getTime() - new Date(a.fecha_programada).getTime();
+        // Orden secundario: fecha (más antiguo a más reciente - Ascendente)
+        return new Date(a.fecha_programada).getTime() - new Date(b.fecha_programada).getTime();
     });
 
     return (

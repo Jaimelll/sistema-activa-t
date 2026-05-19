@@ -227,7 +227,26 @@ export default function GestionMonitoresView() {
 
     if (loading) return <div className="p-8 text-slate-500">Cargando módulo de gestión...</div>;
 
-    const currentPagePlanes = planes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const statePriority: Record<string, number> = {
+        'en proceso': 1,
+        'pendiente': 2,
+        'ejecutado': 3,
+        'completado': 3
+    };
+
+    const sortedAllPlanes = [...planes].sort((a, b) => {
+        const priorityA = statePriority[a.estado] || 99;
+        const priorityB = statePriority[b.estado] || 99;
+        
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+        
+        // Orden secundario: fecha (más antiguo a más reciente - Ascendente)
+        return new Date(a.fecha_programada).getTime() - new Date(b.fecha_programada).getTime();
+    });
+
+    const currentPagePlanes = sortedAllPlanes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const enProceso = currentPagePlanes.filter(p => p.estado === 'en proceso');
     const pendientes = currentPagePlanes.filter(p => p.estado === 'pendiente');
     const ejecutados = currentPagePlanes.filter(p => p.estado === 'ejecutado' || p.estado === 'completado');
