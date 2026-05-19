@@ -173,9 +173,9 @@ export default function BandejaMonitoresView() {
                 <div>
                     <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3 uppercase tracking-tight">
                         <LayoutDashboard className="text-blue-600" size={32} />
-                        Mis Supervisiones
+                        Planes de Monitoreo
                     </h1>
-                    <p className="text-slate-500 mt-2 font-medium">Controla y ejecuta tus planes de supervisión en tiempo real.</p>
+                    <p className="text-slate-500 mt-2 font-medium">Control y ejecución de los planes de monitoreo.</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <div className="bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
