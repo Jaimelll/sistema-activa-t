@@ -16,8 +16,7 @@ import {
     Eye,
     Pencil,
     X,
-    AlertTriangle,
-    Play
+    AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -213,96 +212,25 @@ export default function GestionMonitoresView() {
         }
     };
 
+    const handleStateChange = async (id: string | number, nuevoEstado: string) => {
+        try {
+            const { cambiarEstadoSupervision } = await import('@/modules/gestion-proyectos/campo-test/actions');
+            await cambiarEstadoSupervision(id, nuevoEstado);
+            showToast(`Estado cambiado a ${nuevoEstado}`, 'success');
+            const updatedPlanes = await getPlanesSupervision();
+            setPlanes(updatedPlanes || []);
+            router.refresh();
+        } catch (err: any) {
+            showToast('Error al cambiar estado: ' + err.message, 'error');
+        }
+    };
+
     if (loading) return <div className="p-8 text-slate-500">Cargando módulo de gestión...</div>;
 
     const currentPagePlanes = planes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const enProceso = currentPagePlanes.filter(p => p.estado === 'en proceso');
     const pendientes = currentPagePlanes.filter(p => p.estado === 'pendiente');
     const ejecutados = currentPagePlanes.filter(p => p.estado === 'ejecutado' || p.estado === 'completado');
-
-    const renderRow = (plan: Plan) => (
-        <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
-            <td className="px-4 md:px-6 py-3 md:py-4 min-w-[250px] md:min-w-[450px]">
-                <div className="text-sm font-bold text-slate-800 leading-tight">
-                    [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}] | {plan.proyecto?.nombre || 'S/N'}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1.5 italic leading-relaxed">
-                    {plan.proyecto?.nombre ? 'Información completa del proyecto disponible en modo auditoría.' : 'Sin descripción adicional'}
-                </div>
-            </td>
-            <td className="px-4 md:px-6 py-3 md:py-4">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <User size={14} className="text-slate-400" />
-                    {plan.monitor?.nombre || 'No asignado'}
-                </div>
-            </td>
-            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-slate-600 font-medium">
-                <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" />
-                    {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
-                </div>
-            </td>
-            <td className="px-4 md:px-6 py-3 md:py-4">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                    plan.estado === 'pendiente' 
-                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
-                    : plan.estado === 'en proceso'
-                    ? 'bg-blue-50 text-blue-600 border-blue-100'
-                    : 'bg-green-50 text-green-600 border-green-100'
-                }`}>
-                    {plan.estado === 'pendiente' ? <Clock size={12} /> : plan.estado === 'en proceso' ? <Play size={12} className="text-blue-500" /> : <CheckCircle2 size={12} />}
-                    {plan.estado}
-                </span>
-            </td>
-            <td className="px-4 md:px-6 py-3 md:py-4 text-center">
-                <div className="flex items-center justify-center gap-1">
-                    <Link 
-                        href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
-                        target="_blank"
-                        className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
-                        title="Visualizar en modo auditoría"
-                    >
-                        <Eye size={18} className="group-hover:scale-110 transition-transform" />
-                    </Link>
-                    <button
-                        onClick={async () => {
-                            if (window.confirm('¿Está seguro de eliminar este plan de monitoreo? Se eliminarán también las fotos y registros asociados.')) {
-                                try {
-                                    setDeleting(true);
-                                    const res = await eliminarPlanSupervision(plan.id);
-                                    if (res.success) {
-                                        showToast('Plan eliminado exitosamente', 'success');
-                                        setPlanes(prev => prev.filter(p => p.id !== plan.id));
-                                        router.refresh();
-                                    } else {
-                                        showToast(res.error || 'Error al eliminar', 'error');
-                                    }
-                                } catch (err: any) {
-                                    showToast('Error de red: ' + err.message, 'error');
-                                } finally {
-                                    setDeleting(false);
-                                }
-                            }
-                        }}
-                        disabled={deleting}
-                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group disabled:opacity-30"
-                        title="Eliminar Plan"
-                    >
-                        <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-                    </button>
-                    {canManagePlans && (
-                        <button
-                            onClick={() => handleEditPlan(plan)}
-                            className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
-                            title="Editar Plan"
-                        >
-                            <Pencil size={18} className="group-hover:scale-110 transition-transform" />
-                        </button>
-                    )}
-                </div>
-            </td>
-        </tr>
-    );
 
     return (
         <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
@@ -491,47 +419,64 @@ export default function GestionMonitoresView() {
                         </div>
 
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left">
+                            <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                        <th className="px-4 md:px-6 py-3 md:py-4">Proyecto</th>
-                                        <th className="px-4 md:px-6 py-3 md:py-4">Monitor</th>
-                                        <th className="px-4 md:px-6 py-3 md:py-4">Fecha</th>
-                                        <th className="px-4 md:px-6 py-3 md:py-4">Estado</th>
-                                        <th className="px-4 md:px-6 py-3 md:py-4 text-center">Acciones</th>
+                                    <tr className="bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">
+                                        <th className="py-3 px-2 whitespace-nowrap">PROYECTO</th>
+                                        <th className="py-3 px-2 whitespace-nowrap">REGIÓN</th>
+                                        <th className="py-3 px-2 whitespace-nowrap">PROVINCIA</th>
+                                        <th className="py-3 px-2 whitespace-nowrap">MONITOR</th>
+                                        <th className="py-3 px-2 whitespace-nowrap">FECHA</th>
+                                        <th className="py-3 px-2 whitespace-nowrap">ESTADO</th>
+                                        <th className="py-3 px-2 text-center whitespace-nowrap">ACCIONES</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {enProceso.length > 0 && (
-                                        <>
-                                            <tr className="bg-blue-50/20 border-b border-blue-100">
-                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50/10">
-                                                    🔴 EN PROCESO ({enProceso.length})
-                                                </td>
-                                            </tr>
-                                            {enProceso.map(plan => renderRow(plan))}
-                                        </>
-                                    )}
-                                    {pendientes.length > 0 && (
-                                        <>
-                                            <tr className="bg-amber-50/20 border-b border-amber-100">
-                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-amber-600 tracking-widest uppercase bg-amber-50/10">
-                                                    🟡 PENDIENTES ({pendientes.length})
-                                                </td>
-                                            </tr>
-                                            {pendientes.map(plan => renderRow(plan))}
-                                        </>
-                                    )}
-                                    {ejecutados.length > 0 && (
-                                        <>
-                                            <tr className="bg-green-50/20 border-b border-green-100">
-                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-green-600 tracking-widest uppercase bg-green-50/10">
-                                                    🟢 EJECUTADOS ({ejecutados.length})
-                                                </td>
-                                            </tr>
-                                            {ejecutados.map(plan => renderRow(plan))}
-                                        </>
-                                    )}
+                                <tbody className="divide-y divide-slate-100">
+                                    {currentPagePlanes.map(plan => (
+                                        <tr key={plan.id} className="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                                            <td className="py-3 px-2 align-top max-w-[350px] whitespace-normal break-words">
+                                                <span className="font-bold text-slate-800">[{plan.proyecto?.id || '?'}]</span> {plan.proyecto?.nombre || 'S/N'}
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap font-medium text-slate-600">
+                                                {plan.proyecto?.regiones?.descripcion || 'No definida'}
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap font-medium text-slate-600">
+                                                {plan.proyecto?.provincia || 'No definida'}
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap">
+                                                {plan.monitor?.nombre || 'No asignado'}
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap">
+                                                {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap">
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                                    plan.estado === 'pendiente' ? 'bg-amber-100 text-amber-700' : 
+                                                    plan.estado === 'en proceso' ? 'bg-blue-100 text-blue-700' : 
+                                                    'bg-green-100 text-green-700'
+                                                }`}>
+                                                    {plan.estado}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-2 align-top whitespace-nowrap text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <Link href={`/dashboard/campo?id=${plan.id}&readOnly=true`} target="_blank" className="text-blue-500 hover:text-blue-700 p-1" title="Ver Detalles"><Eye size={14} /></Link>
+                                                    {canManagePlans && <button onClick={() => handleEditPlan(plan)} className="text-amber-500 hover:text-amber-700 p-1" title="Editar"><Pencil size={14} /></button>}
+                                                    <button onClick={async () => {
+                                                        if (window.confirm('¿Eliminar plan de monitoreo?')) {
+                                                            try {
+                                                                setDeleting(true);
+                                                                const res = await eliminarPlanSupervision(plan.id);
+                                                                if (res.success) setPlanes(prev => prev.filter(p => p.id !== plan.id));
+                                                            } finally {
+                                                                setDeleting(false);
+                                                            }
+                                                        }
+                                                    }} disabled={deleting} className="text-red-500 hover:text-red-700 p-1 disabled:opacity-50" title="Eliminar"><Trash2 size={14} /></button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

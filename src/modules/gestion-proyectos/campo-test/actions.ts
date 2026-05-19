@@ -146,7 +146,7 @@ export async function getMisPlanesSupervision() {
   const planesEnriquecidos = await Promise.all(planes.map(async (plan: any) => {
     const { data: proyecto } = await supabase
       .from('proyectos')
-      .select('id, codigo_proyecto, nombre')
+      .select('id, codigo_proyecto, nombre, provincia, region_id, regiones(descripcion)')
       .eq('id', plan.id_proyecto)
       .single();
     return { 

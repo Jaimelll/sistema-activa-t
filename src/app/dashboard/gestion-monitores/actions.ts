@@ -38,7 +38,7 @@ export async function getPlanesSupervision() {
         .from('plan_supervision')
         .select(`
             *,
-            proyecto:proyectos(id, codigo_proyecto, nombre),
+            proyecto:proyectos(id, codigo_proyecto, nombre, provincia, region_id, regiones(descripcion)),
             monitor:monitores(nombre)
         `)
         .order('fecha_programada', { ascending: false });
