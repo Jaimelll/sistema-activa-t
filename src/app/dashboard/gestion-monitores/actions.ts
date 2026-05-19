@@ -47,7 +47,24 @@ export async function getPlanesSupervision() {
         console.error('CRITICAL: Error fetching planes:', error);
         return [];
     }
-    return data;
+
+    const statePriority: Record<string, number> = {
+        'en proceso': 1,
+        'pendiente': 2,
+        'ejecutado': 3,
+        'completado': 3
+    };
+
+    const sortedData = [...(data || [])].sort((a: any, b: any) => {
+        const priorityA = statePriority[a.estado] || 99;
+        const priorityB = statePriority[b.estado] || 99;
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+        return new Date(b.fecha_programada).getTime() - new Date(a.fecha_programada).getTime();
+    });
+
+    return sortedData;
 }
 
 export async function crearPlanSupervision(payload: {

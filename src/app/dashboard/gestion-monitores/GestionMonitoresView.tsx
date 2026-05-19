@@ -16,7 +16,8 @@ import {
     Eye,
     Pencil,
     X,
-    AlertTriangle
+    AlertTriangle,
+    Play
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -213,6 +214,95 @@ export default function GestionMonitoresView() {
     };
 
     if (loading) return <div className="p-8 text-slate-500">Cargando módulo de gestión...</div>;
+
+    const currentPagePlanes = planes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const enProceso = currentPagePlanes.filter(p => p.estado === 'en proceso');
+    const pendientes = currentPagePlanes.filter(p => p.estado === 'pendiente');
+    const ejecutados = currentPagePlanes.filter(p => p.estado === 'ejecutado' || p.estado === 'completado');
+
+    const renderRow = (plan: Plan) => (
+        <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
+            <td className="px-4 md:px-6 py-3 md:py-4 min-w-[250px] md:min-w-[450px]">
+                <div className="text-sm font-bold text-slate-800 leading-tight">
+                    [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}] | {plan.proyecto?.nombre || 'S/N'}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1.5 italic leading-relaxed">
+                    {plan.proyecto?.nombre ? 'Información completa del proyecto disponible en modo auditoría.' : 'Sin descripción adicional'}
+                </div>
+            </td>
+            <td className="px-4 md:px-6 py-3 md:py-4">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <User size={14} className="text-slate-400" />
+                    {plan.monitor?.nombre || 'No asignado'}
+                </div>
+            </td>
+            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-slate-600 font-medium">
+                <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-slate-400" />
+                    {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
+                </div>
+            </td>
+            <td className="px-4 md:px-6 py-3 md:py-4">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    plan.estado === 'pendiente' 
+                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
+                    : plan.estado === 'en proceso'
+                    ? 'bg-blue-50 text-blue-600 border-blue-100'
+                    : 'bg-green-50 text-green-600 border-green-100'
+                }`}>
+                    {plan.estado === 'pendiente' ? <Clock size={12} /> : plan.estado === 'en proceso' ? <Play size={12} className="text-blue-500" /> : <CheckCircle2 size={12} />}
+                    {plan.estado}
+                </span>
+            </td>
+            <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                <div className="flex items-center justify-center gap-1">
+                    <Link 
+                        href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
+                        target="_blank"
+                        className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
+                        title="Visualizar en modo auditoría"
+                    >
+                        <Eye size={18} className="group-hover:scale-110 transition-transform" />
+                    </Link>
+                    <button
+                        onClick={async () => {
+                            if (window.confirm('¿Está seguro de eliminar este plan de supervisión? Se eliminarán también las fotos y registros asociados.')) {
+                                try {
+                                    setDeleting(true);
+                                    const res = await eliminarPlanSupervision(plan.id);
+                                    if (res.success) {
+                                        showToast('Plan eliminado exitosamente', 'success');
+                                        setPlanes(prev => prev.filter(p => p.id !== plan.id));
+                                        router.refresh();
+                                    } else {
+                                        showToast(res.error || 'Error al eliminar', 'error');
+                                    }
+                                } catch (err: any) {
+                                    showToast('Error de red: ' + err.message, 'error');
+                                } finally {
+                                    setDeleting(false);
+                                }
+                            }
+                        }}
+                        disabled={deleting}
+                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group disabled:opacity-30"
+                        title="Eliminar Plan"
+                    >
+                        <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
+                    </button>
+                    {canManagePlans && (
+                        <button
+                            onClick={() => handleEditPlan(plan)}
+                            className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
+                            title="Editar Plan"
+                        >
+                            <Pencil size={18} className="group-hover:scale-110 transition-transform" />
+                        </button>
+                    )}
+                </div>
+            </td>
+        </tr>
+    );
 
     return (
         <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
@@ -412,89 +502,36 @@ export default function GestionMonitoresView() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {planes
-                                        .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
-                                        .map((plan) => (
-                                        <tr key={plan.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-4 md:px-6 py-3 md:py-4 min-w-[250px] md:min-w-[450px]">
-                                                <div className="text-sm font-bold text-slate-800 leading-tight">
-                                                    [{plan.proyecto?.id || '?'}] | [{plan.proyecto?.codigo_proyecto || 'S/C'}] | {plan.proyecto?.nombre || 'S/N'}
-                                                </div>
-                                                <div className="text-[11px] text-slate-500 mt-1.5 italic leading-relaxed">
-                                                    {plan.proyecto?.nombre ? 'Información completa del proyecto disponible en modo auditoría.' : 'Sin descripción adicional'}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4">
-                                                <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                    <User size={14} className="text-slate-400" />
-                                                    {plan.monitor?.nombre || 'No asignado'}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-slate-600 font-medium">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar size={14} className="text-slate-400" />
-                                                    {new Date(plan.fecha_programada).toLocaleDateString('es-ES', { timeZone: 'UTC' })}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                                    plan.estado === 'pendiente' 
-                                                    ? 'bg-amber-50 text-amber-600 border-amber-100' 
-                                                    : 'bg-green-50 text-green-600 border-green-100'
-                                                }`}>
-                                                    {plan.estado === 'pendiente' ? <Clock size={12} /> : <CheckCircle2 size={12} />}
-                                                    {plan.estado}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 md:px-6 py-3 md:py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    <Link 
-                                                        href={`/dashboard/campo?id=${plan.id}&readOnly=true`}
-                                                        target="_blank"
-                                                        className="inline-flex items-center justify-center p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all group"
-                                                        title="Visualizar en modo auditoría"
-                                                    >
-                                                        <Eye size={18} className="group-hover:scale-110 transition-transform" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('¿Está seguro de eliminar este plan de supervisión? Se eliminarán también las fotos y registros asociados.')) {
-                                                                try {
-                                                                    setDeleting(true);
-                                                                    const res = await eliminarPlanSupervision(plan.id);
-                                                                    if (res.success) {
-                                                                        showToast('Plan eliminado exitosamente', 'success');
-                                                                        setPlanes(prev => prev.filter(p => p.id !== plan.id));
-                                                                        router.refresh();
-                                                                    } else {
-                                                                        showToast(res.error || 'Error al eliminar', 'error');
-                                                                    }
-                                                                } catch (err: any) {
-                                                                    showToast('Error de red: ' + err.message, 'error');
-                                                                } finally {
-                                                                    setDeleting(false);
-                                                                }
-                                                            }
-                                                        }}
-                                                        disabled={deleting}
-                                                        className="inline-flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-full transition-all group disabled:opacity-30"
-                                                        title="Eliminar Plan"
-                                                    >
-                                                        <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-                                                    </button>
-                                                    {canManagePlans && (
-                                                        <button
-                                                            onClick={() => handleEditPlan(plan)}
-                                                            className="inline-flex items-center justify-center p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-all group"
-                                                            title="Editar Plan"
-                                                        >
-                                                            <Pencil size={18} className="group-hover:scale-110 transition-transform" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {enProceso.length > 0 && (
+                                        <>
+                                            <tr className="bg-blue-50/20 border-b border-blue-100">
+                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-blue-600 tracking-widest uppercase bg-blue-50/10">
+                                                    🔴 EN PROCESO ({enProceso.length})
+                                                </td>
+                                            </tr>
+                                            {enProceso.map(plan => renderRow(plan))}
+                                        </>
+                                    )}
+                                    {pendientes.length > 0 && (
+                                        <>
+                                            <tr className="bg-amber-50/20 border-b border-amber-100">
+                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-amber-600 tracking-widest uppercase bg-amber-50/10">
+                                                    🟡 PENDIENTES ({pendientes.length})
+                                                </td>
+                                            </tr>
+                                            {pendientes.map(plan => renderRow(plan))}
+                                        </>
+                                    )}
+                                    {ejecutados.length > 0 && (
+                                        <>
+                                            <tr className="bg-green-50/20 border-b border-green-100">
+                                                <td colSpan={5} className="px-6 py-2.5 text-[10px] font-black text-green-600 tracking-widest uppercase bg-green-50/10">
+                                                    🟢 EJECUTADOS ({ejecutados.length})
+                                                </td>
+                                            </tr>
+                                            {ejecutados.map(plan => renderRow(plan))}
+                                        </>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

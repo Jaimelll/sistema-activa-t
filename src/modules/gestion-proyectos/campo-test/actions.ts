@@ -25,7 +25,7 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
 
   let query = supabase
     .from('plan_supervision')
-    .select('*')
+    .select('*, monitor:monitores!id_supervisor(nombre)')
     .eq('estado', 'pendiente');
 
   const GLOBAL_EMAILS = ['jduran@fondoempleo.com.pe', 'rcarbajal@fondoempleo.com.pe', 'erizabal@fondoempleo.com.pe'];
@@ -44,7 +44,7 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
   }
 
   // 2. Obtenemos el proyecto manualmente con los nombres de campos CORRECTOS
-  const planesConProyecto = await Promise.all(planes.map(async (plan) => {
+  const planesConProyecto = await Promise.all(planes.map(async (plan: any) => {
     const { data: proyecto, error: proyError } = await supabase
       .from('proyectos')
       .select('id, codigo_proyecto, nombre, monto_fondoempleo, beneficiarios, avance, institucion_ejecutora_id, region_id, etapa_id, contacto, sustento')
@@ -53,7 +53,7 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
 
     if (proyError) {
       console.error(`Error al obtener proyecto ${plan.id_proyecto}:`, proyError);
-      return { ...plan, proyecto: null };
+      return { ...plan, proyecto: null, monitor: plan.monitor?.nombre || 'Sin asignar' };
     }
     
     // Consulta independiente para la institución
@@ -98,6 +98,7 @@ export async function getPlanesSupervisionPendientes(skipUserFilter = false) {
     // Devolvemos el plan con el objeto proyecto enriquecido
     return { 
       ...plan, 
+      monitor: plan.monitor?.nombre || 'Sin asignar',
       proyecto: { 
         ...proyecto, 
         nombre_institucion,
@@ -120,7 +121,7 @@ export async function getMisPlanesSupervision() {
 
   let query = supabase
     .from('plan_supervision')
-    .select('*')
+    .select('*, monitor:monitores!id_supervisor(nombre)')
     .order('fecha_programada', { ascending: false });
 
   // Si NO es un usuario global, filtramos por su monitor_id
@@ -142,13 +143,17 @@ export async function getMisPlanesSupervision() {
   if (error || !planes) return [];
 
   // Enriquecer con datos de proyecto
-  const planesEnriquecidos = await Promise.all(planes.map(async (plan) => {
+  const planesEnriquecidos = await Promise.all(planes.map(async (plan: any) => {
     const { data: proyecto } = await supabase
       .from('proyectos')
       .select('id, codigo_proyecto, nombre')
       .eq('id', plan.id_proyecto)
       .single();
-    return { ...plan, proyecto };
+    return { 
+      ...plan, 
+      proyecto,
+      monitor: plan.monitor?.nombre || 'Sin asignar'
+    };
   }));
 
   return planesEnriquecidos;
@@ -373,4 +378,23 @@ export async function eliminarPlanSupervision(planId: string | number) {
         console.error('Error eliminando plan:', e);
         return { success: false, error: e.message };
     }
+}
+
+export async function cambiarEstadoSupervision(id: number | string, nuevoEstado: string) {
+    console.log('Cambiar estado de supervisión:', id, 'a:', nuevoEstado);
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('plan_supervision')
+        .update({ estado: nuevoEstado })
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        console.error('Error al cambiar estado de supervisión:', error);
+        throw new Error(`Error al cambiar estado: ${error.message}`);
+    }
+
+    revalidatePath('/dashboard/campo');
+    revalidatePath('/dashboard/gestion-monitores');
+    return data;
 }
