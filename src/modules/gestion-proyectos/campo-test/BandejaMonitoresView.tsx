@@ -109,7 +109,9 @@ export default function BandejaMonitoresView() {
                                 {sortedPlanes.map(plan => (
                                     <tr key={plan.id} className="hover:bg-slate-50 transition-colors text-xs text-slate-700">
                                         <td className="py-3 px-2 align-top max-w-[350px] whitespace-normal break-words">
-                                            <span className="font-bold text-slate-800">[{plan.proyecto?.id || '?'}]</span> {plan.proyecto?.nombre || 'S/N'}
+                                            <span className="font-bold text-slate-800">
+                                                [ID: {plan.proyecto?.id || '?'}{plan.proyecto?.codigo_proyecto ? ` | ${plan.proyecto.codigo_proyecto}` : ''}]
+                                            </span> {plan.proyecto?.nombre || 'S/N'}
                                         </td>
                                         <td className="py-3 px-2 align-top whitespace-nowrap font-medium text-slate-600 uppercase">
                                             {plan.proyecto?.regiones?.descripcion || 'No definida'}
