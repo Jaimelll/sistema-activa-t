@@ -200,7 +200,7 @@ export default function GestionMonitoresView() {
                     fecha_programada: formData.fecha_programada,
                     checklist_preguntas: checklistJSON
                 });
-                showToast('Plan de supervisión creado exitosamente', 'success');
+                showToast('Plan de monitoreo creado exitosamente', 'success');
             }
             
             resetForm();
@@ -266,7 +266,7 @@ export default function GestionMonitoresView() {
                     </Link>
                     <button
                         onClick={async () => {
-                            if (window.confirm('¿Está seguro de eliminar este plan de supervisión? Se eliminarán también las fotos y registros asociados.')) {
+                            if (window.confirm('¿Está seguro de eliminar este plan de monitoreo? Se eliminarán también las fotos y registros asociados.')) {
                                 try {
                                     setDeleting(true);
                                     const res = await eliminarPlanSupervision(plan.id);
@@ -322,7 +322,7 @@ export default function GestionMonitoresView() {
                         <div className={`p-6 border-b ${editingPlanId ? 'bg-amber-50/50 border-amber-100' : 'bg-slate-50/50 border-slate-100'}`}>
                             <h2 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                 {editingPlanId ? <Pencil className="text-amber-600" size={16} /> : <Plus className="text-blue-600" size={16} />}
-                                {editingPlanId ? 'Editando Plan de Supervisión' : 'Nuevo Plan de Supervisión'}
+                                {editingPlanId ? 'Editando Plan de Monitoreo' : 'Nuevo Plan de Monitoreo'}
                             </h2>
                             {editingPlanId && (
                                 <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Modifique los campos y presione Actualizar.</p>
@@ -462,7 +462,7 @@ export default function GestionMonitoresView() {
                                 }`}
                             >
                                 {saving ? <Clock className="animate-spin" size={18} /> : <Save size={18} />}
-                                {saving ? 'GUARDANDO...' : (editingPlanId ? 'ACTUALIZAR PLAN' : 'CREAR PLAN DE SUPERVISIÓN')}
+                                {saving ? 'GUARDANDO...' : (editingPlanId ? 'ACTUALIZAR PLAN' : 'CREAR PLAN DE MONITOREO')}
                             </button>
                             {editingPlanId && (
                                 <button 

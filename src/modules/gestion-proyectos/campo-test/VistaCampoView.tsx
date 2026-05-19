@@ -170,7 +170,7 @@ export default function VistaCampoView() {
                         <ArrowLeft size={20} /> <span className="hidden md:inline">Mis Tareas</span>
                     </Link>
                     <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
-                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Módulo de Supervisión</h1>
+                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase">Módulo de Monitoreo</h1>
                 </div>
                 <div className="text-[10px] font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">
                     Paso: {step}
@@ -210,7 +210,7 @@ export default function VistaCampoView() {
                         <button onClick={() => goToStep('info')} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 hover:text-slate-600">
                             <ArrowLeft size={24} />
                         </button>
-                    <h2 className="text-2xl font-bold text-slate-800">Checklist de Supervisión {isReadOnly && '(MODO LECTURA)'}</h2>
+                    <h2 className="text-2xl font-bold text-slate-800">Checklist de Monitoreo {isReadOnly && '(MODO LECTURA)'}</h2>
                     </div>
                     {isLoadingData ? (
                         <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-4">
@@ -316,7 +316,7 @@ export default function VistaCampoView() {
                                                 firma: null
                                             });
                                             
-                                            showToast('Supervisión finalizada correctamente', 'success');
+                                            showToast('Monitoreo finalizado correctamente', 'success');
                                             
                                             // Redirigir después de un breve delay para ver el toast
                                             setTimeout(() => {
@@ -332,7 +332,7 @@ export default function VistaCampoView() {
                                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg shadow-xl transition-all flex items-center justify-center gap-3 uppercase tracking-tight"
                                 >
                                     {saving ? <Loader2 className="animate-spin" size={24} /> : <CheckCircle2 size={24} />}
-                                    {saving ? 'FINALIZANDO...' : 'FINALIZAR SUPERVISIÓN'}
+                                    {saving ? 'FINALIZANDO...' : 'FINALIZAR MONITOREO'}
                                 </button>
                             </div>
                         </div>

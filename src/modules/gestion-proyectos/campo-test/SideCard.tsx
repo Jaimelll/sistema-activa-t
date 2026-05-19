@@ -50,7 +50,7 @@ export default function SideCard({ proyecto, onStart }) {
         <div className="flex items-center justify-between text-slate-600">
           <div className="flex items-center gap-2">
             <Calendar size={14} className="text-blue-500" />
-            <span className="text-[11px] uppercase font-semibold text-slate-400">Supervisión</span>
+            <span className="text-[11px] uppercase font-semibold text-slate-400">Monitoreo</span>
           </div>
           <span className="text-sm font-bold text-slate-700">{fecha}</span>
         </div>
@@ -115,7 +115,7 @@ export default function SideCard({ proyecto, onStart }) {
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-base font-bold py-4 mt-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 tracking-widest uppercase"
         >
           <ClipboardCheck size={22} />
-          INICIAR SUPERVISIÓN
+          INICIAR MONITOREO
           <ChevronRight size={22} />
         </button>
       )}

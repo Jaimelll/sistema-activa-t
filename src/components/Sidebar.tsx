@@ -104,7 +104,9 @@ export function Sidebar() {
                                     onClick={() => setIsOpen(false)}
                                 >
                                     <Icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.name}</span>
+                                    <span className="font-medium">
+                                        {item.name === 'Supervisión' ? 'Monitoreo' : item.name}
+                                    </span>
                                 </Link>
                             );
                         });

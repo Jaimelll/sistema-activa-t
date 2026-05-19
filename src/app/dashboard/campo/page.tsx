@@ -2,8 +2,8 @@ import VistaCampoView from '@/modules/gestion-proyectos/campo-test/VistaCampoVie
 import BandejaMonitoresView from '@/modules/gestion-proyectos/campo-test/BandejaMonitoresView';
 
 export const metadata = {
-  title: 'Supervisión de Campo | Sistema ACTIVA-T',
-  description: 'Gestión y ejecución de planes de supervisión.',
+  title: 'Monitoreo de Campo | Sistema ACTIVA-T',
+  description: 'Gestión y ejecución de planes de monitoreo.',
 };
 
 export const dynamic = 'force-dynamic';
