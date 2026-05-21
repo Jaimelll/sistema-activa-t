@@ -169,7 +169,7 @@ async function recalculateBecaAvance(becaId: any, supabase: any) {
   // 1. Obtener TODO el historial de avances para este servicio
   const { data: allAvances, error: fetchError } = await supabase
     .from('avance_beca')
-    .select('etapa_id, sustento, fecha, monto')
+    .select('etapa_id, sustento, fecha')
     .eq('beca_id', becaId)
     .lte('fecha', today)                 // 2. Filtrar fecha <= hoy (ignora proyecciones)
     .order('fecha', { ascending: false }) // 3. Ordenar por fecha descendente
@@ -188,16 +188,12 @@ async function recalculateBecaAvance(becaId: any, supabase: any) {
     // 5. Asigna como sustento el texto del avance más reciente. Si está vacío, busca hacia atrás.
     const sustentoFinal = allAvances.find((av: any) => av.sustento && av.sustento.trim() !== '')?.sustento || '';
 
-    // Calculamos el avance financiero total (solo de avances reales <= hoy)
-    const totalAvanceFinanciero = allAvances.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0);
-
-    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${newEtapaId}, Avance S/ ${totalAvanceFinanciero}`);
+    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${newEtapaId}`);
     
     await supabase
       .from('becas_nueva')
       .update({ 
         etapa_id: newEtapaId,
-        avance: totalAvanceFinanciero,
         sustento: sustentoFinal
       })
       .eq('id', becaId);
@@ -215,8 +211,7 @@ export async function addAvanceServicio(becaId: any, avanceData: any) {
       beca_id: becaId,
       etapa_id: avanceData.etapa_id,
       fecha: avanceData.fecha,
-      sustento: avanceData.sustento,
-      monto: Number(avanceData.monto) || 0
+      sustento: avanceData.sustento
     }])
     .select()
     .single();
@@ -224,6 +219,21 @@ export async function addAvanceServicio(becaId: any, avanceData: any) {
   if (insertError) {
     console.error("Error inserting avance:", insertError);
     throw new Error(insertError.message);
+  }
+
+  // Avance económico: Solo se debe actualizar el valor de avance en becas_nueva si el monto ingresado en el formulario es mayor a cero.
+  if (Number(avanceData.monto) > 0) {
+    const { data: beca } = await supabase
+      .from('becas_nueva')
+      .select('avance')
+      .eq('id', becaId)
+      .single();
+    const currentAvance = Number(beca?.avance) || 0;
+    const nuevoAvance = currentAvance + Number(avanceData.monto);
+    await supabase
+      .from('becas_nueva')
+      .update({ avance: nuevoAvance })
+      .eq('id', becaId);
   }
 
   await recalculateBecaAvance(becaId, supabase);
@@ -240,8 +250,7 @@ export async function updateAvanceServicio(id: any, avanceData: any) {
     .update({
       etapa_id: avanceData.etapa_id,
       fecha: avanceData.fecha,
-      sustento: avanceData.sustento,
-      monto: Number(avanceData.monto) || 0
+      sustento: avanceData.sustento
     })
     .eq('id', id)
     .select()
@@ -253,6 +262,19 @@ export async function updateAvanceServicio(id: any, avanceData: any) {
   }
 
   if (data?.beca_id) {
+    if (Number(avanceData.monto) > 0) {
+      const { data: beca } = await supabase
+        .from('becas_nueva')
+        .select('avance')
+        .eq('id', data.beca_id)
+        .single();
+      const currentAvance = Number(beca?.avance) || 0;
+      const nuevoAvance = currentAvance + Number(avanceData.monto);
+      await supabase
+        .from('becas_nueva')
+        .update({ avance: nuevoAvance })
+        .eq('id', data.beca_id);
+    }
     await recalculateBecaAvance(data.beca_id, supabase);
   }
 

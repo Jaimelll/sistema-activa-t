@@ -221,6 +221,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
         const finalEtapaId = newAvance.etapa_id || servicio.etapa_id;
 
         try {
+            setErrorMsg(null);
             setIsSubmitting(true);
             await addAvanceServicio(servicio.id, {
                 ...newAvance,
@@ -234,9 +235,9 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 monto: 0
             });
             onClose(); 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error adding avance:", error);
-            alert("Error al registrar avance");
+            setErrorMsg(error.message || "Error al registrar avance");
         } finally {
             setIsSubmitting(false);
         }
@@ -245,6 +246,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
     const handleUpdateAvance = async () => {
         if (!editingAvance) return;
         try {
+            setErrorMsg(null);
             setIsSubmitting(true);
             await updateAvanceServicio(editingAvance.id, {
                 etapa_id: Number(editingAvance.etapa_id),
@@ -255,9 +257,9 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             alert("Avance actualizado correctamente");
             setEditingAvance(null);
             onClose(); 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating avance:", error);
-            alert("Error al actualizar avance");
+            setErrorMsg(error.message || "Error al actualizar avance");
         } finally {
             setIsSubmitting(false);
         }
@@ -266,13 +268,14 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
     const handleDeleteAvance = async (avanceId: any) => {
         if (!window.confirm("¿Está seguro de eliminar este avance? El avance total se recalculará.")) return;
         try {
+            setErrorMsg(null);
             setIsSubmitting(true);
             await deleteAvanceServicio(avanceId, servicio.id);
             alert("Avance eliminado correctamente");
             onClose(); 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error deleting avance:", error);
-            alert("Error al eliminar avance");
+            setErrorMsg(error.message || "Error al eliminar avance");
         } finally {
             setIsSubmitting(false);
         }
