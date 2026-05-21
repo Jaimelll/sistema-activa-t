@@ -71,6 +71,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
     const [isPresupuestoFocused, setIsPresupuestoFocused] = useState(false);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'general' | 'becario' | 'avances'>('general');
     const [editingAvance, setEditingAvance] = useState<any>(null);
     const [newAvance, setNewAvance] = useState({
@@ -114,6 +115,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             });
             setActiveTab('general');
             setEditingAvance(null);
+            setErrorMsg(null);
         } else {
             setFormData({
                 nombre: "",
@@ -144,6 +146,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             });
             setActiveTab('general');
             setEditingAvance(null);
+            setErrorMsg(null);
         }
     }, [servicio, isOpen]);
 
@@ -159,6 +162,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        setErrorMsg(null);
         try {
             setIsSubmitting(true);
             const cleanedData = { ...formData };
@@ -184,11 +188,27 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             // Validación y normalización de sexo
             if (cleanedData.sexo === "") cleanedData.sexo = null;
 
-            await onSave(cleanedData);
+            // Limpieza estricta de campos en el cliente
+            const allowedKeys = [
+                'nombre', 'documento', 'periodo', 'modalidad_id', 'institucion_id', 'eje_id', 'linea_id',
+                'etapa_id', 'condicion_id', 'grupo_id', 'presupuesto', 'avance', 'beneficiarios',
+                'provincia_procedencia', 'distrito_procedencia', 'celular', 'correo_electronico',
+                'tipo_estudio_id', 'naturaleza_ie_id', 'especialidad', 'formato_id', 'fecha_nacimiento',
+                'sexo', 'empresa_id'
+            ];
+            
+            const finalPayload: any = {};
+            allowedKeys.forEach(key => {
+                if (cleanedData[key] !== undefined) {
+                    finalPayload[key] = cleanedData[key];
+                }
+            });
+
+            await onSave(finalPayload);
             onClose();
-        } catch (error) {
-            console.error("Error saving service:", error);
-            alert("Error al guardar el servicio.");
+        } catch (error: any) {
+            console.error("Supabase/Backend error when saving service:", error);
+            setErrorMsg(error.message || "No se pudo guardar el servicio. Por favor, verifique los datos.");
         } finally {
             setIsSubmitting(false);
         }
@@ -316,6 +336,21 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto p-6">
+                    {errorMsg && (
+                        <div className="mb-4 p-4 text-sm text-red-800 rounded-xl bg-red-50 border border-red-100 flex items-center justify-between animate-in fade-in duration-200">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold">Error:</span>
+                                <span>{errorMsg}</span>
+                            </div>
+                            <button 
+                                onClick={() => setErrorMsg(null)} 
+                                className="text-red-500 hover:text-red-700 font-black text-lg leading-none"
+                                type="button"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                    )}
                     {activeTab === 'general' ? (
                         <form id="servicio-form" onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -324,7 +359,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         required
                                         name="nombre"
-                                        value={formData.nombre}
+                                        value={formData.nombre || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Nombre completo de la beca o servicio"
@@ -337,7 +372,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         required
                                         name="documento"
-                                        value={formData.documento}
+                                        value={formData.documento || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         placeholder="Ej: FE-2024-001"
@@ -350,7 +385,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         type="number"
                                         name="periodo"
-                                        value={formData.periodo}
+                                        value={formData.periodo || ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         disabled={isReadOnly}
@@ -460,7 +495,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         type="text"
                                         name="presupuesto"
-                                        value={isPresupuestoFocused ? formData.presupuesto : formatCurrency(formData.presupuesto)}
+                                        value={isPresupuestoFocused ? (formData.presupuesto ?? "") : formatCurrency(formData.presupuesto)}
                                         onFocus={() => setIsPresupuestoFocused(true)}
                                         onBlur={() => setIsPresupuestoFocused(false)}
                                         onChange={(e) => {
@@ -481,7 +516,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                         type="number"
                                         name="avance"
                                         step="0.01"
-                                        value={formData.avance}
+                                        value={formData.avance ?? ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly || !!servicio} 
@@ -494,7 +529,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                     <input
                                         type="number"
                                         name="beneficiarios"
-                                        value={formData.beneficiarios}
+                                        value={formData.beneficiarios ?? ""}
                                         onChange={handleChange}
                                         className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none text-sm"
                                         disabled={isReadOnly}
@@ -683,7 +718,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                             <div className="space-y-1">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Nueva Etapa</label>
                                                 <select
-                                                    value={newAvance.etapa_id}
+                                                    value={newAvance.etapa_id || ""}
                                                     onChange={(e) => setNewAvance({...newAvance, etapa_id: e.target.value})}
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                 >
@@ -695,7 +730,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
                                                 <input
                                                     type="date"
-                                                    value={newAvance.fecha}
+                                                    value={newAvance.fecha || ""}
                                                     onChange={(e) => setNewAvance({...newAvance, fecha: e.target.value})}
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                 />
@@ -704,7 +739,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
                                                 <input
                                                     type="text"
-                                                    value={isMontoAvanceFocused ? newAvance.monto : formatCurrency(newAvance.monto)}
+                                                    value={isMontoAvanceFocused ? (newAvance.monto ?? "") : formatCurrency(newAvance.monto)}
                                                     onFocus={() => setIsMontoAvanceFocused(true)}
                                                     onBlur={() => setIsMontoAvanceFocused(false)}
                                                     onChange={(e) => {
@@ -718,7 +753,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                             <div className="space-y-1 md:col-span-2">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
                                                 <input
-                                                    value={newAvance.sustento}
+                                                    value={newAvance.sustento || ""}
                                                     onChange={(e) => setNewAvance({...newAvance, sustento: e.target.value})}
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none"
                                                     placeholder="Ej: Informe mensual aprobado"
@@ -804,49 +839,49 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                <button onClick={() => setEditingAvance(null)} className="p-1 hover:bg-gray-200 rounded-full"><X className="w-4 h-4 text-gray-500" /></button>
                            </div>
                            <div className="p-5 space-y-4">
-                               <div className="space-y-1">
-                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Etapa</label>
-                                   <select
-                                       value={editingAvance.etapa_id}
-                                       onChange={(e) => setEditingAvance({...editingAvance, etapa_id: e.target.value})}
-                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                   >
-                                       <option value="">Seleccione Etapa</option>
-                                       {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                   </select>
-                               </div>
-                               <div className="space-y-1">
-                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
-                                   <input
-                                       type="date"
-                                       value={editingAvance.fecha}
-                                       onChange={(e) => setEditingAvance({...editingAvance, fecha: e.target.value})}
-                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
-                                   />
-                               </div>
-                               <div className="space-y-1">
-                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
-                                   <input
-                                       type="text"
-                                       value={isMontoEditFocused ? editingAvance.monto : formatCurrency(editingAvance.monto)}
-                                       onFocus={() => setIsMontoEditFocused(true)}
-                                       onBlur={() => setIsMontoEditFocused(false)}
-                                       onChange={(e) => {
-                                           const val = e.target.value.replace(/[^0-9.]/g, '');
-                                           setEditingAvance({...editingAvance, monto: val === "" ? 0 : Number(val)});
-                                       }}
-                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:outline-none"
-                                   />
-                               </div>
-                               <div className="space-y-1">
-                                   <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
-                                   <textarea
-                                       value={editingAvance.sustento || ""}
-                                       onChange={(e) => setEditingAvance({...editingAvance, sustento: e.target.value})}
-                                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
-                                       placeholder="Ej: Informe mensual aprobado"
-                                   />
-                               </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Etapa</label>
+                                    <select
+                                        value={editingAvance.etapa_id || ""}
+                                        onChange={(e) => setEditingAvance({...editingAvance, etapa_id: e.target.value})}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                    >
+                                        <option value="">Seleccione Etapa</option>
+                                        {options.etapas.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Fecha</label>
+                                    <input
+                                        type="date"
+                                        value={editingAvance.fecha || ""}
+                                        onChange={(e) => setEditingAvance({...editingAvance, fecha: e.target.value})}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Monto de Avance (S/.)</label>
+                                    <input
+                                        type="text"
+                                        value={isMontoEditFocused ? (editingAvance.monto ?? "") : formatCurrency(editingAvance.monto)}
+                                        onFocus={() => setIsMontoEditFocused(true)}
+                                        onBlur={() => setIsMontoEditFocused(false)}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            setEditingAvance({...editingAvance, monto: val === "" ? 0 : Number(val)});
+                                        }}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-emerald-600 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">Descripción / Observación</label>
+                                    <textarea
+                                        value={editingAvance.sustento || ""}
+                                        onChange={(e) => setEditingAvance({...editingAvance, sustento: e.target.value})}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none h-20 resize-none"
+                                        placeholder="Ej: Informe mensual aprobado"
+                                    />
+                                </div>
                            </div>
                            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
                                <button onClick={() => setEditingAvance(null)} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 rounded-xl">Cancelar</button>

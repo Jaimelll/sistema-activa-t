@@ -52,55 +52,104 @@ export async function getServiciosGestionData(filters?: { eje?: string; linea?: 
   return data || [];
 }
 
+function cleanBecaPayload(formData: any) {
+  const allowedKeys = [
+    'nombre',
+    'documento',
+    'periodo',
+    'modalidad_id',
+    'institucion_id',
+    'eje_id',
+    'linea_id',
+    'etapa_id',
+    'condicion_id',
+    'grupo_id',
+    'presupuesto',
+    'avance',
+    'beneficiarios',
+    'provincia_procedencia',
+    'distrito_procedencia',
+    'celular',
+    'correo_electronico',
+    'tipo_estudio_id',
+    'naturaleza_ie_id',
+    'especialidad',
+    'formato_id',
+    'fecha_nacimiento',
+    'sexo',
+    'empresa_id'
+  ];
+
+  const cleaned: any = {};
+  for (const key of allowedKeys) {
+    if (key in formData) {
+      cleaned[key] = formData[key];
+    }
+  }
+  return cleaned;
+}
+
 export async function createServicio(formData: any) {
-  const supabase = getSupabase();
+  try {
+    const supabase = getSupabase();
+    const cleaned = cleanBecaPayload(formData);
 
-  // Safety normalization for sexo
-  if (formData.sexo) {
-    if (formData.sexo === 'Masculino') formData.sexo = 'M';
-    else if (formData.sexo === 'Femenino') formData.sexo = 'F';
-  } else {
-    formData.sexo = null;
+    // Safety normalization for sexo
+    if (cleaned.sexo) {
+      if (cleaned.sexo === 'Masculino') cleaned.sexo = 'M';
+      else if (cleaned.sexo === 'Femenino') cleaned.sexo = 'F';
+    } else {
+      cleaned.sexo = null;
+    }
+
+    const { data, error } = await supabase
+      .from('becas_nueva')
+      .insert([cleaned])
+      .select();
+
+    if (error) {
+      console.error("Error creating servicio inside Supabase:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/dashboard/gestion-servicios');
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Uncaught error in createServicio:", err);
+    return { success: false, error: err.message };
   }
-
-  const { data, error } = await supabase
-    .from('becas_nueva')
-    .insert([formData])
-    .select();
-
-  if (error) {
-    console.error("Error creating servicio:", error);
-    throw new Error(error.message);
-  }
-
-  revalidatePath('/dashboard/gestion-servicios');
-  return data;
 }
 
 export async function updateServicio(id: any, formData: any) {
-  const supabase = getSupabase();
+  try {
+    const supabase = getSupabase();
+    const cleaned = cleanBecaPayload(formData);
 
-  // Safety normalization for sexo
-  if (formData.sexo) {
-    if (formData.sexo === 'Masculino') formData.sexo = 'M';
-    else if (formData.sexo === 'Femenino') formData.sexo = 'F';
-  } else {
-    formData.sexo = null;
+    // Safety normalization for sexo
+    if (cleaned.sexo) {
+      if (cleaned.sexo === 'Masculino') cleaned.sexo = 'M';
+      else if (cleaned.sexo === 'Femenino') cleaned.sexo = 'F';
+    } else {
+      cleaned.sexo = null;
+    }
+
+    const { data, error } = await supabase
+      .from('becas_nueva')
+      .update(cleaned)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      console.error("Error updating servicio inside Supabase:", error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/dashboard/gestion-servicios');
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Uncaught error in updateServicio:", err);
+    return { success: false, error: err.message };
   }
-
-  const { data, error } = await supabase
-    .from('becas_nueva')
-    .update(formData)
-    .eq('id', id)
-    .select();
-
-  if (error) {
-    console.error("Error updating servicio:", error);
-    throw new Error(error.message);
-  }
-
-  revalidatePath('/dashboard/gestion-servicios');
-  return data;
 }
 
 export async function deleteServicio(id: any) {

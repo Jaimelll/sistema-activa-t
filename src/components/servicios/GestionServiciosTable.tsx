@@ -141,9 +141,15 @@ export default function GestionServiciosTable({
 
   const handleSave = async (formData: any) => {
     if (selectedServicio) {
-        await updateServicio(selectedServicio.id, formData);
+        const res = await updateServicio(selectedServicio.id, formData);
+        if (res && !res.success) {
+            throw new Error(res.error || "Error al actualizar el servicio en la base de datos.");
+        }
     } else {
-        await createServicio(formData);
+        const res = await createServicio(formData);
+        if (res && !res.success) {
+            throw new Error(res.error || "Error al crear el servicio en la base de datos.");
+        }
     }
   };
 
