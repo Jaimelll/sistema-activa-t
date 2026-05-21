@@ -83,7 +83,8 @@ function cleanBecaPayload(formData: any) {
   const cleaned: any = {};
   for (const key of allowedKeys) {
     if (key in formData) {
-      cleaned[key] = formData[key];
+      const val = formData[key];
+      cleaned[key] = (typeof val === 'string' && val.trim() === '') ? null : val;
     }
   }
   return cleaned;
@@ -92,19 +93,13 @@ function cleanBecaPayload(formData: any) {
 export async function createServicio(formData: any) {
   try {
     const supabase = getSupabase();
-    const cleaned = cleanBecaPayload(formData);
+    const payloadLimpio = cleanBecaPayload(formData);
 
-    // Safety normalization for sexo
-    if (cleaned.sexo) {
-      if (cleaned.sexo === 'Masculino') cleaned.sexo = 'M';
-      else if (cleaned.sexo === 'Femenino') cleaned.sexo = 'F';
-    } else {
-      cleaned.sexo = null;
-    }
+    console.log("Payload limpio a enviar:", payloadLimpio);
 
     const { data, error } = await supabase
       .from('becas_nueva')
-      .insert([cleaned])
+      .insert([payloadLimpio])
       .select();
 
     if (error) {
@@ -123,19 +118,13 @@ export async function createServicio(formData: any) {
 export async function updateServicio(id: any, formData: any) {
   try {
     const supabase = getSupabase();
-    const cleaned = cleanBecaPayload(formData);
+    const payloadLimpio = cleanBecaPayload(formData);
 
-    // Safety normalization for sexo
-    if (cleaned.sexo) {
-      if (cleaned.sexo === 'Masculino') cleaned.sexo = 'M';
-      else if (cleaned.sexo === 'Femenino') cleaned.sexo = 'F';
-    } else {
-      cleaned.sexo = null;
-    }
+    console.log("Payload limpio a enviar:", payloadLimpio);
 
     const { data, error } = await supabase
       .from('becas_nueva')
-      .update(cleaned)
+      .update(payloadLimpio)
       .eq('id', id)
       .select();
 

@@ -110,7 +110,7 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 especialidad: servicio.especialidad || "",
                 formato_id: servicio.formato_id || "",
                 fecha_nacimiento: servicio.fecha_nacimiento || "",
-                sexo: servicio.sexo === "Masculino" ? "M" : (servicio.sexo === "Femenino" ? "F" : (servicio.sexo || "")),
+                sexo: servicio.sexo || "",
                 empresa_id: servicio.empresa_id || ""
             });
             setActiveTab('general');
@@ -683,8 +683,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                                             disabled={isReadOnly}
                                         >
                                             <option value="">Seleccione Sexo</option>
-                                            <option value="M">Masculino</option>
-                                            <option value="F">Femenino</option>
+                                            <option value="Masculino">Masculino</option>
+                                            <option value="Femenino">Femenino</option>
                                         </select>
                                     </div>
                                     <div className="md:col-span-2 space-y-1">
