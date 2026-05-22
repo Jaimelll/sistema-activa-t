@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
     ResponsiveContainer, CartesianGrid, Cell, ReferenceLine

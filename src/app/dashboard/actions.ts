@@ -34,7 +34,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
           etapa_id,
           sustento,
           monto
-        )
+        ),
+        grupo:grupo_id(descripcion)
       `);
 
     if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
@@ -117,6 +118,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
         avances: p.avance_proyecto || [],
         grupo_id: p.grupo_id,
+        nombre_grupo: p.grupo?.descripcion || '',
         provincia: p.provincia || '',
         especialista_id: p.especialista_id,
         especialista: p.especialista?.nombre || '',
@@ -179,7 +181,8 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
           etapa_id,
           sustento,
           monto
-        )
+        ),
+        grupo:grupo_id(descripcion)
       `);
 
     if (filters?.periodo && filters.periodo !== 'all' && filters.periodo !== 'undefined') {
@@ -266,6 +269,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
         avances: p.avance_proyecto || [],
         grupo_id: p.grupo_id,
+        nombre_grupo: p.grupo?.descripcion || '',
         provincia: p.provincia || '',
         especialista_id: p.especialista_id,
         especialista: p.especialista?.nombre || '',

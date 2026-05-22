@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { KPICard } from '@/components/dashboard/KPICard';
-import { getDashboardStats, getTimelineData, getRegionData, getInstitucionData } from './actions';
+import { getDashboardStats, getTimelineData, getRegionData, getInstitucionData, getProyectoCompletoById } from './actions';
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
 import { StatusChart } from '@/components/dashboard/charts/StatusChart';
 import { EjeChart } from '@/components/dashboard/charts/EjeChart';
@@ -13,6 +13,7 @@ import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
 import { TimelineChart } from '@/components/dashboard/charts/TimelineChart';
 import { PeruMapChart } from '@/components/dashboard/charts/PeruMapChart';
+import ProyectoModal from '@/components/ProyectoModal';
 
 interface DashboardViewProps {
     initialData: any[];
@@ -44,6 +45,11 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [dashboardData, setDashboardData] = useState(initialData);
     const [timelineDataState, setTimelineDataState] = useState(timelineData);
     const [isInitialMount, setIsInitialMount] = useState(true);
+
+    // States for project details modal from map tooltip
+    const [selectedModalProyecto, setSelectedModalProyecto] = useState<any>(null);
+    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+    const [isLoadingProjectModal, setIsLoadingProjectModal] = useState(false);
 
     const handleFundingBarClick = (region: string) => {
         setSelectedRegion(region === selectedRegion ? null : region);
@@ -219,7 +225,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
     // Bubble Map Data — agrupado por región, excluyendo regiones no geográficas
     const bubbleMapData = useMemo(() => {
-        const map = new Map<any, { regionId: any; regionName: string; count: number; proyectos: { id: number; codigo: string; nombre: string; contacto?: string; institucion?: string }[] }>();
+        const map = new Map<any, { regionId: any; regionName: string; count: number; proyectos: { id: number; codigo: string; nombre: string; contacto?: string; institucion?: string; grupo_id?: any; nombre_grupo?: string }[] }>();
         filteredData.forEach(d => {
             const key = d.regionId ?? d.region;
             if (!map.has(key)) {
@@ -238,6 +244,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                 nombre: d.nombre || '',
                 contacto: d.contacto || '',
                 institucion: d.institucion || '',
+                grupo_id: d.grupo_id,
+                nombre_grupo: d.nombre_grupo,
             });
         });
         return Array.from(map.values());
@@ -349,6 +357,24 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         }
         return selectedFase || 'Todas las Fases';
     }, [selectedEtapa, selectedFase, availableFilters.uniqueEtapas]);
+
+    const handleProyectoClick = async (proyectoId: number) => {
+        try {
+            setIsLoadingProjectModal(true);
+            const fullProject = await getProyectoCompletoById(String(proyectoId));
+            if (fullProject) {
+                setSelectedModalProyecto(fullProject);
+                setIsProjectModalOpen(true);
+            } else {
+                alert("No se pudieron cargar los detalles del proyecto.");
+            }
+        } catch (error) {
+            console.error("Error fetching project details:", error);
+            alert("Ocurrió un error al cargar el proyecto.");
+        } finally {
+            setIsLoadingProjectModal(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -498,7 +524,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             {/* Charts Section */}
 
             {/* Timeline Chart (Principal) */}
-            <div className="w-full">
+            <div className="w-full" id="timeline-chart-section">
                 <TimelineChart 
                     data={filteredTimelineData} 
                     options={{
@@ -619,13 +645,50 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             </div>
 
             <div className="w-full mt-2">
-                <PeruMapChart data={bubbleMapData} />
+                <PeruMapChart data={bubbleMapData} onProyectoClick={handleProyectoClick} />
             </div>
 
             {/* Gestora Chart */}
             {gestoraData.length > 0 && (
                 <div className="w-full">
                     <GestoraChart data={gestoraData} />
+                </div>
+            )}
+
+            {/* Proyecto Modal */}
+            <ProyectoModal
+                isOpen={isProjectModalOpen}
+                onClose={() => {
+                    setIsProjectModalOpen(false);
+                    setSelectedModalProyecto(null);
+                }}
+                onSave={async () => {}} // Read-only
+                proyecto={selectedModalProyecto}
+                isReadOnly={true}
+                options={{
+                    lineas: lines,
+                    ejes: ejesList,
+                    regiones: regiones,
+                    etapas: etapasList,
+                    modalidades: modalidades,
+                    instituciones: instituciones,
+                    grupos: grupos,
+                    especialistas: especialistas
+                }}
+            />
+
+            {/* Premium Loading Spinner with blur backdrop */}
+            {isLoadingProjectModal && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-gray-950/40 backdrop-blur-sm transition-all duration-300">
+                    <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-6 py-5 rounded-2xl border border-gray-200/50 shadow-2xl flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
+                        <div className="relative w-12 h-12">
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-100 dark:border-blue-900/30"></div>
+                            <div className="absolute inset-0 rounded-full border-4 border-t-blue-600 border-r-blue-600 animate-spin"></div>
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-widest animate-pulse">
+                            Cargando detalles...
+                        </span>
+                    </div>
                 </div>
             )}
 

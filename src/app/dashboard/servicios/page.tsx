@@ -8,6 +8,8 @@ import { ServiciosTimeline } from '@/components/servicios/ServiciosTimeline';
 import { PeruMapBeneficiariosChart } from '@/components/servicios/PeruMapBeneficiariosChart';
 import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInstitucionChart';
 import { ServiciosDemografiaCharts } from '@/components/servicios/ServiciosDemografiaCharts';
+import ServicioModal from '@/components/servicios/ServicioModal';
+import { getServicioCompletoById } from '@/app/dashboard/gestion-servicios/actions';
 
 export default function ServiciosPage() {
     const supabase = createClient();
@@ -54,6 +56,11 @@ export default function ServiciosPage() {
     const [selectedInstitucion, setSelectedInstitucion] = useState<string>('all');
     const [selectedTipoEstudio, setSelectedTipoEstudio] = useState<string>('all');
     const [selectedGrupo, setSelectedGrupo] = useState<string>('all');
+
+    // -- Modal and loading states for map click --------------------------------
+    const [selectedModalServicio, setSelectedModalServicio] = useState<any>(null);
+    const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+    const [isLoadingServiceModal, setIsLoadingServiceModal] = useState(false);
 
     // -- Initial data load -----------------------------------------------------
     useEffect(() => {
@@ -306,7 +313,9 @@ export default function ServiciosPage() {
                 codigo: d.nombre || '',
                 nombre: d.nombre || '',
                 beneficiarios: Number(d.beneficiarios) || 0,
-                institucion: d.institucion?.descripcion || ''
+                institucion: d.institucion?.descripcion || '',
+                grupo_id: d.grupo_id,
+                nombre_grupo: d.grupo?.descripcion
             });
         });
         return Array.from(map.values());
@@ -382,6 +391,24 @@ export default function ServiciosPage() {
         ].filter(item => item.value > 0);
     }, [filteredData]);
 
+    const handleRegistroClick = async (registroId: number | string) => {
+        try {
+            setIsLoadingServiceModal(true);
+            const fullService = await getServicioCompletoById(Number(registroId));
+            if (fullService) {
+                setSelectedModalServicio(fullService);
+                setIsServiceModalOpen(true);
+            } else {
+                alert("No se pudieron cargar los detalles del servicio.");
+            }
+        } catch (error) {
+            console.error("Error fetching service details:", error);
+            alert("Ocurrió un error al cargar el servicio.");
+        } finally {
+            setIsLoadingServiceModal(false);
+        }
+    };
+
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-6 pb-12">
@@ -428,7 +455,7 @@ export default function ServiciosPage() {
             <ServiciosKPIs data={filteredData} />
 
             {/* Línea de Tiempo — receives filteredData so it also respects the fase filter */}
-            <div className="w-full">
+            <div className="w-full" id="servicios-timeline-section">
                 <ServiciosTimeline
                     data={filteredData}
                     options={timelineOptions}
@@ -437,7 +464,7 @@ export default function ServiciosPage() {
 
             {/* Mapa de Beneficiarios */}
             <div className="w-full">
-                <PeruMapBeneficiariosChart data={bubbleMapData} />
+                <PeruMapBeneficiariosChart data={bubbleMapData} onRegistroClick={handleRegistroClick} />
             </div>
 
             {/* Distribución por Institución */}
@@ -449,6 +476,34 @@ export default function ServiciosPage() {
             <div className="w-full">
                 <ServiciosDemografiaCharts sexoData={sexoData} edadesData={edadesData} />
             </div>
+
+            {/* Servicio Detail Modal */}
+            <ServicioModal 
+                isOpen={isServiceModalOpen}
+                onClose={() => {
+                    setIsServiceModalOpen(false);
+                    setSelectedModalServicio(null);
+                }}
+                onSave={async () => {}} // Read-only
+                servicio={selectedModalServicio}
+                options={timelineOptions}
+                isReadOnly={true}
+            />
+
+            {/* Premium Loading Spinner with blur backdrop */}
+            {isLoadingServiceModal && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-gray-950/40 backdrop-blur-sm transition-all duration-300">
+                    <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md px-6 py-5 rounded-2xl border border-gray-200/50 shadow-2xl flex flex-col items-center gap-3 animate-in zoom-in-95 duration-200">
+                        <div className="relative w-12 h-12">
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-100 dark:border-blue-900/30"></div>
+                            <div className="absolute inset-0 rounded-full border-4 border-t-blue-600 border-r-blue-600 animate-spin"></div>
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-widest animate-pulse">
+                            Cargando detalles...
+                        </span>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

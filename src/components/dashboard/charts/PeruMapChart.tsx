@@ -11,6 +11,8 @@ interface ProyectoBurbuja {
   nombre: string;
   contacto?: string;
   institucion?: string;
+  grupo_id?: number | string;
+  nombre_grupo?: string;
 }
 
 interface RegionBubble {
@@ -22,6 +24,7 @@ interface RegionBubble {
 
 interface PeruMapChartProps {
   data: RegionBubble[];
+  onProyectoClick?: (proyectoId: number) => void;
 }
 
 // ─── Regiones excluidas del mapa ─────────────────────────────────────────────
@@ -63,7 +66,7 @@ interface TooltipData {
   isMobile: boolean;
 }
 
-function MapTooltip({ data }: { data: TooltipData }) {
+function MapTooltip({ data, onProyectoClick, onMouseEnter, onMouseLeave }: { data: TooltipData; onProyectoClick?: (proyectoId: number) => void; onMouseEnter?: () => void; onMouseLeave?: () => void }) {
   const recent = [...data.proyectos].sort((a, b) => b.id - a.id);
 
   const isMobile = data.isMobile;
@@ -72,7 +75,9 @@ function MapTooltip({ data }: { data: TooltipData }) {
 
   return (
     <div
-      className={`fixed z-[100] transition-all duration-200 ease-out ${isMobile ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="fixed z-[100] transition-all duration-200 ease-out pointer-events-auto"
       style={{ 
         left: data.x, 
         top: data.y,
@@ -111,6 +116,25 @@ function MapTooltip({ data }: { data: TooltipData }) {
                         <span className="italic">{p.contacto}</span>
                     </p>
                 )}
+                {p.nombre_grupo && (
+                    <div className="text-[10px] sm:text-xs text-blue-300 font-bold mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="flex-shrink-0 text-blue-400">👥</span>
+                        {onProyectoClick ? (
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onProyectoClick(p.id);
+                                }}
+                                className="text-blue-400 hover:text-blue-300 underline decoration-dashed hover:decoration-solid underline-offset-2 transition-all duration-150 cursor-pointer font-bold text-left focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-0.5 bg-transparent border-0"
+                            >
+                                {p.nombre_grupo}
+                            </button>
+                        ) : (
+                            <span className="text-gray-300">{p.nombre_grupo}</span>
+                        )}
+                    </div>
+                )}
               </div>
             </div>
           ))}
@@ -122,7 +146,7 @@ function MapTooltip({ data }: { data: TooltipData }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function PeruMapChart({ data }: PeruMapChartProps) {
+export function PeruMapChart({ data, onProyectoClick }: PeruMapChartProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -149,8 +173,12 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
 
   const maxCount = useMemo(() => Math.max(...bubbles.map((b) => b.count), 1), [bubbles]);
 
+  const [hoveringTooltip, setHoveringTooltip] = useState(false);
+  const leaveTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent, region: RegionBubble) => {
+      if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
       const isMobile = window.innerWidth < 768;
       const isRightSide = e.clientX > window.innerWidth / 2;
       const isBottomSide = e.clientY > window.innerHeight - 350;
@@ -170,6 +198,25 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
   );
 
   const handleMouseLeave = useCallback(() => {
+    if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
+    leaveTimeout.current = setTimeout(() => {
+      setTooltip(prev => {
+        if (prev && !hoveringTooltip) {
+          setHoveredRegion(null);
+          return null;
+        }
+        return prev;
+      });
+    }, 150);
+  }, [hoveringTooltip]);
+
+  const handleTooltipMouseEnter = useCallback(() => {
+    if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
+    setHoveringTooltip(true);
+  }, []);
+
+  const handleTooltipMouseLeave = useCallback(() => {
+    setHoveringTooltip(false);
     setTooltip(null);
     setHoveredRegion(null);
   }, []);
@@ -357,7 +404,14 @@ export function PeruMapChart({ data }: PeruMapChartProps) {
       </div>
 
       {/* Tooltip */}
-      {tooltip && <MapTooltip data={tooltip} />}
+      {tooltip && (
+        <MapTooltip
+          data={tooltip}
+          onProyectoClick={onProyectoClick}
+          onMouseEnter={handleTooltipMouseEnter}
+          onMouseLeave={handleTooltipMouseLeave}
+        />
+      )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {

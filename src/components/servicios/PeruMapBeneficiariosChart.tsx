@@ -11,6 +11,8 @@ interface ProyectoBurbuja {
   nombre: string;
   beneficiarios: number;
   institucion: string;
+  grupo_id?: number | string;
+  nombre_grupo?: string;
 }
 
 interface RegionBubble {
@@ -22,6 +24,7 @@ interface RegionBubble {
 
 interface PeruMapBeneficiariosChartProps {
   data: RegionBubble[];
+  onRegistroClick?: (identificador: number | string) => void;
 }
 
 // ─── Regiones excluidas del mapa ─────────────────────────────────────────────
@@ -62,7 +65,19 @@ interface TooltipData {
   isMobile: boolean;
 }
 
-function MapTooltip({ data }: { data: TooltipData }) {
+function MapTooltip({ 
+  data, 
+  onRegistroClick, 
+  onMouseEnter, 
+  onMouseLeave 
+}: { 
+  data: TooltipData; 
+  onRegistroClick?: (identificador: number | string) => void; 
+  onMouseEnter?: () => void; 
+  onMouseLeave?: () => void 
+}) {
+  const [activeTab, setActiveTab] = useState<'instituciones' | 'registros'>('instituciones');
+
   // Agrupación por Institución
   const institutions = useMemo(() => {
     const map = new Map<string, number>();
@@ -85,18 +100,20 @@ function MapTooltip({ data }: { data: TooltipData }) {
 
   return (
     <div
-      className={`fixed z-[100] transition-all duration-200 ease-out ${isMobile ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      className="fixed z-[100] transition-all duration-200 ease-out pointer-events-auto"
       style={{ 
         left: data.x, 
         top: data.y,
         transform: `translate(${transformX}, ${transformY})`
       }}
     >
-      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-[1.5rem] sm:rounded-xl shadow-2xl border border-white/20 p-3 sm:p-5 w-screen max-w-[92vw] sm:w-[450px] text-xs ring-1 ring-black/5 flex flex-col max-h-[75vh] sm:max-h-none overflow-hidden">
+      <div className="bg-gray-900/95 backdrop-blur-md text-white rounded-[1.5rem] sm:rounded-2xl shadow-2xl border border-white/20 p-3 sm:p-4 w-screen max-w-[92vw] sm:w-[500px] text-xs ring-1 ring-black/5 flex flex-col max-h-[75vh] sm:max-h-[600px] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2 sm:mb-4 pb-2 sm:pb-4 border-b border-white/10 shrink-0">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/10 shrink-0">
           <div className="flex flex-col">
-            <span className="font-bold text-sm sm:text-lg text-blue-300">{data.regionName}</span>
+            <span className="font-bold text-sm sm:text-base text-blue-300">{data.regionName}</span>
             <span className="text-[8px] sm:text-[10px] text-gray-400 font-black uppercase tracking-widest">Participación: {data.participation}</span>
           </div>
           <div className="text-right">
@@ -106,29 +123,93 @@ function MapTooltip({ data }: { data: TooltipData }) {
           </div>
         </div>
 
-        {/* Institutions List */}
-        <div className="space-y-1.5 sm:space-y-2 pr-1 overflow-y-auto custom-scrollbar flex-1">
-          <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 sm:mb-2 flex items-center gap-2">
-            <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full"></span>
-            Detalle por Institución
-          </p>
-          {topInstitutions.map((inst, idx) => (
-            <div key={idx} className="flex justify-between items-center gap-3 sm:gap-4 py-1 sm:py-2 px-2 sm:px-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
-              <span className="text-[10px] sm:text-[11px] font-bold text-gray-200 truncate flex-1 uppercase">
-                {inst.name}
-              </span>
-              <span className="text-[10px] sm:text-[11px] font-black text-blue-300 tabular-nums whitespace-nowrap">
-                {inst.count.toLocaleString('es-PE')} <span className="text-[8px] font-medium text-gray-400 ml-0.5 sm:ml-1">BENEFS.</span>
-              </span>
-            </div>
-          ))}
-          
-          {remainingCount > 0 && (
-            <div className="pt-2 text-center border-t border-white/5 mt-2 shrink-0">
-              <p className="text-[9px] sm:text-[10px] text-gray-500 font-bold italic">
-                Y {remainingCount} instituciones más...
+        {/* Tab System */}
+        <div className="flex bg-white/5 p-1 rounded-xl mb-3 shrink-0 border border-white/5">
+          <button
+            onClick={() => setActiveTab('instituciones')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-bold transition-all duration-200 cursor-pointer ${activeTab === 'instituciones' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+          >
+            🏢 Instituciones
+          </button>
+          <button
+            onClick={() => setActiveTab('registros')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-bold transition-all duration-200 cursor-pointer ${activeTab === 'registros' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+          >
+            👥 Registros
+          </button>
+        </div>
+
+        {/* Content Container */}
+        <div className="space-y-2 pr-1 overflow-y-auto custom-scrollbar flex-1">
+          {activeTab === 'instituciones' ? (
+            <>
+              <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-2">
+                <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full"></span>
+                Detalle por Institución
               </p>
-            </div>
+              {topInstitutions.map((inst, idx) => (
+                <div key={idx} className="flex justify-between items-center gap-3 sm:gap-4 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-gray-200 truncate flex-1 uppercase">
+                    {inst.name}
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-black text-blue-300 tabular-nums whitespace-nowrap">
+                    {inst.count.toLocaleString('es-PE')} <span className="text-[8px] font-medium text-gray-400 ml-0.5 sm:ml-1">BENEFS.</span>
+                  </span>
+                </div>
+              ))}
+              
+              {remainingCount > 0 && (
+                <div className="pt-2 text-center border-t border-white/5 mt-2 shrink-0">
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-bold italic">
+                    Y {remainingCount} instituciones más...
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-[8px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 sm:mb-2 flex items-center gap-2">
+                <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 bg-blue-500 rounded-full"></span>
+                Detalle de Registros
+              </p>
+              {[...data.proyectos].sort((a, b) => b.beneficiarios - a.beneficiarios).map((p) => (
+                <div key={p.id} className="border-l-2 border-blue-500/30 pl-2.5 py-1.5 space-y-1 hover:bg-white/5 rounded-r-lg transition-colors pr-1">
+                  <div className="flex justify-between items-start gap-2">
+                    {onRegistroClick ? (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onRegistroClick(p.id);
+                        }}
+                        className="text-blue-400 hover:text-blue-300 text-[11px] sm:text-xs font-black underline decoration-dashed hover:decoration-solid underline-offset-2 transition-all duration-150 cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-0.5 bg-transparent border-0"
+                      >
+                        {p.nombre || p.codigo || `#${p.id}`}
+                      </button>
+                    ) : (
+                      <span className="text-[11px] sm:text-xs font-bold text-blue-100 truncate">
+                        {p.nombre || p.codigo || `#${p.id}`}
+                      </span>
+                    )}
+                    <span className="bg-blue-500/20 text-blue-300 border border-blue-500/25 px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-black shrink-0 whitespace-nowrap">
+                      {p.beneficiarios.toLocaleString('es-PE')} BENEFS.
+                    </span>
+                  </div>
+                  {p.institucion && (
+                    <p className="text-[10px] text-yellow-200 font-bold italic line-clamp-1 flex items-start gap-1">
+                      <span className="flex-shrink-0 mt-0.5">🏢</span>
+                      <span>{p.institucion}</span>
+                    </p>
+                  )}
+                  {p.nombre_grupo && (
+                    <div className="text-[10px] text-gray-400 font-semibold flex items-center gap-1.5 flex-wrap">
+                      <span className="flex-shrink-0 text-gray-500">👥</span>
+                      <span className="text-gray-300 font-bold">{p.nombre_grupo}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>
@@ -138,7 +219,7 @@ function MapTooltip({ data }: { data: TooltipData }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartProps) {
+export function PeruMapBeneficiariosChart({ data, onRegistroClick }: PeruMapBeneficiariosChartProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -166,8 +247,12 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
 
   const maxCount = useMemo(() => Math.max(...bubbles.map((b) => b.count), 1), [bubbles]);
 
+  const [hoveringTooltip, setHoveringTooltip] = useState(false);
+  const leaveTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent, region: RegionBubble) => {
+      if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
       const isMobile = window.innerWidth < 768;
       const isRightSide = e.clientX > window.innerWidth / 2;
       const isBottomSide = e.clientY > window.innerHeight - 350;
@@ -192,6 +277,25 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
   );
 
   const handleMouseLeave = useCallback(() => {
+    if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
+    leaveTimeout.current = setTimeout(() => {
+      setTooltip(prev => {
+        if (prev && !hoveringTooltip) {
+          setHoveredRegion(null);
+          return null;
+        }
+        return prev;
+      });
+    }, 150);
+  }, [hoveringTooltip]);
+
+  const handleTooltipMouseEnter = useCallback(() => {
+    if (leaveTimeout.current) clearTimeout(leaveTimeout.current);
+    setHoveringTooltip(true);
+  }, []);
+
+  const handleTooltipMouseLeave = useCallback(() => {
+    setHoveringTooltip(false);
     setTooltip(null);
     setHoveredRegion(null);
   }, []);
@@ -373,7 +477,14 @@ export function PeruMapBeneficiariosChart({ data }: PeruMapBeneficiariosChartPro
         </div>
       </div>
 
-      {tooltip && <MapTooltip data={tooltip} />}
+      {tooltip && (
+        <MapTooltip
+          data={tooltip}
+          onRegistroClick={onRegistroClick}
+          onMouseEnter={handleTooltipMouseEnter}
+          onMouseLeave={handleTooltipMouseLeave}
+        />
+      )}
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar {
