@@ -56,7 +56,7 @@ interface ChecklistItem {
     tipo: string;
 }
 
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 6;
 
 export default function GestionMonitoresView() {
     const router = useRouter();
@@ -262,10 +262,10 @@ export default function GestionMonitoresView() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full max-w-[1600px] mx-auto items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full max-w-[1600px] mx-auto items-stretch">
                 {/* Formulario de Creación */}
-                <div className="w-full lg:col-span-4">
-                    <form ref={formRef} onSubmit={handleSave} className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${editingPlanId ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
+                <div className="w-full lg:col-span-4 h-full">
+                    <form ref={formRef} onSubmit={handleSave} className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all h-full flex flex-col ${editingPlanId ? 'border-amber-300 ring-2 ring-amber-100' : 'border-slate-200'}`}>
                         <div className={`p-6 border-b ${editingPlanId ? 'bg-amber-50/50 border-amber-100' : 'bg-slate-50/50 border-slate-100'}`}>
                             <h2 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
                                 {editingPlanId ? <Pencil className="text-amber-600" size={16} /> : <Plus className="text-blue-600" size={16} />}
@@ -275,7 +275,7 @@ export default function GestionMonitoresView() {
                                 <p className="text-[10px] text-amber-600 mt-0.5 font-medium">Modifique los campos y presione Actualizar.</p>
                             )}
                         </div>
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 flex-1">
                             <div className="grid grid-cols-1 gap-5">
                                 <div className="relative">
                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Proyecto</label>
@@ -425,8 +425,8 @@ export default function GestionMonitoresView() {
                 </div>
 
                 {/* Lista de Planes */}
-                <div className="w-full lg:col-span-8">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="w-full lg:col-span-8 h-full">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <h2 className="font-bold text-slate-800 flex items-center gap-2">
                                 <ClipboardList className="text-blue-600" size={18} />
@@ -437,7 +437,7 @@ export default function GestionMonitoresView() {
                             </span>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto flex-1">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200">

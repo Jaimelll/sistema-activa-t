@@ -166,7 +166,15 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad;
         });
-        const dynamicFases = Array.from(new Set(dataForFases.map(d => d.fase).filter(Boolean))).sort();
+        const dynamicFases = Array.from(new Set(dataForFases.map(d => d.fase).filter(Boolean)))
+            .sort((a, b) => {
+                const indexA = fases.indexOf(a);
+                const indexB = fases.indexOf(b);
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
 
         // 5. Opciones de Modalidades (dependen de Año, Fase, Eje, Línea, Etapa)
         const dataForModalidades = dashboardData.filter(item => {
@@ -183,7 +191,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades };
-    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades]);
+    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades, fases]);
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
