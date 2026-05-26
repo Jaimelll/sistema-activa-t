@@ -755,8 +755,8 @@ export default function InfGerencialView({
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} tickFormatter={formatCompactCurrency} width={85} />
                                 <Tooltip shared={false} content={<CustomComparativeTooltip />} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                                <Bar dataKey="poi" name="Presupuesto" fill="#dc2626" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="poi" name="Presupuesto" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#dc2626" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     )}
@@ -784,8 +784,8 @@ export default function InfGerencialView({
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} tickFormatter={formatCompactCurrency} width={85} />
                                 <Tooltip shared={false} content={<CustomBudgetTooltip />} />
                                 <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                                <Bar dataKey="presupuesto" name="Presupuesto" fill="#dc2626" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="presupuesto" name="Presupuesto" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#dc2626" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
 
