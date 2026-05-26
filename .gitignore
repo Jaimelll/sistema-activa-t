@@ -42,3 +42,30 @@ next-env.d.ts
 
 env
 
+# datos de origen y respaldos (no en repo — usar Supabase)
+*.xlsx
+*.xlsm
+*.dump
+/data/
+/historial/
+/scratch/
+
+# salidas de scripts one-off
+*.log
+diagnostic_output*.txt
+import_result*.txt
+import_debug.*
+schema_check_output.txt
+db_check_output.txt
+discovery_output.txt
+inspect_output.txt
+excel_output*.json
+openapi_output.txt
+openapi_raw.json
+columns.json
+build_log.txt
+verify_output.txt
+migration_log*.txt
+migration_avance_log.txt
+import_base*_log.txt
+schema_final.txt

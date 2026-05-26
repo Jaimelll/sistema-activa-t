@@ -39,3 +39,36 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# git
+.git
+.gitignore
+.gitattributes
+
+# repo housekeeping (no necesarios en runtime)
+*.md
+*.xlsx
+*.xlsm
+*.dump
+*.sql
+/data/
+/historial/
+/scratch/
+/scripts/
+
+# salidas de scripts one-off (por si alguno se cuela)
+*.log
+diagnostic_output*.txt
+import_result*.txt
+import_debug.*
+schema_check_output.txt
+db_check_output.txt
+discovery_output.txt
+inspect_output.txt
+excel_output*.json
+openapi_output.txt
+openapi_raw.json
+columns.json
+build_log.txt
+verify_output.txt
+migration_log*.txt
