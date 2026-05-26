@@ -2,6 +2,7 @@
 // Force Update: 2026-04-14 MAP-BUBBLE-v2
 
 import { useState, useMemo, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { getDashboardStats, getTimelineData, getRegionData, getInstitucionData, getProyectoCompletoById } from './actions';
 import { FundingChart } from '@/components/dashboard/charts/FundingChart';
@@ -11,9 +12,26 @@ import { DollarSign, FileText, CheckCircle, TrendingUp, Filter, Users, LucideIco
 import Image from 'next/image';
 import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
-import { TimelineChart } from '@/components/dashboard/charts/TimelineChart';
-import { PeruMapChart } from '@/components/dashboard/charts/PeruMapChart';
 import ProyectoModal from '@/components/ProyectoModal';
+
+// ── Lazy load de componentes pesados ─────────────────────────────────────────
+// PeruMapChart (~540 líneas de SVG + lógica) y TimelineChart (~519 líneas con
+// recharts) se descargan como chunks separados, reduciendo el bundle inicial
+// del dashboard.
+const TimelineChart = dynamic(
+    () => import('@/components/dashboard/charts/TimelineChart').then(m => ({ default: m.TimelineChart })),
+    {
+        ssr: false,
+        loading: () => <div className="h-80 w-full bg-gray-50 animate-pulse rounded-lg" />,
+    }
+);
+const PeruMapChart = dynamic(
+    () => import('@/components/dashboard/charts/PeruMapChart').then(m => ({ default: m.PeruMapChart })),
+    {
+        ssr: false,
+        loading: () => <div className="h-96 w-full bg-gray-50 animate-pulse rounded-lg" />,
+    }
+);
 
 interface DashboardViewProps {
     initialData: any[];
