@@ -1,7 +1,17 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Helpers de caché para catálogos (líneas, ejes, etc.) — datos que rara vez
+// cambian. Revalidación: 1 hora + invalidación por tag.
+// Si modificas un catálogo desde un server action, llama:
+//     revalidateTag('catalogos');
+// y la próxima lectura traerá datos frescos.
+// ──────────────────────────────────────────────────────────────────────────────
+const CATALOG_REVALIDATE_SECONDS = 3600; // 1 hora
+const CATALOG_TAG = "catalogos";
 
 
 export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string }) {
@@ -382,218 +392,258 @@ export async function getProyectoCompletoById(id: string) {
   }
 }
 
-export async function getLineas() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const _getLineas = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data, error } = await supabase
-      .from('lineas')
-      .select('id, descripcion')
-      .order('id', { ascending: true });
+      const { data, error } = await supabase
+        .from('lineas')
+        .select('id, descripcion')
+        .order('id', { ascending: true });
 
-    if (error) {
-      console.error("Error fetching lines:", error);
-      return [];
-    }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: `L${item.id} - ${item.descripcion}`
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getLineas:", err);
-    return [];
-  }
-}
-
-export async function getEjes() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('ejes')
-      .select('id, descripcion')
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching ejes:", error);
-      return [];
-    }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: `${item.id} - ${item.descripcion}`
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getEjes:", err);
-    return [];
-  }
-}
-
-export async function getModalidades() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('modalidades')
-      .select('id, descripcion')
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching modalidades:", error);
-      return [];
-    }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: `${item.id} - ${item.descripcion}`
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getModalidades:", err);
-    return [];
-  }
-}
-
-export async function getEspecialistas() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('especialistas')
-      .select('id, nombre')
-      .order('nombre', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching especialistas:", error);
-      return [];
-    }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: item.nombre
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getEspecialistas:", err);
-    return [];
-  }
-}
-
-export async function fetchDynamicYears() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('proyectos')
-      .select('año');
-
-    if (error) {
-      console.error("Error fetching years:", error);
-      return [];
-    }
-
-    const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año))))
-      .filter(y => !isNaN(y) && y > 0)
-      .sort((a, b) => b - a);
-
-    return uniqueYears;
-  } catch (err) {
-    console.error("FATAL ERROR fetchDynamicYears:", err);
-    return [];
-  }
-}
-
-export async function getEtapas() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('etapas')
-      .select('id, descripcion')
-      .not('descripcion', 'ilike', 'no habilitada')
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching stages:", error);
-      return [];
-    }
-
-    if (!data) return [];
-    // Mantener el orden del .order('id') eliminando duplicados si los hubiera
-    const uniqueDescriptions: string[] = [];
-    const seen = new Set();
-    data.forEach((d: any) => {
-      if (d.descripcion && !seen.has(d.descripcion)) {
-        seen.add(d.descripcion);
-        uniqueDescriptions.push(d.descripcion);
+      if (error) {
+        console.error("Error fetching lines:", error);
+        return [];
       }
-    });
-    return uniqueDescriptions;
-  } catch (err) {
-    console.error("FATAL ERROR getEtapas:", err);
-    return [];
-  }
-}
 
-export async function getEtapasList() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('etapas')
-      .select('id, descripcion')
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching etapas list:", error);
+      return data.map((item: any) => ({
+        value: item.id,
+        label: `L${item.id} - ${item.descripcion}`
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getLineas:", err);
       return [];
     }
+  },
+  ['catalog:lineas'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getLineas() { return _getLineas(); }
 
-    return data.map((item: any) => ({
-      value: item.id,
-      label: item.descripcion
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getEtapasList:", err);
-    return [];
-  }
-}
+const _getEjes = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export async function getFasesOptions() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data, error } = await supabase
+        .from('ejes')
+        .select('id, descripcion')
+        .order('id', { ascending: true });
 
-    const { data, error } = await supabase
-      .from('etapas')
-      .select('id, fase')
-      .order('id', { ascending: true });
+      if (error) {
+        console.error("Error fetching ejes:", error);
+        return [];
+      }
 
-    if (error) {
-      console.error("Error fetching fases list unique:", error);
+      return data.map((item: any) => ({
+        value: item.id,
+        label: `${item.id} - ${item.descripcion}`
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getEjes:", err);
       return [];
     }
+  },
+  ['catalog:ejes'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getEjes() { return _getEjes(); }
 
-    return [...new Set(data.map((item: any) => item.fase))].filter(Boolean) as string[];
-  } catch (err) {
-    console.error("FATAL ERROR getFasesOptions:", err);
-    return [];
-  }
-}
+const _getModalidades = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('modalidades')
+        .select('id, descripcion')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching modalidades:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        value: item.id,
+        label: `${item.id} - ${item.descripcion}`
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getModalidades:", err);
+      return [];
+    }
+  },
+  ['catalog:modalidades'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getModalidades() { return _getModalidades(); }
+
+const _getEspecialistas = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('especialistas')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching especialistas:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        value: item.id,
+        label: item.nombre
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getEspecialistas:", err);
+      return [];
+    }
+  },
+  ['catalog:especialistas'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getEspecialistas() { return _getEspecialistas(); }
+
+const _fetchDynamicYears = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('proyectos')
+        .select('año');
+
+      if (error) {
+        console.error("Error fetching years:", error);
+        return [];
+      }
+
+      const uniqueYears = Array.from(new Set((data as any[]).map(d => Number(d.año))))
+        .filter(y => !isNaN(y) && y > 0)
+        .sort((a, b) => b - a);
+
+      return uniqueYears;
+    } catch (err) {
+      console.error("FATAL ERROR fetchDynamicYears:", err);
+      return [];
+    }
+  },
+  ['catalog:years'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function fetchDynamicYears() { return _fetchDynamicYears(); }
+
+const _getEtapas = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('etapas')
+        .select('id, descripcion')
+        .not('descripcion', 'ilike', 'no habilitada')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching stages:", error);
+        return [];
+      }
+
+      if (!data) return [];
+      // Mantener el orden del .order('id') eliminando duplicados si los hubiera
+      const uniqueDescriptions: string[] = [];
+      const seen = new Set();
+      data.forEach((d: any) => {
+        if (d.descripcion && !seen.has(d.descripcion)) {
+          seen.add(d.descripcion);
+          uniqueDescriptions.push(d.descripcion);
+        }
+      });
+      return uniqueDescriptions;
+    } catch (err) {
+      console.error("FATAL ERROR getEtapas:", err);
+      return [];
+    }
+  },
+  ['catalog:etapas'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getEtapas() { return _getEtapas(); }
+
+const _getEtapasList = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('etapas')
+        .select('id, descripcion')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching etapas list:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        value: item.id,
+        label: item.descripcion
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getEtapasList:", err);
+      return [];
+    }
+  },
+  ['catalog:etapas-list'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getEtapasList() { return _getEtapasList(); }
+
+const _getFasesOptions = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('etapas')
+        .select('id, fase')
+        .order('id', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching fases list unique:", error);
+        return [];
+      }
+
+      return [...new Set(data.map((item: any) => item.fase))].filter(Boolean) as string[];
+    } catch (err) {
+      console.error("FATAL ERROR getFasesOptions:", err);
+      return [];
+    }
+  },
+  ['catalog:fases'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getFasesOptions() { return _getFasesOptions(); }
 
 
 // --- TIMELINE ACTIONS ---
@@ -745,6 +795,7 @@ export async function createProyecto(formData: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
+  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
   return data;
 }
 
@@ -765,6 +816,7 @@ export async function updateProyecto(id: any, formData: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
+  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
   return data;
 }
 
@@ -784,60 +836,71 @@ export async function deleteProyecto(id: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
+  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
   return { success: true };
 }
 
-export async function getInstituciones() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const _getInstituciones = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data, error } = await supabase
-      .from('instituciones_ejecutoras')
-      .select('id, nombre')
-      .order('nombre', { ascending: true });
+      const { data, error } = await supabase
+        .from('instituciones_ejecutoras')
+        .select('id, nombre')
+        .order('nombre', { ascending: true });
 
-    if (error) {
-      console.error("Error fetching instituciones:", error);
+      if (error) {
+        console.error("Error fetching instituciones:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        value: item.id,
+        label: item.nombre
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getInstituciones:", err);
       return [];
     }
+  },
+  ['catalog:instituciones'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getInstituciones() { return _getInstituciones(); }
 
-    return data.map((item: any) => ({
-      value: item.id,
-      label: item.nombre
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getInstituciones:", err);
-    return [];
-  }
-}
+const _getRegiones = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export async function getRegiones() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data, error } = await supabase
+        .from('regiones')
+        .select('id, descripcion')
+        .order('descripcion', { ascending: true });
 
-    const { data, error } = await supabase
-      .from('regiones')
-      .select('id, descripcion')
-      .order('descripcion', { ascending: true });
+      if (error) {
+        console.error("Error fetching regiones:", error);
+        return [];
+      }
 
-    if (error) {
-      console.error("Error fetching regiones:", error);
+      return data.map((item: any) => ({
+        value: item.id,
+        label: item.descripcion
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getRegiones:", err);
       return [];
     }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: item.descripcion
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getRegiones:", err);
-    return [];
-  }
-}
+  },
+  ['catalog:regiones'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getRegiones() { return _getRegiones(); }
 
 // --- AVANCE PROYECTO ACTIONS ---
 
@@ -964,29 +1027,34 @@ export async function deleteAvanceProyecto(id: any, proyectoId: any) {
   return { success: true };
 }
 
-export async function getGruposProyectos() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const _getGruposProyectos = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data, error } = await supabase
-      .from('grupo')
-      .select('id, descripcion, orden, proyectos!inner(id)')
-      .eq('tipo', 2)
-      .order('orden', { ascending: true });
+      const { data, error } = await supabase
+        .from('grupo')
+        .select('id, descripcion, orden, proyectos!inner(id)')
+        .eq('tipo', 2)
+        .order('orden', { ascending: true });
 
-    if (error) {
-      console.error("Error fetching grupos proyectos:", error);
+      if (error) {
+        console.error("Error fetching grupos proyectos:", error);
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        value: item.id,
+        label: `${item.orden} - ${item.descripcion}`
+      }));
+    } catch (err) {
+      console.error("FATAL ERROR getGruposProyectos:", err);
       return [];
     }
-
-    return data.map((item: any) => ({
-      value: item.id,
-      label: `${item.orden} - ${item.descripcion}`
-    }));
-  } catch (err) {
-    console.error("FATAL ERROR getGruposProyectos:", err);
-    return [];
-  }
-}
+  },
+  ['catalog:grupos'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] }
+);
+export async function getGruposProyectos() { return _getGruposProyectos(); }
