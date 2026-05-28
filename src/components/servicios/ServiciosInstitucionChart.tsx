@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList
 } from 'recharts';
@@ -48,6 +48,16 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartProps) {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const mql = window.matchMedia('(max-width: 768px)');
+        const update = () => setIsMobile(mql.matches);
+        update();
+        mql.addEventListener('change', update);
+        return () => mql.removeEventListener('change', update);
+    }, []);
+
     const chartData = useMemo(() => {
         return data.map(item => {
             const average = item.beneficiaries > 0 ? item.budget / item.beneficiaries : 0;
@@ -58,59 +68,68 @@ export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartPro
 
             return {
                 ...item,
-                fullLabel: `${item.beneficiaries.toLocaleString('es-PE')} - Prom. S/ ${formattedAverage}`
+                fullLabel: `${item.beneficiaries.toLocaleString('es-PE')} - Prom. S/ ${formattedAverage}`,
+                shortLabel: `${item.beneficiaries.toLocaleString('es-PE')}`,
             };
         });
     }, [data]);
 
+    const yAxisWidth = isMobile ? 110 : 180;
+    const rightMargin = isMobile ? 90 : 250;
+    const leftMargin = isMobile ? 8 : 40;
+    const tickFontSize = isMobile ? 9 : 11;
+    const labelFontSize = isMobile ? 9 : 11;
+    const barSize = isMobile ? 16 : 24;
+    const tickTruncate = isMobile ? 14 : 25;
+
     return (
-        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-            <div className="mb-8 text-center relative">
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight uppercase italic">
+        <div className="bg-white p-4 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+            <div className="mb-6 md:mb-8 text-center relative">
+                <h3 className="text-lg md:text-2xl font-black text-slate-900 tracking-tight uppercase italic">
                     Distribución por Instituto
                 </h3>
             </div>
-            
-            <div className="h-[500px] w-full">
+
+            <div className="h-[420px] md:h-[500px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={chartData}
                         layout="vertical"
-                        margin={{ top: 5, right: 250, left: 40, bottom: 5 }}
+                        margin={{ top: 5, right: rightMargin, left: leftMargin, bottom: 5 }}
                     >
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                         <XAxis type="number" hide />
-                        <YAxis 
-                            dataKey="name" 
-                            type="category" 
-                            axisLine={false} 
-                            tickLine={false} 
-                            tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} 
-                            width={180} 
-                            tickFormatter={(val) => val.length > 25 ? `${val.substring(0, 25)}...` : val}
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#1e293b', fontWeight: '600', fontSize: tickFontSize }}
+                            width={yAxisWidth}
+                            tickFormatter={(val) => val.length > tickTruncate ? `${val.substring(0, tickTruncate)}...` : val}
                         />
                         <Tooltip content={<CustomTooltip />} />
-                        <Bar 
-                            dataKey="beneficiaries" 
-                            name="Beneficiarios" 
-                            fill="#2563eb" 
-                            radius={[0, 6, 6, 0]} 
-                            barSize={24} 
+                        <Bar
+                            dataKey="beneficiaries"
+                            name="Beneficiarios"
+                            fill="#2563eb"
+                            radius={[0, 6, 6, 0]}
+                            barSize={barSize}
                             animationDuration={1000}
                         >
-                            <LabelList 
-                                dataKey="fullLabel" 
-                                position="right" 
+                            <LabelList
+                                dataKey={isMobile ? "shortLabel" : "fullLabel"}
+                                position="right"
                                 content={(props: any) => {
                                     const { x, y, width, height, value } = props;
                                     return (
-                                        <text 
-                                            x={x + width} 
-                                            y={y + height / 2} 
-                                            dx={10}
+                                        <text
+                                            x={x + width}
+                                            y={y + height / 2}
+                                            dx={6}
                                             dy={4}
-                                            fill="#1e293b" 
-                                            fontSize={11} 
+                                            fill="#1e293b"
+                                            fontSize={labelFontSize}
                                             fontWeight={700}
                                             textAnchor="start"
                                         >
