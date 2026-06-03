@@ -184,7 +184,7 @@ export default function ServiciosPage() {
                     linea:linea_id(descripcion),
                     etapa:etapa_id(descripcion),
                     condicion:condicion_id(descripcion),
-                    avances:avance_beca(fecha, etapa_id),
+                    avances:avance_beca(id, fecha, etapa_id, sustento, monto),
                     grupo:grupo_id(descripcion, orden)
                 `)
                 .order('id', { ascending: true });

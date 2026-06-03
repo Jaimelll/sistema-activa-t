@@ -1,0 +1,42 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Columna `monto` en avance_beca (Gestión de Servicios)
+-- Ejecutar en Supabase Studio → SQL Editor → New query → paste → Run
+--
+-- Replica el comportamiento de avance_proyecto.monto: cada avance del historial
+-- guarda su propio monto, y becas_nueva.avance se recalcula como la SUMA de
+-- todos los montos del historial (ver recalculateBecaAvance en
+-- src/app/dashboard/gestion-servicios/actions.ts).
+--
+-- Idempotente: seguro de correr aunque la columna ya exista.
+-- Reversible: ALTER TABLE avance_beca DROP COLUMN monto;
+-- ─────────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE avance_beca
+  ADD COLUMN IF NOT EXISTS monto numeric NOT NULL DEFAULT 0;
+
+-- ⚠ OPCIONAL — Re-sincronizar totales históricos.
+--
+-- Con el enfoque incremental anterior, becas_nueva.avance acumulaba montos que
+-- NO quedaron registrados en avance_beca (la columna no existía). Tras agregar
+-- la columna, esos avances históricos valen monto=0, por lo que el PRÓXIMO
+-- recálculo de cada beca (al agregar/editar/eliminar un avance) sobrescribirá su
+-- avance acumulado con la suma del historial (= 0 para los avances viejos).
+--
+-- Si necesitas conservar los totales históricos ya cargados, decide una de estas
+-- opciones ANTES de editar avances en producción:
+--   a) Volcar el avance acumulado al avance más reciente de cada beca, para que
+--      la suma siga dando el mismo total (descomenta el bloque de abajo), o
+--   b) Re-ingresar los montos manualmente en cada avance del historial.
+--
+-- Opción (a): asigna el avance acumulado actual al último avance de cada beca.
+-- UPDATE avance_beca ab
+-- SET monto = bn.avance
+-- FROM becas_nueva bn
+-- WHERE ab.beca_id = bn.id
+--   AND bn.avance > 0
+--   AND ab.id = (
+--     SELECT id FROM avance_beca
+--     WHERE beca_id = bn.id
+--     ORDER BY fecha DESC, id DESC
+--     LIMIT 1
+--   );
