@@ -158,11 +158,10 @@ export async function deleteServicio(id: any) {
 }
 
 async function recalculateBecaAvance(becaId: any, supabase: any) {
-  // Safe date calculation for America/Lima (UTC-5)
-  const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const peruTime = new Date(utc - (5 * 3600000));
-  const today = peruTime.toISOString().split('T')[0];
+  // Los avances se guardan con new Date().toISOString() (UTC) desde el modal, así que el
+  // filtro "hasta hoy" debe usar la MISMA referencia UTC. Antes se calculaba en hora Perú
+  // (UTC-5), lo que de noche dejaba "hoy" un día atrás y excluía el avance recién creado.
+  const today = new Date().toISOString().split('T')[0];
 
   console.log(`[DEBUG] Recalculating stage for Beca ${becaId} as of ${today}`);
 
@@ -185,22 +184,26 @@ async function recalculateBecaAvance(becaId: any, supabase: any) {
     const latestAvance = allAvances[0];
     const newEtapaId = latestAvance.etapa_id;
 
-    // 5. Asigna como sustento el texto del avance más reciente. Si está vacío, busca hacia atrás.
-    const sustentoFinal = allAvances.find((av: any) => av.sustento && av.sustento.trim() !== '')?.sustento || '';
-
-    // 6. Calculamos el avance financiero total (solo de avances reales <= hoy)
+    // 5. Calculamos el avance financiero total (solo de avances reales <= hoy)
     const totalAvanceFinanciero = allAvances.reduce((sum: number, item: any) => sum + (Number(item.monto) || 0), 0);
 
-    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${newEtapaId}`);
+    console.log(`[DEBUG] Updating Beca ${becaId} to Stage ${newEtapaId} | avance=${totalAvanceFinanciero}`);
 
-    await supabase
+    // OJO: becas_nueva NO tiene columna 'sustento' (a diferencia de proyectos). Incluirla hacía
+    // que el UPDATE entero fallara con PGRST204 y, al no haber manejo de error, el avance nunca
+    // se actualizaba (fallaba en silencio). El sustento ya queda guardado por avance en avance_beca.
+    const { error: updateError } = await supabase
       .from('becas_nueva')
       .update({
         etapa_id: newEtapaId,
-        sustento: sustentoFinal,
         avance: totalAvanceFinanciero
       })
       .eq('id', becaId);
+
+    if (updateError) {
+      console.error('[recalc] Error al actualizar becas_nueva:', updateError);
+      throw new Error(updateError.message);
+    }
   } else {
     console.log(`[DEBUG] No valid advance found for Beca ${becaId}. Stage remains unchanged.`);
   }

@@ -12,6 +12,7 @@ interface ServicioModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: any) => Promise<void>;
+    onDataChange?: () => void;
     servicio?: any;
     options: {
         lineas: any[];
@@ -29,7 +30,7 @@ interface ServicioModalProps {
     isReadOnly?: boolean;
 }
 
-export default function ServicioModal({ isOpen, onClose, onSave, servicio, options, isReadOnly = false }: ServicioModalProps) {
+export default function ServicioModal({ isOpen, onClose, onSave, onDataChange, servicio, options, isReadOnly = false }: ServicioModalProps) {
     const [formData, setFormData] = useState<any>({
         nombre: "",
         documento: "",
@@ -234,7 +235,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
                 sustento: "",
                 monto: 0
             });
-            onClose(); 
+            onDataChange?.(); // refresca la tabla con el avance total recalculado
+            onClose();
         } catch (error: any) {
             console.error("Error adding avance:", error);
             setErrorMsg(error.message || "Error al registrar avance");
@@ -256,7 +258,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             });
             alert("Avance actualizado correctamente");
             setEditingAvance(null);
-            onClose(); 
+            onDataChange?.(); // refresca la tabla con el avance total recalculado
+            onClose();
         } catch (error: any) {
             console.error("Error updating avance:", error);
             setErrorMsg(error.message || "Error al actualizar avance");
@@ -272,7 +275,8 @@ export default function ServicioModal({ isOpen, onClose, onSave, servicio, optio
             setIsSubmitting(true);
             await deleteAvanceServicio(avanceId, servicio.id);
             alert("Avance eliminado correctamente");
-            onClose(); 
+            onDataChange?.(); // refresca la tabla con el avance total recalculado
+            onClose();
         } catch (error: any) {
             console.error("Error deleting avance:", error);
             setErrorMsg(error.message || "Error al eliminar avance");

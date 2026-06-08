@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { 
+import { useRouter } from 'next/navigation';
+import {
   Edit, 
   Trash2, 
   Download, 
@@ -42,6 +43,8 @@ export default function GestionServiciosTable({
   formatos,
   empresas
 }: GestionServiciosTableProps) {
+  const router = useRouter();
+
   // Filters State
   const [selectedEtapa, setSelectedEtapa] = useState('all');
   const [selectedEje, setSelectedEje] = useState('all');
@@ -132,6 +135,7 @@ export default function GestionServiciosTable({
     if (window.confirm(`¿Está seguro de eliminar el servicio "${name}"? Esta acción no se puede deshacer.`)) {
       try {
         await deleteServicio(id);
+        router.refresh(); // refresca la tabla con datos frescos del servidor
       } catch (error) {
         console.error('Error al eliminar:', error);
         alert('Error al eliminar el servicio.');
@@ -151,6 +155,7 @@ export default function GestionServiciosTable({
             throw new Error(res.error || "Error al crear el servicio en la base de datos.");
         }
     }
+    router.refresh(); // refresca la tabla con datos frescos del servidor
   };
 
   const calcularEdad = (fechaNac: string) => {
@@ -393,9 +398,10 @@ export default function GestionServiciosTable({
         </div>
       </div>
 
-      <ServicioModal 
+      <ServicioModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onDataChange={() => router.refresh()}
         onSave={handleSave}
         servicio={selectedServicio}
         options={{
