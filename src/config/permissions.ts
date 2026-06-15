@@ -12,7 +12,7 @@ export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
     'pricra@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Gestión de Aportantes'],
     'herique@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores'],
     'arojas@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
-    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Supervisión'],
+    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Supervisión', 'Gestión de Proyectos', 'Gestión de Servicios'],
     'jleclere@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
     'jbozzo@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
     'emoya@fondoempleo.com.pe': ['Servicios', 'Gestión de Servicios'],
