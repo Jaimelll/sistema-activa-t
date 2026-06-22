@@ -1036,7 +1036,7 @@ const _getGruposProyectos = unstable_cache(
 
       const { data, error } = await supabase
         .from('grupo')
-        .select('id, descripcion, orden, proyectos!inner(id)')
+        .select('id, descripcion, orden')
         .eq('tipo', 2)
         .order('orden', { ascending: true });
 
