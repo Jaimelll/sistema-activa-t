@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+build_pptx/
 /.pnp
 .pnp.*
 .yarn/*

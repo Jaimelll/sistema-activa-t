@@ -123,7 +123,7 @@ const CustomComparativeTooltip = ({ active, payload, label }: any) => {
 
         return (
             <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[220px]">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{title} {label}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{title} {data.año}</p>
                 <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(total)}</p>
                 <div className="space-y-1 pt-1">
                     {Object.entries(breakdown).sort((a: any, b: any) => (b[1] as number) - (a[1] as number)).map(([key, value]) => (
