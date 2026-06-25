@@ -212,7 +212,7 @@ export default function ServiciosPage() {
 
     // -- Cascading Filtering Logic (Smart Selection) ---------------------------
     const availableFilterOptions = useMemo(() => {
-        if (data.length === 0) return filterOptions;
+        if (data.length === 0) return { ...filterOptions, fases };
 
         // Helper to get matching data for all filters EXCEPT the one we are calculating
         const getFilteredSubset = (excludeKey: string) => {

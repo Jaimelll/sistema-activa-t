@@ -1,13 +1,13 @@
 "use client";
 
-import { LayoutDashboard, FolderOpen, Users, LogOut, Menu, ClipboardCheck, BookOpen } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Users, LogOut, Menu, ClipboardCheck, BookOpen, Database } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 
 import { createClient } from '@/utils/supabase/client';
-import { getModulosVisibles } from '@/config/permissions';
+import { getModulosVisibles, getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
 
 export function Sidebar() {
     const pathname = usePathname();
@@ -30,7 +30,7 @@ export function Sidebar() {
         getUser();
     }, [supabase.auth]);
 
-    const allMenuItems = [
+    const allMenuItems: { name: string; icon: typeof LayoutDashboard; href: string; superAdminOnly?: boolean }[] = [
         { name: 'Inf. Gerencial', icon: LayoutDashboard, href: '/dashboard/inf-gerencial' },
         { name: 'Proyectos', icon: LayoutDashboard, href: '/dashboard' },
         { name: 'Servicios', icon: FolderOpen, href: '/dashboard/servicios' },
@@ -41,15 +41,20 @@ export function Sidebar() {
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
         { name: 'Gestión de Servicios', icon: BookOpen, href: '/dashboard/gestion-servicios' },
         { name: 'Gestión de Aportantes', icon: Users, href: '/dashboard/gestion-aportantes' },
+        { name: 'Catálogos', icon: Database, href: '/dashboard/catalogos', superAdminOnly: true },
     ];
 
     // Filtrar los items visibles según los módulos permitidos del usuario
     const getMenuItems = (email: string | null | undefined) => {
+        const esSuperAdmin = getNormalizedEmail(email) === SUPER_ADMIN;
+        // Items marcados superAdminOnly solo se muestran al super admin.
+        const visibles = allMenuItems.filter(item => !item.superAdminOnly || esSuperAdmin);
+
         const modulosVisibles = getModulosVisibles(email);
-        if (modulosVisibles === 'ALL') return allMenuItems;
-        
+        if (modulosVisibles === 'ALL') return visibles;
+
         // Comparación robusta para evitar problemas de espacios o acentos
-        return allMenuItems.filter(item => 
+        return visibles.filter(item =>
             modulosVisibles.some(m => m.trim().toLowerCase() === item.name.trim().toLowerCase())
         );
     };

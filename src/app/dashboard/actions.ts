@@ -795,7 +795,7 @@ export async function createProyecto(formData: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
-  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
+  revalidateTag(CATALOG_TAG, 'max'); // años, grupos podrían haber cambiado (Next 16 exige el 2º arg; 'max' preserva el comportamiento previo)
   return data;
 }
 
@@ -816,7 +816,7 @@ export async function updateProyecto(id: any, formData: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
-  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
+  revalidateTag(CATALOG_TAG, 'max'); // años, grupos podrían haber cambiado (Next 16 exige el 2º arg; 'max' preserva el comportamiento previo)
   return data;
 }
 
@@ -836,7 +836,7 @@ export async function deleteProyecto(id: any) {
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
-  revalidateTag(CATALOG_TAG); // años, grupos podrían haber cambiado
+  revalidateTag(CATALOG_TAG, 'max'); // años, grupos podrían haber cambiado (Next 16 exige el 2º arg; 'max' preserva el comportamiento previo)
   return { success: true };
 }
 

@@ -31,6 +31,7 @@ export const RUTA_POR_MODULO: Record<string, string> = {
     'Gestión de Proyectos': '/dashboard/gestion-proyectos',
     'Gestión de Servicios': '/dashboard/gestion-servicios',
     'Gestión de Aportantes': '/dashboard/gestion-aportantes',
+    'Catálogos': '/dashboard/catalogos', // solo super admin (ver Sidebar y guardas de página)
 };
 
 // Rutas que siempre están permitidas sin importar el perfil
