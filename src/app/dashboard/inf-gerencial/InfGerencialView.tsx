@@ -285,9 +285,10 @@ export default function InfGerencialView({
         return allYears.filter(y => y >= 2024);
     }, [initialData]);
 
-    const yearRange = last5Years.length > 0
-        ? `${last5Years[0]} - ${last5Years[last5Years.length - 1]}`
+    const yearRange3Y = last3Years.length > 0
+        ? `${last3Years[0]} - ${last3Years[last3Years.length - 1]}`
         : '';
+    const latestYear = last3Years.length > 0 ? last3Years[last3Years.length - 1] : null;
 
     const baseData = useMemo(() => {
         return initialData.filter(d => {
@@ -311,15 +312,6 @@ export default function InfGerencialView({
         const names = Array.from(new Set(baseData.map(d => d.razon_social)));
         return names.filter(n => n.toLowerCase().includes(term)).slice(0, 8);
     }, [baseData, searchTerm]);
-
-    const top20Companies = useMemo(() => {
-        const totals = new Map<string, number>();
-        baseData.forEach(d => totals.set(d.razon_social, (totals.get(d.razon_social) || 0) + d.monto));
-        return Array.from(totals.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 20)
-            .map(e => e[0]);
-    }, [baseData]);
 
     const top20CompaniesPerYear = useMemo(() => {
         const result: Record<number, { name: string, monto: number }[]> = {};
@@ -371,9 +363,9 @@ export default function InfGerencialView({
             .slice(0, 8);
     }, [baseData3Y]);
 
-    const totalLast5 = useMemo(() => baseData.reduce((s, d) => s + d.monto, 0), [baseData]);
-    const topCompanyName = top20Companies[0] || 'N/A';
-    const totalEmpresas = useMemo(() => new Set(baseData.map(d => d.ruc)).size, [baseData]);
+    const total3Y = useMemo(() => baseData3Y.reduce((s, d) => s + d.monto, 0), [baseData3Y]);
+    const totalEmpresas3Y = useMemo(() => new Set(baseData3Y.map(d => d.ruc)).size, [baseData3Y]);
+    const topCompany2026 = latestYear ? (top20CompaniesPerYear[latestYear]?.[0]?.name || 'N/A') : 'N/A';
 
     const fmt = (v: number) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
     const fmtM = (v: number) => `${(v / 1000000).toFixed(0)}M`;
@@ -441,7 +433,7 @@ export default function InfGerencialView({
             {/* Evolución de Aportes vs PBI Line Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026) vs PBI (1998-2025)</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026)</h3>
                     <p className="text-sm font-semibold text-slate-500 mt-1">Aportes 2026: Información actualizada a la fecha</p>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-aportes" />
@@ -452,10 +444,6 @@ export default function InfGerencialView({
                         <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
                         <span className="text-sm font-bold text-slate-600">Aportes Totales (S/)</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
-                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%)</span>
-                    </div>
                 </div>
                 <div className="w-full overflow-x-auto pb-4">
                     <div className="min-w-[800px] h-[400px]">
@@ -464,13 +452,11 @@ export default function InfGerencialView({
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} />
                                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={fmtM} width={85} />
-                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => v === 0 ? '' : `${v}%`} />
-                                <Tooltip 
+                                <Tooltip
                                     contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
-                                    formatter={(value: any, name: string) => name === 'pbi' ? (value != null ? [`${value}%`, 'Crecimiento PBI'] : null) : [formatCurrency(value), 'Aportes Totales']}
+                                    formatter={(value: any) => [formatCurrency(value), 'Aportes Totales']}
                                 />
                                 <Line yAxisId="left" type="monotone" dataKey="total" name="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 4, fill: '#fff' }} activeDot={{ r: 8 }} />
-                                <Line yAxisId="right" type="monotone" dataKey="pbi" name="pbi" stroke="#dc2626" strokeWidth={2} dot={{ r: 3, fill: '#fff', stroke: '#dc2626' }} activeDot={{ r: 6 }} connectNulls />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
@@ -480,16 +466,16 @@ export default function InfGerencialView({
             {/* KPI Cards (Moved here, below Aportes vs PBI chart) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-blue-400/20">
-                    <span className="text-blue-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Total Aportado ({yearRange})</span>
-                    <span className="text-lg lg:text-xl font-black tracking-tighter">{fmt(totalLast5)}</span>
+                    <span className="text-blue-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Total Aportado ({yearRange3Y})</span>
+                    <span className="text-lg lg:text-xl font-black tracking-tighter">{fmt(total3Y)}</span>
                 </div>
                 <div className="bg-gradient-to-br from-teal-500 to-teal-700 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-teal-400/20">
-                    <span className="text-teal-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Principal Aportante (2021 - 2026)</span>
-                    <span className="text-md lg:text-lg font-black tracking-tight uppercase truncate">{topCompanyName}</span>
+                    <span className="text-teal-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Principal Aportante ({latestYear})</span>
+                    <span className="text-md lg:text-lg font-black tracking-tight uppercase truncate">{topCompany2026}</span>
                 </div>
                 <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-4 rounded-2xl shadow-md flex flex-col justify-center text-white border border-violet-400/20">
-                    <span className="text-violet-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Empresas Activas (2021 - 2026)</span>
-                    <span className="text-lg lg:text-xl font-black tracking-tighter">{totalEmpresas}</span>
+                    <span className="text-violet-100 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Empresas Activas ({yearRange3Y})</span>
+                    <span className="text-lg lg:text-xl font-black tracking-tighter">{totalEmpresas3Y}</span>
                 </div>
             </div>
 
