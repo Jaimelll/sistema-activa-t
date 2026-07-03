@@ -31,6 +31,22 @@ const STAGE_PALETTE = [
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const MARGIN_DAYS = 30;
 
+// Resuelve la fila (fusionada) y el año usado para ordenar cronológicamente.
+// Mismos nombres/agrupaciones que el gráfico de barras de Inf. Gerencial:
+// "Beca Trabajadores" (grupos 1 y 2) se junta en una sola fila 2024, y
+// MiBeca (grupo 6) se etiqueta como 2021 aunque tenga becas de otros períodos.
+function resolverGrupoDisplay(grupoId: number, descripcion: string): { key: string; label: string; sortYear: number } {
+    if (grupoId === 1 || grupoId === 2) {
+        return { key: 'trabajadores-2024', label: 'Beca Trabajadores 2024', sortYear: 2024 };
+    }
+    if (grupoId === 6) {
+        return { key: 'mibeca-2021', label: 'MiBeca 2021', sortYear: 2021 };
+    }
+    const label = (descripcion || 'Sin Grupo').replace(/^\d+\s*-\s*/, '');
+    const yearMatch = label.match(/\d{4}/);
+    return { key: String(grupoId), label, sortYear: yearMatch ? Number(yearMatch[0]) : 9999 };
+}
+
 export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     
@@ -86,8 +102,8 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             return { chartData: [], usedStageIds: [], minTimestamp: null, maxTimestamp: null, stageById };
         }
 
-        // Agrupar por grupo_id
-        const groupMap = new Map<number, any>();
+        // Agrupar por grupo "fusionado" (ver resolverGrupoDisplay)
+        const groupMap = new Map<string, any>();
 
         data.forEach((beca: any) => {
             const grupoId = beca.grupo_id;
@@ -97,17 +113,14 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 return;
             }
 
-            // Obtener datos del grupo
             const grupoDescripcion = beca.grupo?.descripcion || '';
-            const grupoOrden = beca.grupo?.orden || grupoId;
+            const { key: displayKey, label: displayLabel, sortYear } = resolverGrupoDisplay(grupoId, grupoDescripcion);
 
-            const etiquetaCompleta = grupoDescripcion || 'Sin Grupo';
-
-            if (!groupMap.has(grupoId)) {
-                groupMap.set(grupoId, {
-                    key: String(grupoId),
-                    name: etiquetaCompleta,
-                    grupoOrden: grupoOrden,
+            if (!groupMap.has(displayKey)) {
+                groupMap.set(displayKey, {
+                    key: displayKey,
+                    name: displayLabel,
+                    sortYear,
                     stageDates: {},
                     totalBudget: 0,
                     totalAvance: 0,
@@ -118,7 +131,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 });
             }
 
-            const g = groupMap.get(grupoId)!;
+            const g = groupMap.get(displayKey)!;
             g.count++;
             g.totalBudget += Number(beca.presupuesto) || 0;
             g.totalAvance += Number(beca.avance) || 0;
@@ -183,8 +196,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 lastEnd: endDate,
                 etapa1Date: etapa1Date,
                 totalBeneficiarios: g.totalBeneficiarios,
-                grupoId: Number(g.key),
-                grupoOrden: g.grupoOrden,
+                sortYear: g.sortYear,
             };
             return row;
         }).filter(Boolean);
@@ -270,15 +282,14 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 inicioVacio,
                 ...adjustedDurations,
                 totalBeneficiarios: row.totalBeneficiarios,
-                grupoId: row.grupoId,
-                grupoOrden: row.grupoOrden,
+                sortYear: row.sortYear,
             };
 
             return rowData;
         });
 
-        // ORDEN: primero por grupoOrden, luego por fecha (firstStart)
-        const sortedRows = rows.sort((a, b) => a.grupoOrden - b.grupoOrden);
+        // Orden cronológico: año más antiguo primero; sin año determinado, al final
+        const sortedRows = rows.sort((a, b) => a.sortYear - b.sortYear);
 
         const finalUsedStageIds = Array.from(foundStageIds).sort((a, b) => a - b);
 

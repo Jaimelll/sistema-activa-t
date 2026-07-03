@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { getPresupuestoMensual, getPresupuestoComparativo } from './actions';
+import { getPresupuestoMensual, getPresupuestoComparativo, getFinanciamientoEjecucion } from './actions';
 import { PresentationButton } from '@/components/PresentationButton';
 
 interface AporteFlat {
@@ -32,6 +32,36 @@ interface UnidadOperativa {
     siglas: string;
     nombre_completo: string;
     orden: number;
+}
+
+// Nombres cortos para el eje de categorías del gráfico "Distribución por Sector"
+// (las descripciones CIIU completas son muy largas para caber como etiqueta).
+const SECTOR_SHORT_NAMES: [RegExp, string][] = [
+    [/explotaci[oó]n de minas/i, 'Minas'],
+    [/electricidad/i, 'Electricidad'],
+    [/agua|alcantarillado|desechos/i, 'Agua/Residuos'],
+    [/construcci[oó]n/i, 'Construcción'],
+    [/comercio/i, 'Comercio'],
+    [/transporte|almacenamiento/i, 'Transporte'],
+    [/alojamiento|comidas/i, 'Alojamiento'],
+    [/informaci[oó]n y comunicaci[oó]n/i, 'Comunicación'],
+    [/financiera|seguros/i, 'Finanzas'],
+    [/inmobiliaria/i, 'Inmobiliaria'],
+    [/profesionales|cient[ií]ficas|t[eé]cnicas/i, 'Profesionales'],
+    [/administrativos y de apoyo/i, 'Servicios admin.'],
+    [/administraci[oó]n p[uú]blica/i, 'Adm. pública'],
+    [/enseñanza/i, 'Educación'],
+    [/salud/i, 'Salud'],
+    [/art[ií]sticas|entretenimiento|recreativ/i, 'Entretenimiento'],
+    [/otras actividades de servicios/i, 'Otros servicios'],
+    [/hogares/i, 'Hogares'],
+    [/agricultura|ganader[ií]a|silvicultura|pesca/i, 'Agro'],
+    [/manufacturer[ao]s?/i, 'Manufactura'],
+];
+
+function shortSectorName(fullName: string): string {
+    const match = SECTOR_SHORT_NAMES.find(([pattern]) => pattern.test(fullName));
+    return match ? match[1] : fullName.split(/[,;]| y /i)[0];
 }
 
 const VIBRANT_PALETTE = [
@@ -158,6 +188,7 @@ export default function InfGerencialView({
     // Budgets are now global
     const [presupuestoMensual, setPresupuestoMensual] = useState<any[]>([]);
     const [presupuestoComparativo, setPresupuestoComparativo] = useState<any[]>([]);
+    const [financiamientoEjecucion, setFinanciamientoEjecucion] = useState<{ proyectos: any[]; becas: any[] }>({ proyectos: [], becas: [] });
     const [isLoadingBudget, setIsLoadingBudget] = useState(false);
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
@@ -197,6 +228,15 @@ export default function InfGerencialView({
         };
         fetchBudgetData();
     }, []); // Only fetch on mount since no more unit selector
+
+    useEffect(() => {
+        getFinanciamientoEjecucion()
+            .then(setFinanciamientoEjecucion)
+            .catch((error) => {
+                console.error('Error fetching financiamiento en ejecución:', error);
+                setFinanciamientoEjecucion({ proyectos: [], becas: [] });
+            });
+    }, []);
 
     // --- Finanzas Processing ---
     const groupedFinanzas = useMemo(() => {
@@ -291,7 +331,7 @@ export default function InfGerencialView({
     }, [baseData3Y, last3Years]);
 
     const annualTotalData = useMemo(() => {
-        return [...last3Years].reverse().map(year => ({
+        return last3Years.map(year => ({
             year: year.toString(),
             total: annualTotals[year] || 0
         }));
@@ -321,7 +361,7 @@ export default function InfGerencialView({
             total += d.monto;
         });
         return Array.from(groups.entries())
-            .map(([name, value]) => ({ name, value, percent: total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%' }))
+            .map(([name, value]) => ({ name: shortSectorName(name), value, percent: total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%' }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 8);
     }, [baseData3Y]);
@@ -456,12 +496,11 @@ export default function InfGerencialView({
                         <ResponsiveContainer width="100%" height={320}>
                             <BarChart
                                 data={annualTotalData}
-                                layout="vertical"
                                 margin={{ top: 5, right: 30, left: 10, bottom: 10 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="year" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 12 }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="year" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 12 }} />
+                                <YAxis type="number" hide />
                                 <Tooltip 
                                     content={({ active, payload, label }) => {
                                         if (active && payload && payload.length) {
@@ -559,11 +598,11 @@ export default function InfGerencialView({
                                     trigger={isMobile ? "click" : "hover"}
                                     cursor={{ fill: 'rgba(59, 130, 246, 0.05)' }}
                                 />
-                                <Bar 
-                                    dataKey="total" 
-                                    fill="#2563eb" 
-                                    barSize={24} 
-                                    radius={[0, 6, 6, 0]}
+                                <Bar
+                                    dataKey="total"
+                                    fill="#2563eb"
+                                    barSize={24}
+                                    radius={[6, 6, 0, 0]}
                                     animationDuration={1000}
                                 />
                             </BarChart>
@@ -580,23 +619,91 @@ export default function InfGerencialView({
                             <PresentationButton chartId="distribucion-sector" />
                         </div>
                     </div>
-                    <div className="h-[320px] w-full">
-                        <ResponsiveContainer width="100%" height={320}>
+                    <div className="h-[360px] w-full">
+                        <ResponsiveContainer width="100%" height={360}>
                             <BarChart
                                 data={pieData}
-                                layout="vertical"
-                                margin={{ top: 5, right: 30, left: isMobile ? 10 : 80, bottom: 5 }}
+                                margin={{ top: 20, right: 20, left: 10, bottom: 5 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 9 : 10 }} width={isMobile ? 110 : 150} tickFormatter={(val) => val.length > 20 ? `${val.substring(0, 20)}...` : val} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 9 : 11 }} interval={0} />
+                                <YAxis type="number" hide />
                                 <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} />
-                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[0, 6, 6, 0]} barSize={20} animationDuration={1000}>
-                                    <LabelList dataKey="percent" position="right" fill="#1e293b" fontSize={11} fontWeight={600} />
+                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={20} animationDuration={1000}>
+                                    <LabelList dataKey="percent" position="top" fill="#1e293b" fontSize={11} fontWeight={600} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
+                </div>
+            </div>
+
+            {/* Financiamiento de Proyectos y Becas en ejecución */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                <div className="mb-6 text-center relative">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Financiamiento de Proyectos y Becas en ejecución</h3>
+                    <p className="text-xs text-amber-600 font-semibold mt-1">*Grupos 2026: cifras en curso, aún no reflejan el total proyectado</p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {[
+                        { key: 'proyectos', titulo: 'PROYECTOS', color: '#0d9488', dotClass: 'bg-teal-600', data: financiamientoEjecucion.proyectos, unidad: 'proy.' },
+                        { key: 'becas', titulo: 'BECAS', color: '#2563eb', dotClass: 'bg-blue-600', data: financiamientoEjecucion.becas, unidad: 'becas' },
+                    ].map((panel) => (
+                        <div key={panel.key} className="bg-slate-50/60 p-6 rounded-[2rem] border border-slate-100">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className={`w-2.5 h-2.5 rounded-full inline-block ${panel.dotClass}`} />
+                                <span className="text-sm font-black text-slate-800 tracking-[0.15em]">{panel.titulo}</span>
+                                <span className="text-sm font-semibold text-slate-400 tracking-[0.15em]">2024 — 2026</span>
+                            </div>
+                            {panel.data.length === 0 ? (
+                                <div className="h-[340px] flex items-center justify-center text-sm text-slate-400 font-semibold italic">
+                                    Sin datos disponibles
+                                </div>
+                            ) : (
+                                <div className="h-[340px] w-full">
+                                    <ResponsiveContainer width="100%" height={340}>
+                                        <BarChart data={panel.data} margin={{ top: 30, right: 10, left: 10, bottom: 40 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis
+                                                dataKey="label"
+                                                tickFormatter={(label: string, index: number) => (panel.data[index]?.proyectado ? `*${label}` : label)}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                interval={0}
+                                                angle={-20}
+                                                textAnchor="end"
+                                                height={50}
+                                                tick={{ fill: '#1e293b', fontWeight: '700', fontSize: 10 }}
+                                            />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => `S/ ${(v / 1000000).toFixed(0)} MM`} width={70} />
+                                            <Tooltip
+                                                formatter={(value: number, name: string, props: any) => [formatCurrency(value), `${props.payload.count} ${panel.unidad}`]}
+                                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
+                                            />
+                                            <Bar dataKey="monto" fill={panel.color} radius={[6, 6, 0, 0]} maxBarSize={48} animationDuration={1000}>
+                                                <LabelList
+                                                    dataKey="monto"
+                                                    position="top"
+                                                    fill="#1e293b"
+                                                    fontSize={11}
+                                                    fontWeight={700}
+                                                    formatter={(v: number) => `S/ ${(v / 1000000).toFixed(1)} MM`}
+                                                />
+                                                <LabelList
+                                                    dataKey="count"
+                                                    position="insideTop"
+                                                    fill="#fff"
+                                                    fontSize={11}
+                                                    fontWeight={700}
+                                                    formatter={(v: number) => panel.key === 'becas' ? `${v} becas` : `${v}`}
+                                                />
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
 
