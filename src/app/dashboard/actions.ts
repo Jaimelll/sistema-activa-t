@@ -784,14 +784,37 @@ export async function createProyecto(formData: any) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const { data, error } = await supabase
-    .from('proyectos')
-    .insert([formData])
-    .select();
+  // proyectos.id no tiene default/secuencia en la BD: se asigna max(id)+1.
+  // Si dos altas simultáneas chocan (23505), se reintenta con el nuevo máximo.
+  let data: any = null;
+  let lastError: any = null;
+  for (let intento = 0; intento < 3; intento++) {
+    const { data: maxRow, error: maxError } = await supabase
+      .from('proyectos')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  if (error) {
-    console.error("Error creating proyecto:", error);
-    throw new Error(error.message);
+    if (maxError) {
+      console.error("Error obteniendo máximo id de proyectos:", maxError);
+      throw new Error(maxError.message);
+    }
+
+    const payload = { ...formData, id: (Number(maxRow?.id) || 0) + 1 };
+    const { data: inserted, error } = await supabase
+      .from('proyectos')
+      .insert([payload])
+      .select();
+
+    if (!error) { data = inserted; lastError = null; break; }
+    lastError = error;
+    if (error.code !== '23505') break; // solo reintentar por id duplicado
+  }
+
+  if (lastError) {
+    console.error("Error creating proyecto:", lastError);
+    throw new Error(lastError.message);
   }
 
   revalidatePath('/dashboard/gestion-proyectos');
