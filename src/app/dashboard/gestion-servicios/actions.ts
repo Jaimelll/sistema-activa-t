@@ -284,38 +284,37 @@ export async function deleteAvanceServicio(id: any, becaId: any) {
   return { success: true };
 }
 
+// Nota: estos catálogos se leen COMPLETOS (sin join con becas_nueva). Antes
+// usaban `becas_nueva!inner`, que solo listaba valores ya asignados a alguna
+// beca — un elemento recién creado en Catálogos nunca aparecía en el modal.
+
 export async function getCondiciones() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('condicion')
-    .select('id, descripcion, becas_nueva!inner(id)')
+    .select('id, descripcion')
     .order('id', { ascending: true });
 
   if (error) return [];
-  // Use a Map to deduplicate if the join returns multiple rows per condition (though !inner with distinct usually works better)
-  // Actually, Postgrest join with !inner will return the same condition multiple times if it has multiple becas unless we handle it.
-  // A better way is to use the count filter or just deduplicate in JS if the list is small.
-  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
-  return unique;
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
 }
 
 export async function getInstitucionesBeca() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('institucion')
-    .select('id, descripcion, becas_nueva!inner(id)')
+    .select('id, descripcion')
     .order('descripcion', { ascending: true });
 
   if (error) return [];
-  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
-  return unique;
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
 }
 
 export async function getGrupos() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('grupo')
-    .select('id, descripcion, orden, becas_nueva!inner(id)')
+    .select('id, descripcion, orden')
     .eq('tipo', 1)
     .order('orden', { ascending: true });
 
@@ -323,9 +322,9 @@ export async function getGrupos() {
     console.error("Error fetching grupos:", error);
     return [];
   }
-  return data.map(item => ({ 
-    value: item.id, 
-    label: `${item.orden} - ${item.descripcion}` 
+  return data.map(item => ({
+    value: item.id,
+    label: `${item.orden} - ${item.descripcion}`
   }));
 }
 
@@ -361,12 +360,11 @@ export async function getTiposEstudio() {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('tipo_estudio')
-    .select('id, descripcion, becas_nueva!inner(id)')
+    .select('id, descripcion')
     .order('id', { ascending: true });
 
   if (error) return [];
-  const unique = Array.from(new Map(data.map((item: any) => [item.id, { value: item.id, label: item.descripcion }])).values());
-  return unique;
+  return data.map(item => ({ value: item.id, label: item.descripcion }));
 }
 
 export async function getNaturalezasIE() {

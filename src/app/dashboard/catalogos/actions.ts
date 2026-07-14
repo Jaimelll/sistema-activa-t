@@ -11,9 +11,21 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createSSRClient } from '@/utils/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
 import { esTablaValida, type Columna } from './tablas';
+
+// Tag de los catálogos cacheados con unstable_cache en src/app/dashboard/actions.ts
+// (líneas, ejes, etapas, regiones, especialistas, etc. — TTL 1 hora). Toda
+// escritura desde este módulo DEBE invalidarlo, o el resto de la app seguirá
+// sirviendo la lista vieja hasta por una hora.
+const CATALOG_TAG = 'catalogos';
+
+function invalidarCatalogos(tabla: string) {
+    revalidateTag(CATALOG_TAG, 'max'); // Next 16 exige el 2º arg; 'max' = invalidación total
+    revalidatePath(`/dashboard/catalogos/${tabla}`);
+    revalidatePath('/dashboard/catalogos');
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -176,8 +188,7 @@ export async function crearFila(
     const sb = getAdminSupabase();
     const { error } = await sb.from(tabla).insert(payload);
     if (error) return { ok: false, error: error.message };
-    revalidatePath(`/dashboard/catalogos/${tabla}`);
-    revalidatePath('/dashboard/catalogos');
+    invalidarCatalogos(tabla);
     return { ok: true };
 }
 
@@ -195,7 +206,7 @@ export async function actualizarFila(
     const sb = getAdminSupabase();
     const { error } = await sb.from(tabla).update(payload).eq(pkCol, pkVal);
     if (error) return { ok: false, error: error.message };
-    revalidatePath(`/dashboard/catalogos/${tabla}`);
+    invalidarCatalogos(tabla);
     return { ok: true };
 }
 
@@ -214,7 +225,6 @@ export async function eliminarFila(
             : error.message;
         return { ok: false, error: msg };
     }
-    revalidatePath(`/dashboard/catalogos/${tabla}`);
-    revalidatePath('/dashboard/catalogos');
+    invalidarCatalogos(tabla);
     return { ok: true };
 }
