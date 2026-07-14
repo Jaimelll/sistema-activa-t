@@ -46,6 +46,7 @@ next-env.d.ts
 .gitattributes
 
 # repo housekeeping (no necesarios en runtime)
+/build_pptx/
 *.md
 *.xlsx
 *.xlsm

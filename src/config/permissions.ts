@@ -17,6 +17,7 @@ export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
     'jbozzo@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
     'emoya@fondoempleo.com.pe': ['Servicios', 'Gestión de Servicios'],
     'hmeza@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Evaluación'],
+    'pconcha@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos'],
 };
 
 // Mapa de módulo → ruta principal (para validación en middleware)
