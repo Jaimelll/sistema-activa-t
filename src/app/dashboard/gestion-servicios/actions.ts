@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { fetchAllRows } from "@/utils/supabase/fetchAll";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -13,36 +14,41 @@ function getSupabase() {
 export async function getServiciosGestionData(filters?: { eje?: string; linea?: string; etapa?: string; modalidad?: string; condicion?: string; searchTerm?: string; institucion_id?: string; tipo_estudio_id?: string; grupo_id?: string; id_exacto?: string }) {
   const supabase = getSupabase();
 
-  let query = supabase
-    .from('becas_nueva')
-    .select(`
-      id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
-      provincia_procedencia, distrito_procedencia, celular, correo_electronico, tipo_estudio_id, naturaleza_ie_id, especialidad, formato_id, fecha_nacimiento, sexo, empresa_id,
-      eje:eje_id(descripcion),
-      linea:linea_id(descripcion),
-      etapa:etapa_id(descripcion),
-      modalidad:modalidad_id(descripcion),
-      institucion:institucion_id(descripcion),
-      condicion:condicion_id(descripcion),
-      grupo:grupo_id(descripcion),
-      avances:avance_beca(id, fecha, etapa_id, sustento, monto)
-    `)
-    .order('id', { ascending: true });
+  // Paginado: Supabase corta en 1000 filas por request
+  const buildQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('becas_nueva')
+      .select(`
+        id, nombre, documento, eje_id, linea_id, etapa_id, modalidad_id, institucion_id, condicion_id, grupo_id, presupuesto, avance, beneficiarios,
+        provincia_procedencia, distrito_procedencia, celular, correo_electronico, tipo_estudio_id, naturaleza_ie_id, especialidad, formato_id, fecha_nacimiento, sexo, empresa_id,
+        eje:eje_id(descripcion),
+        linea:linea_id(descripcion),
+        etapa:etapa_id(descripcion),
+        modalidad:modalidad_id(descripcion),
+        institucion:institucion_id(descripcion),
+        condicion:condicion_id(descripcion),
+        grupo:grupo_id(descripcion),
+        avances:avance_beca(id, fecha, etapa_id, sustento, monto)
+      `)
+      .order('id', { ascending: true });
 
-  if (filters?.searchTerm) {
-    query = query.ilike('nombre', `%${filters.searchTerm}%`);
-  }
-  if (filters?.eje && filters.eje !== 'all') query = query.eq('eje_id', filters.eje);
-  if (filters?.linea && filters.linea !== 'all') query = query.eq('linea_id', filters.linea);
-  if (filters?.etapa && filters.etapa !== 'all') query = query.eq('etapa_id', filters.etapa);
-  if (filters?.modalidad && filters.modalidad !== 'all') query = query.eq('modalidad_id', filters.modalidad);
-  if (filters?.condicion && filters.condicion !== 'all') query = query.eq('condicion_id', filters.condicion);
-  if (filters?.institucion_id && filters.institucion_id !== 'all') query = query.eq('institucion_id', filters.institucion_id);
-  if (filters?.tipo_estudio_id && filters.tipo_estudio_id !== 'all') query = query.eq('tipo_estudio_id', filters.tipo_estudio_id);
-  if (filters?.grupo_id && filters.grupo_id !== 'all') query = query.eq('grupo_id', filters.grupo_id);
-  if (filters?.id_exacto) query = query.eq('id', filters.id_exacto);
+    if (filters?.searchTerm) {
+      query = query.ilike('nombre', `%${filters.searchTerm}%`);
+    }
+    if (filters?.eje && filters.eje !== 'all') query = query.eq('eje_id', filters.eje);
+    if (filters?.linea && filters.linea !== 'all') query = query.eq('linea_id', filters.linea);
+    if (filters?.etapa && filters.etapa !== 'all') query = query.eq('etapa_id', filters.etapa);
+    if (filters?.modalidad && filters.modalidad !== 'all') query = query.eq('modalidad_id', filters.modalidad);
+    if (filters?.condicion && filters.condicion !== 'all') query = query.eq('condicion_id', filters.condicion);
+    if (filters?.institucion_id && filters.institucion_id !== 'all') query = query.eq('institucion_id', filters.institucion_id);
+    if (filters?.tipo_estudio_id && filters.tipo_estudio_id !== 'all') query = query.eq('tipo_estudio_id', filters.tipo_estudio_id);
+    if (filters?.grupo_id && filters.grupo_id !== 'all') query = query.eq('grupo_id', filters.grupo_id);
+    if (filters?.id_exacto) query = query.eq('id', filters.id_exacto);
 
-  const { data, error } = await query;
+    return query.range(from, to);
+  };
+
+  const { data, error } = await fetchAllRows(buildQuery);
 
   if (error) {
     console.error("Error fetching servicios gestion data:", error.message, error.code, error.details, error.hint);

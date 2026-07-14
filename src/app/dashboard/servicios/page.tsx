@@ -10,6 +10,7 @@ import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInsti
 import { ServiciosDemografiaCharts } from '@/components/servicios/ServiciosDemografiaCharts';
 import ServicioModal from '@/components/servicios/ServicioModal';
 import { getServicioCompletoById } from '@/app/dashboard/gestion-servicios/actions';
+import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
 export default function ServiciosPage() {
     const supabase = createClient();
@@ -172,8 +173,8 @@ export default function ServiciosPage() {
                 }))
             });
 
-            // Fetch becas with all relations
-            const { data: servicios, error } = await supabase
+            // Fetch becas with all relations (paginado: Supabase corta en 1000 filas por request)
+            const { data: servicios, error } = await fetchAllRows((from, to) => supabase
                 .from('becas_nueva')
                 .select(`
                     *,
@@ -187,7 +188,8 @@ export default function ServiciosPage() {
                     avances:avance_beca(id, fecha, etapa_id, sustento, monto),
                     grupo:grupo_id(descripcion, orden)
                 `)
-                .order('id', { ascending: true });
+                .order('id', { ascending: true })
+                .range(from, to));
 
             if (error) {
                 console.error('Error fetching servicios:', error);

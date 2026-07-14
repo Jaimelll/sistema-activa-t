@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
 export async function getAportantesData() {
     const supabase = await createClient();
@@ -156,17 +157,18 @@ function sortYearFromLabel(label: string): number {
 export async function getFinanciamientoEjecucion() {
     const supabase = await createClient();
 
+    // Paginado: Supabase corta en 1000 filas por request (becas_nueva ya supera ese tamaño)
     const [{ data: proyectosRaw, error: pErr }, { data: becasRaw, error: bErr }] = await Promise.all([
-        supabase.from('proyectos').select(`
+        fetchAllRows((from, to) => supabase.from('proyectos').select(`
             monto_fondoempleo,
             grupo:grupo_id ( descripcion ),
             etapa:etapa_id ( fase )
-        `).not('grupo_id', 'is', null),
-        supabase.from('becas_nueva').select(`
+        `).not('grupo_id', 'is', null).order('id', { ascending: true }).range(from, to)),
+        fetchAllRows((from, to) => supabase.from('becas_nueva').select(`
             presupuesto,
             grupo_id,
             grupo:grupo_id ( descripcion )
-        `).not('grupo_id', 'is', null),
+        `).not('grupo_id', 'is', null).order('id', { ascending: true }).range(from, to)),
     ]);
 
     if (pErr) console.error('Error fetching proyectos para financiamiento en ejecución:', pErr);
