@@ -102,6 +102,9 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
 
         data.forEach((project: any) => {
             (project.avances || []).forEach((a: any) => {
+                // La etapa Impacto se alimenta SOLO de informe_impacto: los avances
+                // de esa etapa registrados en Gestión de Proyectos se ignoran aquí.
+                if (Number(a.etapa_id) === IMPACTO_STAGE_ID) return;
                 const ts = new Date(a.fecha).getTime();
                 if (!isNaN(ts)) {
                     if (ts < absoluteMin) absoluteMin = ts;
@@ -163,9 +166,11 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
             });
 
             project.avances.forEach((a: any) => {
+                const eid = Number(a.etapa_id);
+                // Impacto solo desde informe_impacto (ver arriba).
+                if (eid === IMPACTO_STAGE_ID) return;
                 const ts = new Date(a.fecha).getTime();
                 if (!isNaN(ts)) {
-                    const eid = Number(a.etapa_id);
                     if (!group.datesByStage[eid]) group.datesByStage[eid] = [];
                     group.datesByStage[eid].push(ts);
                     group.endDates.push(ts);
@@ -446,35 +451,48 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                             label={{ position: 'top', value: 'Hoy', fill: '#ef4444', fontSize: 12 }}
                         />
 
-                        {/* Marcadores de informes de impacto (clic = abrir PDF) */}
+                        {/* Marcadores de informes de impacto (clic = abrir el PDF).
+                            Se ubican en la fecha de presentación; si el informe aún
+                            no se presenta, en la fecha de inicio de la evaluación. */}
                         {processedData.flatMap((g: any) =>
-                            (g.informes || [])
-                                .filter((inf: any) => inf.tsFin)
-                                .map((inf: any) => (
+                            (g.informes || []).map((inf: any) => {
+                                const tienePdf = Boolean(inf.archivo_url);
+                                return (
                                     <ReferenceDot
                                         key={`informe-${inf.id}`}
                                         xAxisId="bottom"
-                                        x={inf.tsFin}
+                                        x={inf.tsFin ?? inf.tsInicio}
                                         y={g.name}
                                         isFront
                                         shape={(props: any) => (
                                             <g
                                                 transform={`translate(${props.cx}, ${props.cy})`}
-                                                style={{ cursor: inf.archivo_url ? 'pointer' : 'default' }}
+                                                style={{ cursor: tienePdf ? 'pointer' : 'default', pointerEvents: 'all' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    if (inf.archivo_url) window.open(inf.archivo_url, '_blank', 'noopener');
+                                                    if (tienePdf) window.open(inf.archivo_url, '_blank', 'noopener');
                                                 }}
                                             >
-                                                <title>{`${inf.titulo}${inf.archivo_url ? ' (clic para abrir PDF)' : ''}`}</title>
-                                                <circle r={9} fill="#ffffff" stroke="#0f766e" strokeWidth={1.5} />
-                                                <text textAnchor="middle" dominantBaseline="central" fontSize={10}>
-                                                    📄
-                                                </text>
+                                                <title>{`${inf.titulo}\n${tienePdf ? 'Clic para abrir el informe (PDF)' : 'Aún sin PDF adjunto'}`}</title>
+                                                {/* área de clic amplia e invisible */}
+                                                <circle r={14} fill="transparent" />
+                                                <circle r={11} fill={tienePdf ? '#f0fdfa' : '#f8fafc'} stroke="#0f766e" strokeWidth={1.5} />
+                                                {/* documento con esquina doblada */}
+                                                <path
+                                                    d="M -3.5 -5.5 L 1.5 -5.5 L 4 -3 L 4 5.5 L -3.5 5.5 Z"
+                                                    fill="#ffffff"
+                                                    stroke="#0f766e"
+                                                    strokeWidth={1.2}
+                                                    strokeLinejoin="round"
+                                                />
+                                                <path d="M 1.5 -5.5 L 1.5 -3 L 4 -3" fill="none" stroke="#0f766e" strokeWidth={1} />
+                                                <line x1={-1.8} y1={-0.5} x2={2.2} y2={-0.5} stroke="#0f766e" strokeWidth={1} />
+                                                <line x1={-1.8} y1={2} x2={2.2} y2={2} stroke="#0f766e" strokeWidth={1} />
                                             </g>
                                         )}
                                     />
-                                ))
+                                );
+                            })
                         )}
 
                     </BarChart>

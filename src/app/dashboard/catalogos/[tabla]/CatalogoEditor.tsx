@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Save, Trash2, Search, Upload, ExternalLink } from 'lucide-react';
 import type { Columna } from '../tablas';
@@ -143,32 +143,40 @@ export default function CatalogoEditor({
             {/* Alta de elemento */}
             <form
                 onSubmit={handleCrear}
-                className="flex flex-wrap items-end gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3"
+                className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4"
             >
-                {columnasAlta.map((col) => (
-                    <label
-                        key={col.name}
-                        className="flex min-w-32 flex-1 flex-col gap-1 text-[11px] uppercase tracking-wide text-gray-500"
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {columnasAlta.map((col) => (
+                        <label
+                            key={col.name}
+                            className={`flex flex-col gap-1 text-[11px] uppercase tracking-wide text-gray-500 ${
+                                col.name === 'archivo_url' || /titulo|descripcion|nombre|observac/i.test(col.name)
+                                    ? 'sm:col-span-2'
+                                    : ''
+                            }`}
+                        >
+                            {col.name}
+                            <CampoInput
+                                col={col}
+                                value={nuevo[col.name]}
+                                opciones={opcionesCombo[col.name]}
+                                onChange={(v) =>
+                                    setNuevo((prev) => ({ ...prev, [col.name]: v }))
+                                }
+                            />
+                        </label>
+                    ))}
+                </div>
+                <div className="flex justify-end border-t border-gray-200 pt-3">
+                    <button
+                        type="submit"
+                        disabled={busy === 'nuevo'}
+                        className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-dark disabled:opacity-50"
                     >
-                        {col.name}
-                        <CampoInput
-                            col={col}
-                            value={nuevo[col.name]}
-                            opciones={opcionesCombo[col.name]}
-                            onChange={(v) =>
-                                setNuevo((prev) => ({ ...prev, [col.name]: v }))
-                            }
-                        />
-                    </label>
-                ))}
-                <button
-                    type="submit"
-                    disabled={busy === 'nuevo'}
-                    className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-dark disabled:opacity-50"
-                >
-                    <Plus className="h-4 w-4" />
-                    {busy === 'nuevo' ? 'Agregando…' : 'Agregar'}
-                </button>
+                        <Plus className="h-4 w-4" />
+                        {busy === 'nuevo' ? 'Agregando…' : 'Agregar'}
+                    </button>
+                </div>
             </form>
 
             {/* Grilla editable */}
@@ -237,6 +245,15 @@ function FilaEditable({
     onEliminar: () => void;
 }) {
     const [edits, setEdits] = useState<Fila>(() => ({ ...fila }));
+
+    // Re-sincronizar cuando el servidor devuelve datos frescos (tras guardar):
+    // solo cambia si los VALORES cambiaron, no interfiere mientras se tipea.
+    const filaJson = JSON.stringify(fila);
+    useEffect(() => {
+        setEdits({ ...fila });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filaJson]);
+
     const sucio = columnas.some(
         (c) => !c.isPk && !soloLectura(c) && edits[c.name] !== fila[c.name],
     );
@@ -308,7 +325,7 @@ function CampoInput({
     }`;
 
     if (col.name === 'archivo_url') {
-        return <CampoArchivo value={value} onChange={onChange} base={base} />;
+        return <CampoArchivo value={value} onChange={onChange} base={base} compact={compact} />;
     }
 
     // Columna de referencia con combo (p. ej. grupo_id): se elige por nombre.
@@ -320,7 +337,7 @@ function CampoInput({
                     const raw = e.target.value;
                     onChange(raw === '' ? null : (esNumerico(col.type) ? Number(raw) : raw));
                 }}
-                className={`${base} w-full min-w-56`}
+                className={`${base} w-full ${compact ? 'min-w-44' : 'min-w-56'}`}
             >
                 <option value="">— Seleccionar —</option>
                 {opciones.map((o) => (
@@ -378,20 +395,26 @@ function CampoInput({
             value={value ?? ''}
             title={value ? String(value) : undefined}
             onChange={(e) => onChange(e.target.value)}
-            className={`${base} w-full ${esTextoLargo ? 'min-w-80' : 'min-w-28'}`}
+            className={`${base} w-full ${esTextoLargo ? (compact ? 'min-w-56' : 'min-w-80') : 'min-w-28'}`}
         />
     );
 }
 
-/** Input para columnas `archivo_url`: URL editable + botón que sube un PDF al bucket. */
+/**
+ * Input para columnas `archivo_url`. Dos formas de llenarlo:
+ *  - "Subir PDF": sube el archivo al bucket y llena la URL automáticamente.
+ *  - Pegar directamente una URL en el campo (si el documento ya está en línea).
+ */
 function CampoArchivo({
     value,
     onChange,
     base,
+    compact,
 }: {
     value: any;
     onChange: (v: any) => void;
     base: string;
+    compact?: boolean;
 }) {
     const fileRef = useRef<HTMLInputElement>(null);
     const [subiendo, setSubiendo] = useState(false);
@@ -419,15 +442,10 @@ function CampoArchivo({
         }
     }
 
+    const tieneArchivo = Boolean(value);
+
     return (
-        <div className="flex min-w-48 items-center gap-1">
-            <input
-                type="text"
-                value={value ?? ''}
-                onChange={(e) => onChange(e.target.value || null)}
-                placeholder="URL del PDF…"
-                className={`${base} w-full min-w-28`}
-            />
+        <div className={`flex items-center gap-1.5 ${compact ? 'min-w-60' : 'min-w-72'}`}>
             <input
                 ref={fileRef}
                 type="file"
@@ -435,29 +453,42 @@ function CampoArchivo({
                 className="hidden"
                 onChange={handleFile}
             />
-            <button
-                type="button"
-                disabled={subiendo}
-                onClick={() => fileRef.current?.click()}
-                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
-                title={errorSubida ?? 'Subir PDF'}
-            >
-                <Upload className="h-3.5 w-3.5" />
-                {subiendo ? '…' : 'PDF'}
-            </button>
-            {value && (
+            {tieneArchivo ? (
                 <a
                     href={String(value)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 text-primary hover:text-primary-dark"
-                    title="Abrir archivo"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100"
+                    title={`Abrir PDF:\n${String(value)}`}
                 >
                     <ExternalLink className="h-3.5 w-3.5" />
+                    Ver PDF
                 </a>
+            ) : (
+                <span className="shrink-0 rounded-md border border-dashed border-gray-300 px-2 py-1.5 text-xs italic text-gray-400">
+                    sin PDF
+                </span>
             )}
+            <button
+                type="button"
+                disabled={subiendo}
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                title={errorSubida ?? (tieneArchivo ? 'Reemplazar el PDF (el anterior se elimina si nadie más lo usa)' : 'Subir un PDF al sistema')}
+            >
+                <Upload className="h-3.5 w-3.5" />
+                {subiendo ? 'Subiendo…' : tieneArchivo ? 'Reemplazar' : 'Subir PDF'}
+            </button>
+            <input
+                type="text"
+                value={value ?? ''}
+                onChange={(e) => onChange(e.target.value || null)}
+                placeholder="…o pega aquí una URL"
+                title={value ? String(value) : 'También puedes pegar la URL de un PDF ya publicado'}
+                className={`${base} w-full min-w-24`}
+            />
             {errorSubida && (
-                <span className="text-[10px] text-red-600">{errorSubida}</span>
+                <span className="shrink-0 text-[10px] text-red-600">{errorSubida}</span>
             )}
         </div>
     );

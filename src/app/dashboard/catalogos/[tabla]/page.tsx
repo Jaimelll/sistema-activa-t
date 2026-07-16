@@ -39,7 +39,7 @@ export default async function CatalogoDetallePage({
     const columnas = columnasTodas.filter((c) => !ocultas.includes(c.name));
 
     return (
-        <div className="max-w-5xl space-y-4">
+        <div className="max-w-7xl space-y-4">
             <Link
                 href="/dashboard/catalogos"
                 className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
