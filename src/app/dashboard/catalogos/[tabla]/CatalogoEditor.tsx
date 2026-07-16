@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Save, Trash2, Search } from 'lucide-react';
+import { Plus, Save, Trash2, Search, Upload, ExternalLink } from 'lucide-react';
 import type { Columna } from '../tablas';
-import { actualizarFila, crearFila, eliminarFila } from '../actions';
+import { actualizarFila, crearFila, eliminarFila, subirArchivoCatalogo } from '../actions';
 
 type Fila = Record<string, any>;
 
@@ -297,6 +297,10 @@ function CampoInput({
         compact ? 'py-1' : 'py-1.5'
     }`;
 
+    if (col.name === 'archivo_url') {
+        return <CampoArchivo value={value} onChange={onChange} base={base} />;
+    }
+
     if (esBooleano(col.type)) {
         return (
             <input
@@ -339,6 +343,86 @@ function CampoInput({
             onChange={(e) => onChange(e.target.value)}
             className={`${base} w-full min-w-28`}
         />
+    );
+}
+
+/** Input para columnas `archivo_url`: URL editable + botón que sube un PDF al bucket. */
+function CampoArchivo({
+    value,
+    onChange,
+    base,
+}: {
+    value: any;
+    onChange: (v: any) => void;
+    base: string;
+}) {
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [subiendo, setSubiendo] = useState(false);
+    const [errorSubida, setErrorSubida] = useState<string | null>(null);
+
+    async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        setErrorSubida(null);
+        setSubiendo(true);
+        try {
+            const fd = new FormData();
+            fd.append('archivo', file);
+            const res = await subirArchivoCatalogo(fd);
+            if (!res.ok || !res.url) {
+                setErrorSubida(res.error ?? 'No se pudo subir el archivo.');
+            } else {
+                onChange(res.url);
+            }
+        } catch {
+            setErrorSubida('Error al subir el archivo.');
+        } finally {
+            setSubiendo(false);
+        }
+    }
+
+    return (
+        <div className="flex min-w-48 items-center gap-1">
+            <input
+                type="text"
+                value={value ?? ''}
+                onChange={(e) => onChange(e.target.value || null)}
+                placeholder="URL del PDF…"
+                className={`${base} w-full min-w-28`}
+            />
+            <input
+                ref={fileRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={handleFile}
+            />
+            <button
+                type="button"
+                disabled={subiendo}
+                onClick={() => fileRef.current?.click()}
+                className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                title={errorSubida ?? 'Subir PDF'}
+            >
+                <Upload className="h-3.5 w-3.5" />
+                {subiendo ? '…' : 'PDF'}
+            </button>
+            {value && (
+                <a
+                    href={String(value)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-primary hover:text-primary-dark"
+                    title="Abrir archivo"
+                >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+            )}
+            {errorSubida && (
+                <span className="text-[10px] text-red-600">{errorSubida}</span>
+            )}
+        </div>
     );
 }
 

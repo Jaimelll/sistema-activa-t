@@ -1,11 +1,11 @@
 import DashboardView from './DashboardView';
-import { getDashboardData, fetchDynamicYears, getEtapas, getLineas, getEjes, getTimelineData, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos, getEspecialistas, getFasesOptions } from './actions';
+import { getDashboardData, fetchDynamicYears, getEtapas, getLineas, getEjes, getTimelineData, getModalidades, getInstituciones, getRegiones, getEtapasList, getGruposProyectos, getEspecialistas, getFasesOptions, getInformesImpacto } from './actions';
 // TOUCH: 2026-04-14 map-bubble
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function DashboardPage() {
-    const [data, timelineData, years, stages, headers, ejesList, modalidades, instituciones, regiones, etapasList, grupos, especialistas, fasesUnicas] = await Promise.all([
+    const [data, timelineData, years, stages, headers, ejesList, modalidades, instituciones, regiones, etapasList, grupos, especialistas, fasesUnicas, informesImpacto] = await Promise.all([
         getDashboardData({}),
         getTimelineData(),
         fetchDynamicYears(),
@@ -18,7 +18,8 @@ export default async function DashboardPage() {
         getEtapasList(),
         getGruposProyectos(),
         getEspecialistas(),
-        getFasesOptions()
+        getFasesOptions(),
+        getInformesImpacto()
     ]);
 
     // Inyectar opción "Todos"
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
             grupos={grupos}
             especialistas={especialistas}
             fases={fasesUnicas}
+            informesImpacto={informesImpacto}
         />
     );
 }

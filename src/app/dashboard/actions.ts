@@ -730,6 +730,36 @@ export async function getTimelineData(especialistaId?: number) {
   }
 }
 
+// --- INFORMES DE IMPACTO (por grupo, editados desde Catálogos) ---
+
+const _getInformesImpacto = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data, error } = await supabase
+        .from('informe_impacto')
+        .select('id, grupo_id, linea_id, titulo, fecha_inicio, fecha_fin, archivo_url')
+        .order('fecha_inicio', { ascending: true });
+
+      if (error) {
+        // La tabla puede no existir aún (se crea por SQL): degradar sin romper el dashboard.
+        console.error("Error fetching informes de impacto:", error.message);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.error("FATAL ERROR getInformesImpacto:", err);
+      return [];
+    }
+  },
+  ['catalog:informes-impacto'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] } // ediciones desde Catálogos lo invalidan
+);
+export async function getInformesImpacto() { return _getInformesImpacto(); }
+
 // --- CORPORATIVO ACTIONS ---
 
 export async function getFinanzasAnual() {

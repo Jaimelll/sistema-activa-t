@@ -25,6 +25,7 @@ export const TABLAS = [
     'naturaleza_ie',
     'formato',
     'sectores_ciiu',
+    'informe_impacto',
 ] as const;
 
 export type Tabla = (typeof TABLAS)[number];
@@ -42,6 +43,7 @@ const ETIQUETAS: Record<string, string> = {
     tipo_estudio: 'Tipos de estudio',
     naturaleza_ie: 'Naturaleza IE',
     sectores_ciiu: 'Sectores CIIU',
+    informe_impacto: 'Informes de Impacto',
 };
 
 /** Etiqueta legible para una tabla ("tipo_estudio" → "Tipo Estudio"). */

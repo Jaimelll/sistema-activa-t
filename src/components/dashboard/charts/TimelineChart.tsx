@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, ReferenceDot, Cell } from 'recharts';
+import { FileText } from 'lucide-react';
 import ProyectoModal from '@/components/ProyectoModal';
 import { getProyectoCompletoById } from '@/app/dashboard/actions';
 
 interface TimelineChartProps {
     data: any[]; // Raw project data
     options?: any;
+    /** Informes de impacto por grupo (tabla informe_impacto, editada en Catálogos). */
+    informesImpacto?: any[];
 }
 
 // ── CONFIGURACIÓN DINÁMICA ──────────────────────────────────────────────────
@@ -27,11 +30,16 @@ const STAGE_PALETTE = [
     '#d946ef', // Fuchsia
 ];
 
-// Punto de quiebre: IDs menores usan el valor Mínimo (inicio), 
+// Punto de quiebre: IDs menores usan el valor Mínimo (inicio),
 // IDs mayores o iguales usan el valor Máximo (último avance).
 const EXECUTION_START_ID = 5;
 
-export function TimelineChart({ data, options = {} }: TimelineChartProps) {
+// Etapa "Impacto": su segmento se calcula desde los informes de impacto del
+// grupo (no desde avances de proyectos). Inicio = primer informe que inicia;
+// fin = PRIMER informe presentado (regla acordada; cambiarla aquí si se desea).
+const IMPACTO_STAGE_ID = 10;
+
+export function TimelineChart({ data, options = {}, informesImpacto = [] }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,9 +81,21 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
 
         const groups = new Map();
         const TODAY = new Date().getTime();
-        
+
         let absoluteMin = Infinity;
         let absoluteMax = -Infinity;
+
+        // Informes de impacto agrupados por grupo_id (fechas ya en timestamps)
+        const informesByGrupo = new Map<number, any[]>();
+        (informesImpacto || []).forEach((inf: any) => {
+            const gid = Number(inf.grupo_id);
+            if (!gid) return;
+            const inicio = inf.fecha_inicio ? new Date(inf.fecha_inicio).getTime() : NaN;
+            if (isNaN(inicio)) return;
+            const fin = inf.fecha_fin ? new Date(inf.fecha_fin).getTime() : null;
+            if (!informesByGrupo.has(gid)) informesByGrupo.set(gid, []);
+            informesByGrupo.get(gid)!.push({ ...inf, tsInicio: inicio, tsFin: fin });
+        });
 
         // 1. Identificar etapas que realmente tienen datos para no pintar barras vacías legendariamente
         const stagePresence = new Set<number>();
@@ -89,6 +109,16 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                     stagePresence.add(Number(a.etapa_id));
                 }
             });
+            // Los informes de impacto del grupo también aportan presencia y dominio
+            const infs = informesByGrupo.get(Number(project.grupo_id));
+            if (infs && infs.length > 0) {
+                stagePresence.add(IMPACTO_STAGE_ID);
+                infs.forEach((inf: any) => {
+                    if (inf.tsInicio < absoluteMin) absoluteMin = inf.tsInicio;
+                    const end = inf.tsFin ?? TODAY;
+                    if (end > absoluteMax) absoluteMax = end;
+                });
+            }
         });
 
         // Etapas a renderizar (que existan en el catálogo y tengan datos o sean básicas)
@@ -102,6 +132,7 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
 
             if (!groups.has(key)) {
                 groups.set(key, {
+                    grupoId: Number(project.grupo_id) || null,
                     name: project.grupo_descripcion || project.grupo?.descripcion || 'Sin Grupo',
                     orden: project.grupo_orden || project.grupo?.orden || 999,
                     ejeId: Number(project.eje_id) || 999,
@@ -145,33 +176,51 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         const chartData = Array.from(groups.values()).map((g: any) => {
             // Resolver fechas pivote para cada etapa disponible en el catálogo
             const pivotDates: Record<number, number | null> = {};
-            
+
             allStages.forEach((s: any) => {
                 const eid = Number(s.value);
                 const dates = g.datesByStage[eid];
                 if (dates && dates.length > 0) {
-                    pivotDates[eid] = (eid < EXECUTION_START_ID) 
-                        ? Math.min(...dates) 
+                    pivotDates[eid] = (eid < EXECUTION_START_ID)
+                        ? Math.min(...dates)
                         : Math.max(...dates);
                 } else {
                     pivotDates[eid] = null;
                 }
             });
 
+            // Etapa Impacto: los informes del grupo mandan sobre los avances.
+            // Inicio del segmento = primer informe que inicia.
+            const informes = informesByGrupo.get(g.grupoId) || [];
+            let impactoFin: number | null = null;
+            if (informes.length > 0) {
+                pivotDates[IMPACTO_STAGE_ID] = Math.min(...informes.map((i: any) => i.tsInicio));
+                const fines = informes.map((i: any) => i.tsFin).filter((f: any) => f !== null) as number[];
+                // Regla acordada: el segmento cierra con el PRIMER informe presentado.
+                impactoFin = fines.length > 0 ? Math.min(...fines) : null;
+            }
+
             // La fecha de inicio absoluta del grupo es la mínima de cualquier avance
             const tStart = Math.min(...g.endDates);
             const tEndRaw = Math.max(...g.endDates);
-            
+
             // Si el proyecto no está terminado (ID 6 suele ser terminado, pero lo hacemos dinámico)
             // Si la última etapa del catálogo no tiene fecha, extendemos hasta hoy
             const lastStageId = allStages[allStages.length - 1].value;
             let tEndMax = pivotDates[lastStageId] || tEndRaw || TODAY;
             if (!pivotDates[lastStageId]) tEndMax = Math.max(tEndMax, TODAY);
 
+            // Con informes de impacto: el grupo termina en el primer informe
+            // presentado; si ninguno se presentó aún, sigue "en curso" hasta hoy.
+            if (informes.length > 0) {
+                tEndMax = impactoFin ?? Math.max(pivotDates[IMPACTO_STAGE_ID]!, TODAY);
+            }
+
             const result: any = {
                 ...g,
                 start: tStart,
                 dateEnd: tEndMax,
+                informes,
                 etapa: g.projects.every((p: any) => p.etapa === g.projects[0].etapa)
                     ? (g.projects[0].etapa || 'No definida')
                     : 'Múltiples etapas',
@@ -227,7 +276,7 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
         }
 
         return { processedData: chartData, minDate: dynamicMin, maxDate: dynamicMax, ticks, activeStages };
-    }, [data, allStages]);
+    }, [data, allStages, informesImpacto]);
 
     const formatXAxis = (tickItem: number) => {
         const date = new Date(tickItem);
@@ -276,6 +325,12 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                             <span className="text-gray-500">Monto Total:</span>
                             <span className="font-bold text-blue-700">S/. {totalMonto.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                         </div>
+                        {d.informes && d.informes.length > 0 && (
+                            <div className="flex justify-between">
+                                <span className="text-gray-500">Informes de impacto:</span>
+                                <span className="font-bold text-teal-700">{d.informes.length} 📄</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -391,6 +446,37 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                             label={{ position: 'top', value: 'Hoy', fill: '#ef4444', fontSize: 12 }}
                         />
 
+                        {/* Marcadores de informes de impacto (clic = abrir PDF) */}
+                        {processedData.flatMap((g: any) =>
+                            (g.informes || [])
+                                .filter((inf: any) => inf.tsFin)
+                                .map((inf: any) => (
+                                    <ReferenceDot
+                                        key={`informe-${inf.id}`}
+                                        xAxisId="bottom"
+                                        x={inf.tsFin}
+                                        y={g.name}
+                                        isFront
+                                        shape={(props: any) => (
+                                            <g
+                                                transform={`translate(${props.cx}, ${props.cy})`}
+                                                style={{ cursor: inf.archivo_url ? 'pointer' : 'default' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (inf.archivo_url) window.open(inf.archivo_url, '_blank', 'noopener');
+                                                }}
+                                            >
+                                                <title>{`${inf.titulo}${inf.archivo_url ? ' (clic para abrir PDF)' : ''}`}</title>
+                                                <circle r={9} fill="#ffffff" stroke="#0f766e" strokeWidth={1.5} />
+                                                <text textAnchor="middle" dominantBaseline="central" fontSize={10}>
+                                                    📄
+                                                </text>
+                                            </g>
+                                        )}
+                                    />
+                                ))
+                        )}
+
                     </BarChart>
                 </ResponsiveContainer>
             </div>
@@ -414,6 +500,47 @@ export function TimelineChart({ data, options = {} }: TimelineChartProps) {
                             <span className="text-sm font-bold text-blue-700">{selectedGroup.count} proyectos encontrados</span>
                         </div>
                     </div>
+                    {selectedGroup.informes && selectedGroup.informes.length > 0 && (
+                        <div className="mb-4 rounded-lg border border-teal-200 bg-teal-50/60 p-3">
+                            <div className="mb-2 flex items-center gap-2 text-teal-800">
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-bold uppercase tracking-wide">Informes de Impacto</span>
+                            </div>
+                            <div className="space-y-1">
+                                {selectedGroup.informes.map((inf: any) => {
+                                    const lineaLabel = inf.linea_id
+                                        ? (options.lineas || []).find((l: any) => Number(l.value) === Number(inf.linea_id))?.label || `Línea ${inf.linea_id}`
+                                        : 'Todas las líneas';
+                                    return (
+                                        <div key={inf.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-3 py-2 text-xs border border-teal-100">
+                                            <div>
+                                                <span className="font-bold text-gray-800">{inf.titulo}</span>
+                                                <span className="ml-2 text-gray-500">({lineaLabel})</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-gray-600">
+                                                    {formatDate(inf.tsInicio)} – {inf.tsFin ? formatDate(inf.tsFin) : 'en curso'}
+                                                </span>
+                                                {inf.archivo_url ? (
+                                                    <a
+                                                        href={inf.archivo_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="font-bold text-teal-700 hover:underline"
+                                                    >
+                                                        Ver PDF ↗
+                                                    </a>
+                                                ) : (
+                                                    <span className="italic text-gray-400">sin PDF</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     <div className="pr-1">
                         <table className="w-full border-collapse">
                             <thead>

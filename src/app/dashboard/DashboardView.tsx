@@ -47,9 +47,10 @@ interface DashboardViewProps {
     grupos?: any[];
     especialistas?: any[];
     fases?: string[];
+    informesImpacto?: any[];
 }
 
-export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [], fases = [] }: DashboardViewProps) {
+export default function DashboardView({ initialData, timelineData = [], years = [], stages = [], lines = [], ejesList = [], modalidades = [], instituciones = [], regiones = [], etapasList = [], grupos = [], especialistas = [], fases = [], informesImpacto = [] }: DashboardViewProps) {
 
     // State for filters
     const [selectedYear, setSelectedYear] = useState<any>(''); // Default empty for 'All'
@@ -551,8 +552,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
 
             {/* Timeline Chart (Principal) */}
             <div className="w-full" id="timeline-chart-section">
-                <TimelineChart 
-                    data={filteredTimelineData} 
+                <TimelineChart
+                    data={filteredTimelineData}
+                    informesImpacto={informesImpacto}
                     options={{
                         lineas: lines,
                         ejes: ejesList,

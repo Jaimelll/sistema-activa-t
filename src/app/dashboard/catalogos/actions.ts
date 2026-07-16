@@ -184,6 +184,11 @@ export async function crearFila(
         if (c.hasDefault && (payload[c.name] === null || payload[c.name] === undefined)) {
             delete payload[c.name];
         }
+        // PK vacía: dejar que la genere la BD (columnas identity reportan
+        // has_default=false en information_schema, p.ej. informe_impacto.id).
+        if (c.isPk && (payload[c.name] === null || payload[c.name] === undefined)) {
+            delete payload[c.name];
+        }
     }
     const sb = getAdminSupabase();
     const { error } = await sb.from(tabla).insert(payload);
@@ -208,6 +213,43 @@ export async function actualizarFila(
     if (error) return { ok: false, error: error.message };
     invalidarCatalogos(tabla);
     return { ok: true };
+}
+
+// ─── Subida de archivos (columnas archivo_url) ─────────────────────────────────
+
+const BUCKET_ARCHIVOS = 'informes_impacto';
+
+function sanitizeFileName(fileName: string): string {
+    return fileName
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .toLowerCase();
+}
+
+/**
+ * Sube un PDF al bucket de informes y devuelve su URL pública. Lo usa el
+ * editor de catálogos para llenar columnas `archivo_url`.
+ */
+export async function subirArchivoCatalogo(
+    formData: FormData,
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+    await assertSuperAdmin();
+    const file = formData.get('archivo') as File | null;
+    if (!file || file.size === 0) {
+        return { ok: false, error: 'Debe seleccionar un archivo PDF.' };
+    }
+    if (file.size > 20 * 1024 * 1024) {
+        return { ok: false, error: 'El archivo excede el límite de 20 MB.' };
+    }
+    const sb = getAdminSupabase();
+    const fileName = `${Date.now()}_${sanitizeFileName(file.name)}`;
+    const { data, error } = await sb.storage
+        .from(BUCKET_ARCHIVOS)
+        .upload(fileName, file, { contentType: file.type || 'application/pdf' });
+    if (error) return { ok: false, error: error.message };
+    const { data: urlData } = sb.storage.from(BUCKET_ARCHIVOS).getPublicUrl(data.path);
+    return { ok: true, url: urlData.publicUrl };
 }
 
 export async function eliminarFila(
