@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createSSRClient } from '@/utils/supabase/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
-import { esTablaValida, type Columna } from './tablas';
+import { esTablaValida, COLUMNAS_COMBO, type Columna } from './tablas';
 
 // Tag de los catálogos cacheados con unstable_cache en src/app/dashboard/actions.ts
 // (líneas, ejes, etapas, regiones, especialistas, etc. — TTL 1 hora). Toda
@@ -131,6 +131,38 @@ export async function getConteo(tabla: string): Promise<number> {
     return count ?? 0;
 }
 
+// ─── Opciones para columnas combo (FK) ─────────────────────────────────────────
+
+/**
+ * Devuelve las opciones {value,label} de cada columna combo de la tabla
+ * (config en COLUMNAS_COMBO). El editor las muestra como <select> buscable.
+ */
+export async function getOpcionesCombo(
+    tabla: string,
+): Promise<Record<string, { value: any; label: string }[]>> {
+    await assertSuperAdmin();
+    assertTabla(tabla);
+    const config = COLUMNAS_COMBO[tabla];
+    if (!config) return {};
+    const sb = getAdminSupabase();
+    const out: Record<string, { value: any; label: string }[]> = {};
+    for (const [col, ref] of Object.entries(config)) {
+        let q = sb.from(ref.tabla).select(`${ref.valor}, ${ref.etiqueta}`);
+        if (ref.filtro) q = q.eq(ref.filtro[0], ref.filtro[1]);
+        const { data, error } = await q.order(ref.etiqueta, { ascending: true });
+        if (error) {
+            console.error(`Error cargando opciones de ${tabla}.${col}:`, error.message);
+            out[col] = [];
+            continue;
+        }
+        out[col] = (data || []).map((r: any) => ({
+            value: r[ref.valor],
+            label: String(r[ref.etiqueta] ?? r[ref.valor]).trim(),
+        }));
+    }
+    return out;
+}
+
 // ─── Coerción de valores del formulario ────────────────────────────────────────
 
 function esNumerico(type: string) {
@@ -197,6 +229,38 @@ export async function crearFila(
     return { ok: true };
 }
 
+/** Path dentro del bucket si la URL apunta a nuestro Storage; null si es externa. */
+function extraerPathBucket(url: string | null | undefined): string | null {
+    if (!url) return null;
+    const marker = `/storage/v1/object/public/${BUCKET_ARCHIVOS}/`;
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return decodeURIComponent(url.slice(idx + marker.length));
+}
+
+/**
+ * Borra del bucket el PDF de `url` SOLO si ninguna fila de la tabla lo sigue
+ * usando (un mismo informe puede estar vinculado a varios grupos = varias
+ * filas con la misma URL). Silencioso ante errores: el borrado de la fila ya
+ * ocurrió y no debe revertirse por un problema de limpieza.
+ */
+async function limpiarArchivoSiHuerfano(tabla: string, url: string | null | undefined) {
+    const path = extraerPathBucket(url);
+    if (!path) return;
+    try {
+        const sb = getAdminSupabase();
+        const { count } = await sb
+            .from(tabla)
+            .select('*', { count: 'exact', head: true })
+            .eq('archivo_url', url);
+        if ((count ?? 0) > 0) return; // otra fila aún lo usa
+        const { error } = await sb.storage.from(BUCKET_ARCHIVOS).remove([path]);
+        if (error) console.warn(`No se pudo borrar del bucket "${path}":`, error.message);
+    } catch (e) {
+        console.warn('Limpieza de archivo huérfano falló:', e);
+    }
+}
+
 export async function actualizarFila(
     tabla: string,
     pkCol: string,
@@ -209,8 +273,21 @@ export async function actualizarFila(
     const payload = coerce(valores, columnas);
     delete payload[pkCol]; // nunca actualizamos la PK
     const sb = getAdminSupabase();
+
+    // Si se reemplaza archivo_url, recordar el anterior para limpiar el huérfano.
+    let urlAnterior: string | null = null;
+    if ('archivo_url' in payload) {
+        const { data: actual } = await sb.from(tabla).select('archivo_url').eq(pkCol, pkVal).maybeSingle();
+        urlAnterior = actual?.archivo_url ?? null;
+    }
+
     const { error } = await sb.from(tabla).update(payload).eq(pkCol, pkVal);
     if (error) return { ok: false, error: error.message };
+
+    if (urlAnterior && urlAnterior !== payload['archivo_url']) {
+        await limpiarArchivoSiHuerfano(tabla, urlAnterior);
+    }
+
     invalidarCatalogos(tabla);
     return { ok: true };
 }
@@ -260,6 +337,15 @@ export async function eliminarFila(
     await assertSuperAdmin();
     assertTabla(tabla);
     const sb = getAdminSupabase();
+
+    // Capturar el archivo_url antes de borrar (si la tabla tiene esa columna)
+    // para eliminar también el PDF del bucket cuando quede huérfano.
+    let urlArchivo: string | null = null;
+    try {
+        const { data: fila } = await sb.from(tabla).select('archivo_url').eq(pkCol, pkVal).maybeSingle();
+        urlArchivo = fila?.archivo_url ?? null;
+    } catch { /* la tabla no tiene archivo_url: nada que limpiar */ }
+
     const { error } = await sb.from(tabla).delete().eq(pkCol, pkVal);
     if (error) {
         const msg = /foreign key|violates/i.test(error.message)
@@ -267,6 +353,9 @@ export async function eliminarFila(
             : error.message;
         return { ok: false, error: msg };
     }
+
+    if (urlArchivo) await limpiarArchivoSiHuerfano(tabla, urlArchivo);
+
     invalidarCatalogos(tabla);
     return { ok: true };
 }

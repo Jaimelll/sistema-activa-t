@@ -30,10 +30,12 @@ export default function CatalogoEditor({
     tabla,
     columnas,
     filas,
+    opcionesCombo = {},
 }: {
     tabla: string;
     columnas: Columna[];
     filas: Fila[];
+    opcionesCombo?: Record<string, { value: any; label: string }[]>;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -46,9 +48,10 @@ export default function CatalogoEditor({
         [columnas],
     );
 
-    // Columnas visibles al crear: excluye las que tienen default (uuid/serial/now).
+    // Columnas visibles al crear: excluye la PK (la genera la BD) y las que
+    // tienen default (uuid/serial/now).
     const columnasAlta = useMemo(
-        () => columnas.filter((c) => !c.hasDefault),
+        () => columnas.filter((c) => !c.hasDefault && !c.isPk),
         [columnas],
     );
 
@@ -151,6 +154,7 @@ export default function CatalogoEditor({
                         <CampoInput
                             col={col}
                             value={nuevo[col.name]}
+                            opciones={opcionesCombo[col.name]}
                             onChange={(v) =>
                                 setNuevo((prev) => ({ ...prev, [col.name]: v }))
                             }
@@ -180,7 +184,7 @@ export default function CatalogoEditor({
                                     )}
                                 </th>
                             ))}
-                            <th className="px-3 py-2 text-right">Acciones</th>
+                            <th className="sticky right-0 bg-gray-50 px-3 py-2 text-right shadow-[inset_1px_0_0_#e5e7eb]">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -200,6 +204,7 @@ export default function CatalogoEditor({
                                 columnas={columnas}
                                 fila={fila}
                                 pk={pk}
+                                opcionesCombo={opcionesCombo}
                                 busy={busy === String(fila[pk]) || isPending}
                                 onGuardar={(edits) => handleGuardar(fila, edits)}
                                 onEliminar={() => handleEliminar(fila)}
@@ -219,6 +224,7 @@ function FilaEditable({
     fila,
     pk,
     busy,
+    opcionesCombo = {},
     onGuardar,
     onEliminar,
 }: {
@@ -226,6 +232,7 @@ function FilaEditable({
     fila: Fila;
     pk: string;
     busy: boolean;
+    opcionesCombo?: Record<string, { value: any; label: string }[]>;
     onGuardar: (edits: Fila) => void;
     onEliminar: () => void;
 }) {
@@ -246,6 +253,7 @@ function FilaEditable({
                         <CampoInput
                             col={col}
                             value={edits[col.name]}
+                            opciones={opcionesCombo[col.name]}
                             onChange={(v) =>
                                 setEdits((prev) => ({ ...prev, [col.name]: v }))
                             }
@@ -254,7 +262,7 @@ function FilaEditable({
                     )}
                 </td>
             ))}
-            <td className="px-3 py-1.5">
+            <td className="sticky right-0 bg-white px-3 py-1.5 shadow-[inset_1px_0_0_#e5e7eb]">
                 <div className="flex items-center justify-end gap-1">
                     <button
                         type="button"
@@ -287,11 +295,13 @@ function CampoInput({
     value,
     onChange,
     compact,
+    opciones,
 }: {
     col: Columna;
     value: any;
     onChange: (v: any) => void;
     compact?: boolean;
+    opciones?: { value: any; label: string }[];
 }) {
     const base = `rounded-md border border-gray-300 px-2 text-sm focus:border-primary focus:outline-none ${
         compact ? 'py-1' : 'py-1.5'
@@ -299,6 +309,27 @@ function CampoInput({
 
     if (col.name === 'archivo_url') {
         return <CampoArchivo value={value} onChange={onChange} base={base} />;
+    }
+
+    // Columna de referencia con combo (p. ej. grupo_id): se elige por nombre.
+    if (opciones && opciones.length > 0) {
+        return (
+            <select
+                value={value ?? ''}
+                onChange={(e) => {
+                    const raw = e.target.value;
+                    onChange(raw === '' ? null : (esNumerico(col.type) ? Number(raw) : raw));
+                }}
+                className={`${base} w-full min-w-56`}
+            >
+                <option value="">— Seleccionar —</option>
+                {opciones.map((o) => (
+                    <option key={String(o.value)} value={o.value}>
+                        {o.label}
+                    </option>
+                ))}
+            </select>
+        );
     }
 
     if (esBooleano(col.type)) {
@@ -326,22 +357,28 @@ function CampoInput({
     }
 
     if (esFecha(col.type)) {
+        // Solo la parte YYYY-MM-DD: evita desfases si el valor llega con hora/zona.
+        const fecha = value ? String(value).slice(0, 10) : '';
         return (
             <input
                 type="date"
-                value={value ?? ''}
+                value={fecha}
                 onChange={(e) => onChange(e.target.value || null)}
                 className={`${base} w-full`}
             />
         );
     }
 
+    // Campos de texto largos (titulo, descripcion, etc.): más anchos y con
+    // tooltip para leer el contenido completo.
+    const esTextoLargo = /titulo|descripcion|nombre|observac/i.test(col.name);
     return (
         <input
             type="text"
             value={value ?? ''}
+            title={value ? String(value) : undefined}
             onChange={(e) => onChange(e.target.value)}
-            className={`${base} w-full min-w-28`}
+            className={`${base} w-full ${esTextoLargo ? 'min-w-80' : 'min-w-28'}`}
         />
     );
 }

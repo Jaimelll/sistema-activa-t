@@ -54,6 +54,28 @@ export function etiquetaTabla(t: string): string {
     );
 }
 
+/**
+ * Columnas que NO se muestran en el editor (siguen existiendo en la BD).
+ * Útil para campos que hoy no se gestionan desde la UI.
+ */
+export const COLUMNAS_OCULTAS: Record<string, string[]> = {
+    informe_impacto: ['linea_id', 'created_at'],
+};
+
+/**
+ * Columnas de referencia que se editan con un combo en lugar de un número.
+ * `tabla` es el catálogo de donde salen las opciones (valor = columna id,
+ * etiqueta = columna descriptiva, filtro opcional [columna, valor]).
+ */
+export const COLUMNAS_COMBO: Record<
+    string,
+    Record<string, { tabla: string; valor: string; etiqueta: string; filtro?: [string, any] }>
+> = {
+    informe_impacto: {
+        grupo_id: { tabla: 'grupo', valor: 'id', etiqueta: 'descripcion', filtro: ['tipo', 2] },
+    },
+};
+
 /** Metadatos de una columna descubierta por introspección (ver actions.getColumnas). */
 export type Columna = {
     name: string;

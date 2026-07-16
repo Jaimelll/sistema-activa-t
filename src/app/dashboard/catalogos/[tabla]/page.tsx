@@ -4,8 +4,8 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { ChevronLeft } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
-import { esTablaValida, etiquetaTabla } from '../tablas';
-import { getColumnas, getFilas } from '../actions';
+import { esTablaValida, etiquetaTabla, COLUMNAS_OCULTAS } from '../tablas';
+import { getColumnas, getFilas, getOpcionesCombo } from '../actions';
 import CatalogoEditor from './CatalogoEditor';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +29,14 @@ export default async function CatalogoDetallePage({
         redirect('/dashboard');
     }
 
-    const [columnas, filas] = await Promise.all([
+    const [columnasTodas, filas, opcionesCombo] = await Promise.all([
         getColumnas(tabla),
         getFilas(tabla),
+        getOpcionesCombo(tabla),
     ]);
+
+    const ocultas = COLUMNAS_OCULTAS[tabla] ?? [];
+    const columnas = columnasTodas.filter((c) => !ocultas.includes(c.name));
 
     return (
         <div className="max-w-5xl space-y-4">
@@ -61,7 +65,7 @@ export default async function CatalogoDetallePage({
                     habilitar la introspección incluso de tablas vacías.
                 </div>
             ) : (
-                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} />
+                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} opcionesCombo={opcionesCombo} />
             )}
         </div>
     );
