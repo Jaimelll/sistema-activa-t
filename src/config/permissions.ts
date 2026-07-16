@@ -6,17 +6,19 @@ export const SUPER_ADMIN = 'jduran@fondoempleo.com.pe';
 
 // Módulos por usuario (nombres exactos usados en el Sidebar)
 export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
+    // 'Supervisión' (mostrado como "Monitoreo"), 'Gestión de Monitores' y 'Evaluación'
+    // son exclusivos del super admin (jduran, vía 'ALL') — no asignarlos aquí.
     'jduran@fondoempleo.com.pe': 'ALL',
     'invitado@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios'],
-    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes', 'Supervisión', 'Gestión de Monitores'],
-    'pricra@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Gestión de Aportantes'],
-    'herique@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores'],
+    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes'],
+    'pricra@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Aportantes'],
+    'herique@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios'],
     'arojas@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
-    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Monitores', 'Supervisión', 'Gestión de Proyectos', 'Gestión de Servicios'],
-    'jleclere@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
-    'jbozzo@fondoempleo.com.pe': ['Proyectos', 'Supervisión'],
+    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
+    'jleclere@fondoempleo.com.pe': ['Proyectos'],
+    'jbozzo@fondoempleo.com.pe': ['Proyectos'],
     'emoya@fondoempleo.com.pe': ['Servicios', 'Gestión de Servicios'],
-    'hmeza@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Evaluación'],
+    'hmeza@fondoempleo.com.pe': ['Proyectos', 'Servicios'],
     'pconcha@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos'],
 };
 
