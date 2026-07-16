@@ -38,6 +38,7 @@ const EXECUTION_START_ID = 5;
 // grupo (no desde avances de proyectos). Inicio = primer informe que inicia;
 // fin = PRIMER informe presentado (regla acordada; cambiarla aquí si se desea).
 const IMPACTO_STAGE_ID = 10;
+const PRE_IMPACTO_STAGE_ID = 9;
 
 export function TimelineChart({ data, options = {}, informesImpacto = [] }: TimelineChartProps) {
     const [isMobile, setIsMobile] = useState(false);
@@ -199,10 +200,21 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
             const informes = informesByGrupo.get(g.grupoId) || [];
             let impactoFin: number | null = null;
             if (informes.length > 0) {
-                pivotDates[IMPACTO_STAGE_ID] = Math.min(...informes.map((i: any) => i.tsInicio));
+                const impactoInicio = Math.min(...informes.map((i: any) => i.tsInicio));
+                pivotDates[IMPACTO_STAGE_ID] = impactoInicio;
                 const fines = informes.map((i: any) => i.tsFin).filter((f: any) => f !== null) as number[];
                 // Regla acordada: el segmento cierra con el PRIMER informe presentado.
                 impactoFin = fines.length > 0 ? Math.min(...fines) : null;
+                // El informe es la autoridad: ninguna etapa previa puede empezar
+                // DESPUÉS del inicio del Impacto. Avances de proyectos con fechas
+                // posteriores (p. ej. un "Ejecutado" tardío) se recortan a esa
+                // fecha para no distorsionar la cascada ni alargar la barra.
+                Object.keys(pivotDates).forEach((k) => {
+                    const eid = Number(k);
+                    if (eid !== IMPACTO_STAGE_ID && pivotDates[eid] !== null && pivotDates[eid]! > impactoInicio) {
+                        pivotDates[eid] = impactoInicio;
+                    }
+                });
             }
 
             // La fecha de inicio absoluta del grupo es la mínima de cualquier avance
@@ -217,8 +229,15 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
 
             // Con informes de impacto: el grupo termina en el primer informe
             // presentado; si ninguno se presentó aún, sigue "en curso" hasta hoy.
+            const maxRealStage = Math.max(0, ...Object.keys(g.datesByStage).map(Number));
             if (informes.length > 0) {
                 tEndMax = impactoFin ?? Math.max(pivotDates[IMPACTO_STAGE_ID]!, TODAY);
+            } else if (maxRealStage >= PRE_IMPACTO_STAGE_ID) {
+                // Grupo que ya llegó a Pre-Impacto/Impacto SIN informe registrado:
+                // la barra no se proyecta hasta hoy (eso equivaldría a dibujar el
+                // período de impacto con datos de Gestión de Proyectos). Termina
+                // en su último avance real y crecerá cuando se registre el informe.
+                tEndMax = tEndRaw;
             }
 
             const result: any = {
@@ -420,22 +439,29 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                             const stageId = Number(s.value);
                             const color = STAGE_PALETTE[stageId - 1] || STAGE_PALETTE[idx % STAGE_PALETTE.length];
                             const dataKey = `d${stageId}_safe`;
-                            
+                            const esImpacto = stageId === IMPACTO_STAGE_ID;
+
                             return (
-                                <Bar 
+                                <Bar
                                     key={stageId}
-                                    dataKey={dataKey} 
-                                    stackId="a" 
-                                    name={s.label} 
-                                    fill={color} 
-                                    minPointSize={0} 
+                                    dataKey={dataKey}
+                                    stackId="a"
+                                    name={s.label}
+                                    fill={color}
+                                    // El segmento Impacto siempre se nota, aunque el informe
+                                    // dure 0 días (inicio = fin) o muy poco en un eje de años.
+                                    minPointSize={esImpacto ? 4 : 0}
                                     xAxisId="bottom"
                                 >
                                     {processedData.map((d: any, index: number) => (
-                                        <Cell 
-                                            key={`cell-${stageId}-${index}`} 
-                                            fill={d[dataKey] > 0 ? color : 'transparent'} 
-                                            stroke="none" 
+                                        <Cell
+                                            key={`cell-${stageId}-${index}`}
+                                            fill={
+                                                d[dataKey] > 0 || (esImpacto && d[dataKey] !== undefined && (d.informes?.length ?? 0) > 0)
+                                                    ? color
+                                                    : 'transparent'
+                                            }
+                                            stroke="none"
                                         />
                                     ))}
                                 </Bar>

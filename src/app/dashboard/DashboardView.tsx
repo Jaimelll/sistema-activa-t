@@ -87,8 +87,45 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     };
 
     // Main Filter Logic (Applied to Data)
+    // Grupos que tienen informe de impacto registrado: definen la fase Impacto
+    // a nivel de grupo (la línea de tiempo dibuja esa etapa SOLO desde informes).
+    const gruposConInforme = useMemo(
+        () => new Set((informesImpacto || []).map((i: any) => Number(i.grupo_id))),
+        [informesImpacto],
+    );
+
+    // Sin informe de impacto NO hay etapa Impacto: los proyectos que Gestión de
+    // Proyectos marca en Impacto pero cuyo grupo no tiene informe registrado se
+    // tratan como Pre-Impacto en todo este dashboard (filtros, KPIs, etiquetas
+    // y línea de tiempo).
+    const normalizarImpactoSinInforme = useMemo(() => {
+        return (item: any) => {
+            const enImpacto =
+                item.fase === 'Impacto' ||
+                String(item.etapaId ?? item.etapa_id ?? '') === '10' ||
+                item.etapa === 'Impacto' ||
+                item.estado === 'Impacto';
+            if (!enImpacto || gruposConInforme.has(Number(item.grupo_id))) return item;
+            const out: any = { ...item, fase: 'Pre-Impacto' };
+            if ('etapaId' in item) out.etapaId = 9;
+            if ('etapa_id' in item) out.etapa_id = 9;
+            if ('etapa' in item) out.etapa = 'Pre-Impacto';
+            if ('estado' in item) out.estado = 'Pre-Impacto';
+            return out;
+        };
+    }, [gruposConInforme]);
+
+    const dashboardDataNorm = useMemo(
+        () => dashboardData.map(normalizarImpactoSinInforme),
+        [dashboardData, normalizarImpactoSinInforme],
+    );
+    const timelineDataNorm = useMemo(
+        () => timelineDataState.map(normalizarImpactoSinInforme),
+        [timelineDataState, normalizarImpactoSinInforme],
+    );
+
     const filteredData = useMemo(() => {
-        const res = dashboardData.filter(item => {
+        const res = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
 
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
@@ -96,12 +133,19 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
 
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
-            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            // La fase Impacto se define EXCLUSIVAMENTE por los informes de impacto:
+            // solo entran grupos con informe registrado, aunque sus proyectos tengan
+            // otra etapa en Gestión de Proyectos — y un proyecto en etapa Impacto
+            // SIN informe no cuenta como fase Impacto.
+            const matchFase = isIgnored(selectedFase)
+                || (selectedFase === 'Impacto'
+                    ? gruposConInforme.has(Number(item.grupo_id))
+                    : item.fase === selectedFase);
 
             return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad;
         });
         return res;
-    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad]);
+    }, [dashboardDataNorm, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad, gruposConInforme]);
 
     // REACTIVE GLOBAL FILTER EFFECT
     useEffect(() => {
@@ -135,7 +179,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         // Para cada filtro, calculamos sus opciones disponibles filtrando la data con TODOS LOS DEMÁS filtros.
         
         // 1. Opciones de Ejes (dependen de Año, Fase, Línea, Etapa, Modalidad)
-        const dataForEjes = dashboardData.filter(item => {
+        const dataForEjes = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
@@ -149,7 +193,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         // 2. Opciones de Líneas (dependen de Año, Fase, Eje, Etapa, Modalidad)
-        const dataForLineas = dashboardData.filter(item => {
+        const dataForLineas = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
@@ -163,7 +207,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         // 3. Opciones de Etapas (dependen de Año, Fase, Eje, Línea, Modalidad)
-        const dataForEtapas = dashboardData.filter(item => {
+        const dataForEtapas = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
@@ -177,7 +221,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => Number(a.value) - Number(b.value));
 
         // 4. Opciones de Fases (dependen de Año, Eje, Línea, Etapa, Modalidad)
-        const dataForFases = dashboardData.filter(item => {
+        const dataForFases = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
@@ -185,7 +229,14 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad;
         });
-        const dynamicFases = Array.from(new Set(dataForFases.map(d => d.fase).filter(Boolean)))
+        const fasesPresentes = new Set(dataForFases.map(d => d.fase).filter(Boolean));
+        // La fase Impacto se define por los informes de impacto (no por la etapa
+        // de los proyectos): la opción existe si algún grupo dentro de los
+        // filtros actuales tiene informe registrado.
+        if (dataForFases.some(d => gruposConInforme.has(Number(d.grupo_id)))) {
+            fasesPresentes.add('Impacto');
+        }
+        const dynamicFases = Array.from(fasesPresentes)
             .sort((a, b) => {
                 const indexA = fases.indexOf(a);
                 const indexB = fases.indexOf(b);
@@ -196,7 +247,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             });
 
         // 5. Opciones de Modalidades (dependen de Año, Fase, Eje, Línea, Etapa)
-        const dataForModalidades = dashboardData.filter(item => {
+        const dataForModalidades = dashboardDataNorm.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
@@ -210,7 +261,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
         return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades };
-    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades, fases]);
+    }, [dashboardDataNorm, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades, fases, gruposConInforme]);
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
@@ -374,8 +425,8 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // Linkage Fix: Filter timelineData based on filteredData IDs
     const filteredTimelineData = useMemo(() => {
         const activeIds = new Set(filteredData.map(d => d.id));
-        return timelineDataState.filter(t => activeIds.has(t.id));
-    }, [filteredData, timelineDataState]);
+        return timelineDataNorm.filter(t => activeIds.has(t.id));
+    }, [filteredData, timelineDataNorm]);
 
     const selectedFaseLabel = useMemo(() => {
         if (selectedEtapa !== 'all') {
