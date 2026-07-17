@@ -8,18 +8,20 @@ export const SUPER_ADMIN = 'jduran@fondoempleo.com.pe';
 export const MODULOS_POR_USUARIO: Record<string, string[] | 'ALL'> = {
     // 'Supervisión' (mostrado como "Monitoreo"), 'Gestión de Monitores' y 'Evaluación'
     // son exclusivos del super admin (jduran, vía 'ALL') — no asignarlos aquí.
+    // 'Inf. Gerencial' es restringido: solo rcarbajal, pricra y el super admin.
+    // 'Catálogos': edita solo el super admin; rcarbajal y erizabal lo VEN (solo lectura).
     'jduran@fondoempleo.com.pe': 'ALL',
-    'invitado@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios'],
-    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes'],
+    'invitado@fondoempleo.com.pe': ['Proyectos', 'Servicios'],
+    'rcarbajal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos', 'Gestión de Proyectos', 'Gestión de Servicios', 'Gestión de Aportantes', 'Catálogos'],
     'pricra@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Aportantes'],
-    'herique@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios'],
-    'arojas@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
-    'erizabal@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
+    'herique@fondoempleo.com.pe': ['Proyectos', 'Servicios'],
+    'arojas@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios'],
+    'erizabal@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Gestión de Proyectos', 'Gestión de Servicios', 'Catálogos'],
     'jleclere@fondoempleo.com.pe': ['Proyectos'],
     'jbozzo@fondoempleo.com.pe': ['Proyectos'],
     'emoya@fondoempleo.com.pe': ['Servicios', 'Gestión de Servicios'],
     'hmeza@fondoempleo.com.pe': ['Proyectos', 'Servicios'],
-    'pconcha@fondoempleo.com.pe': ['Inf. Gerencial', 'Proyectos', 'Servicios', 'Documentos'],
+    'pconcha@fondoempleo.com.pe': ['Proyectos', 'Servicios', 'Documentos'],
 };
 
 // Mapa de módulo → ruta principal (para validación en middleware)
@@ -69,6 +71,17 @@ export function getModulosVisibles(email: string | null | undefined): string[] |
     const permisos = MODULOS_POR_USUARIO[norm];
     if (!permisos) return []; // usuario no conocido → sin acceso
     return permisos;
+}
+
+/** Puede VER el módulo Catálogos (super admin o usuarios con el módulo asignado). */
+export function puedeVerCatalogos(email: string | null | undefined): boolean {
+    const norm = getNormalizedEmail(email);
+    return norm === SUPER_ADMIN || tieneAccesoModulo(norm, 'Catálogos');
+}
+
+/** Puede EDITAR (crear/actualizar/eliminar) en Catálogos: solo el super admin. */
+export function puedeEditarCatalogos(email: string | null | undefined): boolean {
+    return getNormalizedEmail(email) === SUPER_ADMIN;
 }
 
 /** Devuelve true si el usuario puede realizar acciones de evaluación */

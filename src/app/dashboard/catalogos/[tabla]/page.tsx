@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { ChevronLeft } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
-import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
+import { puedeVerCatalogos, puedeEditarCatalogos } from '@/config/permissions';
 import { esTablaValida, etiquetaTabla, COLUMNAS_OCULTAS, ORDEN_FILAS } from '../tablas';
 import { getColumnas, getFilas, getOpcionesCombo } from '../actions';
 import CatalogoEditor from './CatalogoEditor';
@@ -20,14 +20,15 @@ export default async function CatalogoDetallePage({
     const { tabla } = await params;
     if (!esTablaValida(tabla)) notFound();
 
-    // Guarda de página: solo el super admin.
+    // Guarda de página: super admin (edición) o módulo Catálogos (solo lectura).
     const supabase = await createClient();
     const {
         data: { user },
     } = await supabase.auth.getUser();
-    if (getNormalizedEmail(user?.email) !== SUPER_ADMIN) {
+    if (!puedeVerCatalogos(user?.email)) {
         redirect('/dashboard');
     }
+    const soloLectura = !puedeEditarCatalogos(user?.email);
 
     const [columnasTodas, filas, opcionesCombo] = await Promise.all([
         getColumnas(tabla),
@@ -65,7 +66,7 @@ export default async function CatalogoDetallePage({
                     habilitar la introspección incluso de tablas vacías.
                 </div>
             ) : (
-                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} opcionesCombo={opcionesCombo} ordenFilas={ORDEN_FILAS[tabla]} />
+                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} opcionesCombo={opcionesCombo} ordenFilas={ORDEN_FILAS[tabla]} readOnly={soloLectura} />
             )}
         </div>
     );

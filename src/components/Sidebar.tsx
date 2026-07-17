@@ -41,7 +41,9 @@ export function Sidebar() {
         { name: 'Gestión de Proyectos', icon: FolderOpen, href: '/dashboard/gestion-proyectos' },
         { name: 'Gestión de Servicios', icon: BookOpen, href: '/dashboard/gestion-servicios' },
         { name: 'Gestión de Aportantes', icon: Users, href: '/dashboard/gestion-aportantes' },
-        { name: 'Catálogos', icon: Database, href: '/dashboard/catalogos', superAdminOnly: true },
+        // Visible para el super admin (edición) y para usuarios con el módulo
+        // 'Catálogos' asignado (solo lectura) — ver permissions.ts.
+        { name: 'Catálogos', icon: Database, href: '/dashboard/catalogos' },
     ];
 
     // Filtrar los items visibles según los módulos permitidos del usuario

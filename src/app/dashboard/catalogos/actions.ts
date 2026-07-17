@@ -3,16 +3,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Server actions del módulo Catálogos.
 //
-// Acceso EXCLUSIVO del super admin (jduran). Cada acción revalida la identidad
-// del usuario vía el cliente SSR (defensa en profundidad: no confiamos solo en
-// el middleware). Las escrituras usan el cliente admin (service role) para
-// sortear RLS, igual que el resto de módulos de gestión.
+// Lectura: super admin + usuarios con el módulo 'Catálogos' (solo lectura).
+// Escritura: EXCLUSIVA del super admin (jduran). Cada acción revalida la
+// identidad del usuario vía el cliente SSR (defensa en profundidad: no
+// confiamos solo en el middleware). Las escrituras usan el cliente admin
+// (service role) para sortear RLS, igual que el resto de módulos de gestión.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createSSRClient } from '@/utils/supabase/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
+import { getNormalizedEmail, SUPER_ADMIN, puedeVerCatalogos } from '@/config/permissions';
 import { esTablaValida, COLUMNAS_COMBO, type Columna } from './tablas';
 
 // Tag de los catálogos cacheados con unstable_cache en src/app/dashboard/actions.ts
@@ -34,14 +35,25 @@ function getAdminSupabase() {
     return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-/** Lanza si el usuario actual no es el super admin. */
+/** Lanza si el usuario actual no es el super admin (guarda de ESCRITURA). */
 async function assertSuperAdmin() {
     const supabase = await createSSRClient();
     const {
         data: { user },
     } = await supabase.auth.getUser();
     if (getNormalizedEmail(user?.email) !== SUPER_ADMIN) {
-        throw new Error('No autorizado: este módulo es solo para el super admin.');
+        throw new Error('No autorizado: solo el super admin puede modificar catálogos.');
+    }
+}
+
+/** Lanza si el usuario no puede VER catálogos (super admin o módulo asignado). */
+async function assertPuedeVer() {
+    const supabase = await createSSRClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!puedeVerCatalogos(user?.email)) {
+        throw new Error('No autorizado para ver los catálogos.');
     }
 }
 
@@ -70,7 +82,7 @@ function inferTypeFromValue(v: unknown): string {
  * una fila de muestra asumiendo PK = "id".
  */
 export async function getColumnas(tabla: string): Promise<Columna[]> {
-    await assertSuperAdmin();
+    await assertPuedeVer();
     assertTabla(tabla);
     const sb = getAdminSupabase();
 
@@ -112,7 +124,7 @@ export async function getColumnas(tabla: string): Promise<Columna[]> {
 // ─── Lectura de filas ──────────────────────────────────────────────────────────
 
 export async function getFilas(tabla: string): Promise<Record<string, any>[]> {
-    await assertSuperAdmin();
+    await assertPuedeVer();
     assertTabla(tabla);
     const sb = getAdminSupabase();
     const { data, error } = await sb.from(tabla).select('*');
@@ -121,7 +133,7 @@ export async function getFilas(tabla: string): Promise<Record<string, any>[]> {
 }
 
 export async function getConteo(tabla: string): Promise<number> {
-    await assertSuperAdmin();
+    await assertPuedeVer();
     assertTabla(tabla);
     const sb = getAdminSupabase();
     const { count, error } = await sb
@@ -141,7 +153,7 @@ export type OpcionesCombo = Record<string, { libre: boolean; opciones: { value: 
  * editor las muestra como <select>, o como input con sugerencias si `libre`.
  */
 export async function getOpcionesCombo(tabla: string): Promise<OpcionesCombo> {
-    await assertSuperAdmin();
+    await assertPuedeVer();
     assertTabla(tabla);
     const config = COLUMNAS_COMBO[tabla];
     if (!config) return {};

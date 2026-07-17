@@ -32,6 +32,7 @@ export default function CatalogoEditor({
     filas,
     opcionesCombo = {},
     ordenFilas,
+    readOnly = false,
 }: {
     tabla: string;
     columnas: Columna[];
@@ -39,6 +40,8 @@ export default function CatalogoEditor({
     opcionesCombo?: OpcionesCombo;
     /** Columnas por las que ordenar la grilla (prioridad en orden); sin esto, por PK. */
     ordenFilas?: string[];
+    /** Modo visualización: sin alta, sin edición ni eliminación. */
+    readOnly?: boolean;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -154,7 +157,8 @@ export default function CatalogoEditor({
                 />
             </div>
 
-            {/* Alta de elemento */}
+            {/* Alta de elemento (oculta en modo visualización) */}
+            {!readOnly && (
             <form
                 onSubmit={handleCrear}
                 className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4"
@@ -192,6 +196,7 @@ export default function CatalogoEditor({
                     </button>
                 </div>
             </form>
+            )}
 
             {/* Grilla editable */}
             <div className="overflow-x-auto rounded-xl border border-gray-200">
@@ -206,14 +211,16 @@ export default function CatalogoEditor({
                                     )}
                                 </th>
                             ))}
-                            <th className="sticky right-0 bg-gray-50 px-3 py-2 text-right shadow-[inset_1px_0_0_#e5e7eb]">Acciones</th>
+                            {!readOnly && (
+                                <th className="sticky right-0 bg-gray-50 px-3 py-2 text-right shadow-[inset_1px_0_0_#e5e7eb]">Acciones</th>
+                            )}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {filasFiltradas.length === 0 && (
                             <tr>
                                 <td
-                                    colSpan={columnas.length + 1}
+                                    colSpan={columnas.length + (readOnly ? 0 : 1)}
                                     className="px-3 py-8 text-center text-gray-400"
                                 >
                                     Sin elementos.
@@ -221,21 +228,76 @@ export default function CatalogoEditor({
                             </tr>
                         )}
                         {filasFiltradas.map((fila) => (
-                            <FilaEditable
-                                key={String(fila[pk])}
-                                columnas={columnas}
-                                fila={fila}
-                                pk={pk}
-                                opcionesCombo={opcionesCombo}
-                                busy={busy === String(fila[pk]) || isPending}
-                                onGuardar={(edits) => handleGuardar(fila, edits)}
-                                onEliminar={() => handleEliminar(fila)}
-                            />
+                            readOnly ? (
+                                <FilaLectura
+                                    key={String(fila[pk])}
+                                    columnas={columnas}
+                                    fila={fila}
+                                    opcionesCombo={opcionesCombo}
+                                />
+                            ) : (
+                                <FilaEditable
+                                    key={String(fila[pk])}
+                                    columnas={columnas}
+                                    fila={fila}
+                                    pk={pk}
+                                    opcionesCombo={opcionesCombo}
+                                    busy={busy === String(fila[pk]) || isPending}
+                                    onGuardar={(edits) => handleGuardar(fila, edits)}
+                                    onEliminar={() => handleEliminar(fila)}
+                                />
+                            )
                         ))}
                     </tbody>
                 </table>
             </div>
         </div>
+    );
+}
+
+// ─── Fila de solo lectura ──────────────────────────────────────────────────────
+
+function FilaLectura({
+    columnas,
+    fila,
+    opcionesCombo = {},
+}: {
+    columnas: Columna[];
+    fila: Fila;
+    opcionesCombo?: OpcionesCombo;
+}) {
+    return (
+        <tr>
+            {columnas.map((col) => {
+                const valor = fila[col.name];
+                const combo = opcionesCombo[col.name];
+                let contenido: React.ReactNode;
+                if (col.name === 'archivo_url') {
+                    contenido = valor ? (
+                        <a
+                            href={String(valor)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                        >
+                            <ExternalLink className="h-3.5 w-3.5" /> Ver PDF
+                        </a>
+                    ) : (
+                        <span className="text-gray-300">—</span>
+                    );
+                } else if (combo && !combo.libre) {
+                    const opcion = combo.opciones.find((o) => String(o.value) === String(valor));
+                    contenido = opcion ? opcion.label : formatLectura(valor);
+                } else {
+                    contenido = formatLectura(valor);
+                }
+                return (
+                    <td key={col.name} className="px-3 py-2 align-middle text-sm text-gray-700" title={valor != null ? String(valor) : undefined}>
+                        {contenido}
+                    </td>
+                );
+            })}
+        </tr>
     );
 }
 
