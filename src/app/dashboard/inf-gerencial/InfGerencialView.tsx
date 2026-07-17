@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { getPresupuestoMensual, getPresupuestoComparativo, getFinanciamientoEjecucion } from './actions';
+import { getPresupuestoMensual, getFinanciamientoEjecucion } from './actions';
 import { PresentationButton } from '@/components/PresentationButton';
 
 interface AporteFlat {
@@ -142,33 +142,6 @@ const CustomBudgetTooltip = ({ active, payload, label }: any) => {
 };
 
 
-const CustomComparativeTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-        const entry = payload[0];
-        const data = entry.payload;
-        const isPoi = entry.dataKey === 'poi';
-        const title = isPoi ? `Presupuesto` : `Ejecutado`;
-        const total = isPoi ? (data.poi || 0) : (data.ejecutado || 0);
-        const breakdown = isPoi ? (data.poiBreakdown || {}) : (data.ejecutadoBreakdown || {});
-
-        return (
-            <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[220px]">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{title} {data.año}</p>
-                <p className="text-sm font-black text-slate-800 mb-2 border-b pb-1">Total: {formatCurrency(total)}</p>
-                <div className="space-y-1 pt-1">
-                    {Object.entries(breakdown).sort((a: any, b: any) => (b[1] as number) - (a[1] as number)).map(([key, value]) => (
-                        <p key={key} className="text-[11px] font-bold text-slate-600 flex justify-between gap-4">
-                            <span className="uppercase text-slate-400">{key}:</span>
-                            <span className="text-slate-700">{formatCurrency(value as number)}</span>
-                        </p>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-    return null;
-};
-
 export default function InfGerencialView({
     initialData,
     annualTotals,
@@ -187,7 +160,6 @@ export default function InfGerencialView({
     
     // Budgets are now global
     const [presupuestoMensual, setPresupuestoMensual] = useState<any[]>([]);
-    const [presupuestoComparativo, setPresupuestoComparativo] = useState<any[]>([]);
     const [financiamientoEjecucion, setFinanciamientoEjecucion] = useState<{ proyectos: any[]; becas: any[] }>({ proyectos: [], becas: [] });
     const [isLoadingBudget, setIsLoadingBudget] = useState(false);
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
@@ -205,10 +177,7 @@ export default function InfGerencialView({
         const fetchBudgetData = async () => {
             setIsLoadingBudget(true);
             try {
-                const [mensual, comparativo] = await Promise.all([
-                    getPresupuestoMensual(),
-                    getPresupuestoComparativo()
-                ]);
+const mensual = await getPresupuestoMensual();
                 
                 // Map month number to short name
                 const mappedMensual = (mensual || []).map((item: any) => ({
@@ -217,11 +186,9 @@ export default function InfGerencialView({
                 }));
 
                 setPresupuestoMensual(mappedMensual);
-                setPresupuestoComparativo(comparativo || []);
             } catch (error) {
                 console.error("Error fetching budget data:", error);
                 setPresupuestoMensual([]);
-                setPresupuestoComparativo([]);
             } finally {
                 setIsLoadingBudget(false);
             }
@@ -360,10 +327,19 @@ export default function InfGerencialView({
             groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto);
             total += d.monto;
         });
-        return Array.from(groups.entries())
-            .map(([name, value]) => ({ name: shortSectorName(name), value, percent: total > 0 ? (value / total * 100).toFixed(1) + '%' : '0.0%' }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 8);
+        const ordenados = Array.from(groups.entries())
+            .map(([name, value]) => ({ name: shortSectorName(name), value }))
+            .sort((a, b) => b.value - a.value);
+        // Solo 4 barras: los 3 sectores principales + "Otros" con el resto acumulado
+        const top = ordenados.slice(0, 3);
+        const resto = ordenados.slice(3);
+        if (resto.length > 0) {
+            top.push({ name: 'Otros', value: resto.reduce((s, r) => s + r.value, 0) });
+        }
+        return top.map(item => ({
+            ...item,
+            percent: total > 0 ? (item.value / total * 100).toFixed(1) + '%' : '0.0%',
+        }));
     }, [baseData3Y]);
 
     const total3Y = useMemo(() => baseData3Y.reduce((s, d) => s + d.monto, 0), [baseData3Y]);
@@ -638,74 +614,65 @@ export default function InfGerencialView({
                 </div>
             </div>
 
-            {/* Financiamiento de Proyectos y Becas en ejecución */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
-                <div className="mb-6 text-center relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Financiamiento de Proyectos y Becas en ejecución</h3>
-                    <p className="text-xs text-amber-600 font-semibold mt-1">*Grupos 2026: cifras en curso, aún no reflejan el total proyectado</p>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {[
-                        { key: 'proyectos', titulo: 'PROYECTOS', color: '#0d9488', dotClass: 'bg-teal-600', data: financiamientoEjecucion.proyectos, unidad: 'proy.' },
-                        { key: 'becas', titulo: 'BECAS', color: '#2563eb', dotClass: 'bg-blue-600', data: financiamientoEjecucion.becas, unidad: 'becas' },
-                    ].map((panel) => (
-                        <div key={panel.key} className="bg-slate-50/60 p-6 rounded-[2rem] border border-slate-100">
-                            <div className="flex items-center gap-2 mb-4">
-                                <span className={`w-2.5 h-2.5 rounded-full inline-block ${panel.dotClass}`} />
-                                <span className="text-sm font-black text-slate-800 tracking-[0.15em]">{panel.titulo}</span>
-                                <span className="text-sm font-semibold text-slate-400 tracking-[0.15em]">2024 — 2026</span>
-                            </div>
-                            {panel.data.length === 0 ? (
-                                <div className="h-[340px] flex items-center justify-center text-sm text-slate-400 font-semibold italic">
-                                    Sin datos disponibles
-                                </div>
-                            ) : (
-                                <div className="h-[340px] w-full">
-                                    <ResponsiveContainer width="100%" height={340}>
-                                        <BarChart data={panel.data} margin={{ top: 30, right: 10, left: 10, bottom: 40 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis
-                                                dataKey="label"
-                                                tickFormatter={(label: string, index: number) => (panel.data[index]?.proyectado ? `*${label}` : label)}
-                                                axisLine={false}
-                                                tickLine={false}
-                                                interval={0}
-                                                angle={-20}
-                                                textAnchor="end"
-                                                height={50}
-                                                tick={{ fill: '#1e293b', fontWeight: '700', fontSize: 10 }}
-                                            />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => `S/ ${(v / 1000000).toFixed(0)} MM`} width={70} />
-                                            <Tooltip
-                                                formatter={(value: number, name: string, props: any) => [formatCurrency(value), `${props.payload.count} ${panel.unidad}`]}
-                                                contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
-                                            />
-                                            <Bar dataKey="monto" fill={panel.color} radius={[6, 6, 0, 0]} maxBarSize={48} animationDuration={1000}>
-                                                <LabelList
-                                                    dataKey="monto"
-                                                    position="top"
-                                                    fill="#1e293b"
-                                                    fontSize={11}
-                                                    fontWeight={700}
-                                                    formatter={(v: number) => `S/ ${(v / 1000000).toFixed(1)} MM`}
-                                                />
-                                                <LabelList
-                                                    dataKey="count"
-                                                    position="insideTop"
-                                                    fill="#fff"
-                                                    fontSize={11}
-                                                    fontWeight={700}
-                                                    formatter={(v: number) => panel.key === 'becas' ? `${v} becas` : `${v}`}
-                                                />
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            )}
+            {/* Financiamiento en curso: dos gráficos independientes a ancho completo */}
+            {[
+                { key: 'proyectos', titulo: 'Financiamiento de Proyectos en curso', color: '#0d9488', data: financiamientoEjecucion.proyectos, unidad: 'proy.' },
+                { key: 'becas', titulo: 'Financiamiento de Becas en curso', color: '#2563eb', data: financiamientoEjecucion.becas, unidad: 'becas' },
+            ].map((panel) => (
+                <div key={panel.key} className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                    <div className="mb-6 text-center">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{panel.titulo}</h3>
+                        <p className="text-xs text-amber-600 font-semibold mt-1">*Grupos 2026: cifras en curso, aún no reflejan el total proyectado</p>
+                    </div>
+                    {panel.data.length === 0 ? (
+                        <div className="h-[340px] flex items-center justify-center text-sm text-slate-400 font-semibold italic">
+                            Sin datos disponibles
                         </div>
-                    ))}
+                    ) : (
+                        <div className="h-[360px] w-full">
+                            <ResponsiveContainer width="100%" height={360}>
+                                <BarChart data={panel.data} margin={{ top: 30, right: 10, left: 10, bottom: isMobile ? 60 : 40 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis
+                                        dataKey="label"
+                                        tickFormatter={(label: string, index: number) => (panel.data[index]?.proyectado ? `*${label}` : label)}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        interval={0}
+                                        angle={isMobile ? -35 : -20}
+                                        textAnchor="end"
+                                        height={isMobile ? 70 : 50}
+                                        tick={{ fill: '#1e293b', fontWeight: '700', fontSize: isMobile ? 9 : 10 }}
+                                    />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 9 : 11 }} tickFormatter={(v) => `S/ ${(v / 1000000).toFixed(0)} MM`} width={isMobile ? 52 : 70} />
+                                    <Tooltip
+                                        formatter={(value: number, name: string, props: any) => [formatCurrency(value), `${props.payload.count} ${panel.unidad}`]}
+                                        contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
+                                    />
+                                    <Bar dataKey="monto" fill={panel.color} radius={[6, 6, 0, 0]} maxBarSize={56} animationDuration={1000}>
+                                        <LabelList
+                                            dataKey="monto"
+                                            position="top"
+                                            fill="#1e293b"
+                                            fontSize={isMobile ? 8 : 11}
+                                            fontWeight={700}
+                                            formatter={(v: number) => `S/ ${(v / 1000000).toFixed(1)} MM`}
+                                        />
+                                        <LabelList
+                                            dataKey="count"
+                                            position="insideTop"
+                                            fill="#fff"
+                                            fontSize={isMobile ? 8 : 11}
+                                            fontWeight={700}
+                                            formatter={(v: number) => panel.key === 'becas' ? (isMobile ? `${v}` : `${v} becas`) : `${v}`}
+                                        />
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
                 </div>
-            </div>
+            ))}
 
             {/* Financial Evolution Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
@@ -753,36 +720,6 @@ export default function InfGerencialView({
                             <span className="text-lg font-bold text-[#1e293b] tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
                         </div>
                     ))}
-                </div>
-            </div>
-
-            {/* Comparative Budget Chart (Moved to bottom) */}
-            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full text-center">
-                <div className="mb-8 relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">POI 2024-2026</h3>
-                    <p className="text-sm font-medium text-slate-400">(Presupuesto vs Ejecutado)</p>
-                    <div className="absolute top-0 right-0">
-                        <PresentationButton chartId="poi-comparativo" />
-                    </div>
-                </div>
-                <div className="h-[350px] w-full flex flex-col items-center justify-center">
-                    {isLoadingBudget ? (
-                        <p className="text-center text-slate-400 py-20 font-bold animate-pulse">Cargando datos del presupuesto...</p>
-                    ) : presupuestoComparativo.length === 0 ? (
-                        <p className="text-center text-slate-400 py-20">No hay datos comparativos disponibles.</p>
-                    ) : (
-                        <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={presupuestoComparativo} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="año" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 13 }} tickFormatter={formatCompactCurrency} width={85} />
-                                <Tooltip shared={false} content={<CustomComparativeTooltip />} />
-                                <Legend verticalAlign="top" iconType="circle" wrapperStyle={{ paddingBottom: '20px' }} />
-                                <Bar dataKey="poi" name="Presupuesto" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="ejecutado" name="Ejecutado" fill="#dc2626" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    )}
                 </div>
             </div>
 
