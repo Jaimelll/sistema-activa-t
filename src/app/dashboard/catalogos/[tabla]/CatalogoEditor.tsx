@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Save, Trash2, Search, Upload, ExternalLink } from 'lucide-react';
 import type { Columna } from '../tablas';
-import { actualizarFila, crearFila, eliminarFila, subirArchivoCatalogo } from '../actions';
+import { actualizarFila, crearFila, eliminarFila, subirArchivoCatalogo, type OpcionesCombo } from '../actions';
 
 type Fila = Record<string, any>;
 
@@ -35,7 +35,7 @@ export default function CatalogoEditor({
     tabla: string;
     columnas: Columna[];
     filas: Fila[];
-    opcionesCombo?: Record<string, { value: any; label: string }[]>;
+    opcionesCombo?: OpcionesCombo;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -159,7 +159,7 @@ export default function CatalogoEditor({
                             <CampoInput
                                 col={col}
                                 value={nuevo[col.name]}
-                                opciones={opcionesCombo[col.name]}
+                                combo={opcionesCombo[col.name]}
                                 onChange={(v) =>
                                     setNuevo((prev) => ({ ...prev, [col.name]: v }))
                                 }
@@ -240,7 +240,7 @@ function FilaEditable({
     fila: Fila;
     pk: string;
     busy: boolean;
-    opcionesCombo?: Record<string, { value: any; label: string }[]>;
+    opcionesCombo?: OpcionesCombo;
     onGuardar: (edits: Fila) => void;
     onEliminar: () => void;
 }) {
@@ -270,7 +270,7 @@ function FilaEditable({
                         <CampoInput
                             col={col}
                             value={edits[col.name]}
-                            opciones={opcionesCombo[col.name]}
+                            combo={opcionesCombo[col.name]}
                             onChange={(v) =>
                                 setEdits((prev) => ({ ...prev, [col.name]: v }))
                             }
@@ -312,14 +312,15 @@ function CampoInput({
     value,
     onChange,
     compact,
-    opciones,
+    combo,
 }: {
     col: Columna;
     value: any;
     onChange: (v: any) => void;
     compact?: boolean;
-    opciones?: { value: any; label: string }[];
+    combo?: { libre: boolean; opciones: { value: any; label: string }[] };
 }) {
+    const datalistId = useId();
     const base = `rounded-md border border-gray-300 px-2 text-sm focus:border-primary focus:outline-none ${
         compact ? 'py-1' : 'py-1.5'
     }`;
@@ -328,8 +329,31 @@ function CampoInput({
         return <CampoArchivo value={value} onChange={onChange} base={base} compact={compact} />;
     }
 
-    // Columna de referencia con combo (p. ej. grupo_id): se elige por nombre.
-    if (opciones && opciones.length > 0) {
+    // Columna con combo (p. ej. grupo_id, unidad operativa, mes): se elige por nombre.
+    if (combo && combo.opciones.length > 0) {
+        // Variante "libre": sugerencias del catálogo + se puede escribir un valor nuevo.
+        if (combo.libre) {
+            return (
+                <>
+                    <input
+                        type="text"
+                        list={datalistId}
+                        value={value ?? ''}
+                        title={value ? String(value) : undefined}
+                        onChange={(e) => onChange(e.target.value || null)}
+                        placeholder="Elige o escribe…"
+                        className={`${base} w-full ${compact ? 'min-w-56' : 'min-w-64'}`}
+                    />
+                    <datalist id={datalistId}>
+                        {combo.opciones.map((o) => (
+                            <option key={String(o.value)} value={String(o.value)}>
+                                {o.label}
+                            </option>
+                        ))}
+                    </datalist>
+                </>
+            );
+        }
         return (
             <select
                 value={value ?? ''}
@@ -340,7 +364,7 @@ function CampoInput({
                 className={`${base} w-full ${compact ? 'min-w-44' : 'min-w-56'}`}
             >
                 <option value="">— Seleccionar —</option>
-                {opciones.map((o) => (
+                {combo.opciones.map((o) => (
                     <option key={String(o.value)} value={o.value}>
                         {o.label}
                     </option>

@@ -133,32 +133,46 @@ export async function getConteo(tabla: string): Promise<number> {
 
 // ─── Opciones para columnas combo (FK) ─────────────────────────────────────────
 
+export type OpcionesCombo = Record<string, { libre: boolean; opciones: { value: any; label: string }[] }>;
+
 /**
- * Devuelve las opciones {value,label} de cada columna combo de la tabla
- * (config en COLUMNAS_COMBO). El editor las muestra como <select> buscable.
+ * Devuelve las opciones de cada columna combo de la tabla (config en
+ * COLUMNAS_COMBO): estáticas (p. ej. meses) o leídas de un catálogo. El
+ * editor las muestra como <select>, o como input con sugerencias si `libre`.
  */
-export async function getOpcionesCombo(
-    tabla: string,
-): Promise<Record<string, { value: any; label: string }[]>> {
+export async function getOpcionesCombo(tabla: string): Promise<OpcionesCombo> {
     await assertSuperAdmin();
     assertTabla(tabla);
     const config = COLUMNAS_COMBO[tabla];
     if (!config) return {};
     const sb = getAdminSupabase();
-    const out: Record<string, { value: any; label: string }[]> = {};
+    const out: OpcionesCombo = {};
     for (const [col, ref] of Object.entries(config)) {
-        let q = sb.from(ref.tabla).select(`${ref.valor}, ${ref.etiqueta}`);
+        if (ref.estatico) {
+            out[col] = { libre: Boolean(ref.libre), opciones: ref.estatico };
+            continue;
+        }
+        if (!ref.tabla || !ref.valor || !ref.etiqueta) continue;
+        const cols = [ref.valor, ref.etiqueta, ...(ref.etiquetaExtra ? [ref.etiquetaExtra] : [])];
+        let q = sb.from(ref.tabla).select(cols.join(', '));
         if (ref.filtro) q = q.eq(ref.filtro[0], ref.filtro[1]);
         const { data, error } = await q.order(ref.etiqueta, { ascending: true });
         if (error) {
             console.error(`Error cargando opciones de ${tabla}.${col}:`, error.message);
-            out[col] = [];
+            out[col] = { libre: Boolean(ref.libre), opciones: [] };
             continue;
         }
-        out[col] = (data || []).map((r: any) => ({
-            value: r[ref.valor],
-            label: String(r[ref.etiqueta] ?? r[ref.valor]).trim(),
-        }));
+        out[col] = {
+            libre: Boolean(ref.libre),
+            opciones: (data || []).map((r: any) => {
+                const principal = String(r[ref.etiqueta!] ?? r[ref.valor!]).trim();
+                const extra = ref.etiquetaExtra ? String(r[ref.etiquetaExtra] ?? '').trim() : '';
+                return {
+                    value: r[ref.valor!],
+                    label: extra && extra !== principal ? `${principal} — ${extra}` : principal,
+                };
+            }),
+        };
     }
     return out;
 }
