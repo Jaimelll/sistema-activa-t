@@ -31,11 +31,14 @@ export default function CatalogoEditor({
     columnas,
     filas,
     opcionesCombo = {},
+    ordenFilas,
 }: {
     tabla: string;
     columnas: Columna[];
     filas: Fila[];
     opcionesCombo?: OpcionesCombo;
+    /** Columnas por las que ordenar la grilla (prioridad en orden); sin esto, por PK. */
+    ordenFilas?: string[];
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -59,11 +62,22 @@ export default function CatalogoEditor({
 
     const filasFiltradas = useMemo(() => {
         const term = q.trim().toLowerCase();
-        const orden = [...filas].sort((a, b) => {
-            const av = a[pk];
-            const bv = b[pk];
+        const compararPor = (a: Fila, b: Fila, col: string) => {
+            const av = a[col];
+            const bv = b[col];
+            if (av === bv) return 0;
+            if (av === null || av === undefined) return 1;
+            if (bv === null || bv === undefined) return -1;
             if (typeof av === 'number' && typeof bv === 'number') return av - bv;
-            return String(av).localeCompare(String(bv));
+            return String(av).localeCompare(String(bv), 'es');
+        };
+        const claves = ordenFilas && ordenFilas.length > 0 ? ordenFilas : [pk];
+        const orden = [...filas].sort((a, b) => {
+            for (const col of claves) {
+                const cmp = compararPor(a, b, col);
+                if (cmp !== 0) return cmp;
+            }
+            return compararPor(a, b, pk); // desempate estable
         });
         if (!term) return orden;
         return orden.filter((f) =>
@@ -71,7 +85,7 @@ export default function CatalogoEditor({
                 String(v ?? '').toLowerCase().includes(term),
             ),
         );
-    }, [filas, q, pk]);
+    }, [filas, q, pk, ordenFilas]);
 
     function refrescar() {
         startTransition(() => router.refresh());

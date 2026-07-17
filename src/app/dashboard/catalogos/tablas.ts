@@ -29,7 +29,7 @@ export const TABLAS = [
     'unidades_operativas',
     'presupuesto_anual_comparativo',
     'presupuesto_mensual',
-    'aportantes_anual',
+    'finanzas_anual',
 ] as const;
 
 export type Tabla = (typeof TABLAS)[number];
@@ -51,7 +51,7 @@ const ETIQUETAS: Record<string, string> = {
     unidades_operativas: 'Unidades Operativas',
     presupuesto_anual_comparativo: 'Presupuesto Anual (POI vs Ejecutado)',
     presupuesto_mensual: 'Presupuesto Mensual',
-    aportantes_anual: 'Aportantes por Año',
+    finanzas_anual: 'Finanzas Anuales (Rubros y Saldos)',
 };
 
 /** Etiqueta legible para una tabla ("tipo_estudio" → "Tipo Estudio"). */
@@ -68,7 +68,17 @@ export function etiquetaTabla(t: string): string {
  */
 export const COLUMNAS_OCULTAS: Record<string, string[]> = {
     informe_impacto: ['linea_id', 'created_at'],
-    aportantes_anual: ['created_at'],
+    finanzas_anual: ['created_at'],
+};
+
+/**
+ * Orden de las filas en la grilla, por tabla (columnas en orden de prioridad).
+ * Sin entrada aquí, se ordena por la clave primaria.
+ */
+export const ORDEN_FILAS: Record<string, string[]> = {
+    finanzas_anual: ['año', 'rubro'],
+    presupuesto_mensual: ['año', 'mes', 'unidad_operativa_id'],
+    presupuesto_anual_comparativo: ['año', 'unidad_operativa_id'],
 };
 
 /**
@@ -108,10 +118,25 @@ export const COLUMNAS_COMBO: Record<string, Record<string, ComboConfig>> = {
         unidad_operativa_id: { tabla: 'unidades_operativas', valor: 'id', etiqueta: 'siglas', etiquetaExtra: 'nombre_completo' },
         mes: { estatico: MESES },
     },
-    aportantes_anual: {
-        // El nombre de empresa es texto en la BD: combo con las empresas del
-        // módulo Gestión de Aportantes + posibilidad de escribir una nueva.
-        empresa: { tabla: 'empresas', valor: 'razon_social', etiqueta: 'razon_social', libre: true },
+    finanzas_anual: {
+        // Combos fijos SIN texto libre: los gráficos de Inf. Gerencial y la
+        // vista de Presentación buscan estos nombres exactos.
+        rubro: {
+            estatico: [
+                { value: 'Aportes', label: 'Aportes' },
+                { value: 'Intereses', label: 'Intereses' },
+                { value: 'G. Operativos', label: 'G. Operativos' },
+                { value: 'Proyectos', label: 'Proyectos' },
+                { value: 'Becas', label: 'Becas' },
+                { value: 'Saldos en Bancos', label: 'Saldos en Bancos' },
+            ],
+        },
+        escenario: {
+            estatico: [
+                { value: 'Real', label: 'Real' },
+                { value: 'Proyectado', label: 'Proyectado' },
+            ],
+        },
     },
 };
 

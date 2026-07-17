@@ -784,29 +784,6 @@ export async function getFinanzasAnual() {
   }
 }
 
-export async function getAportantesAnual() {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { data, error } = await supabase
-      .from('aportantes_anual')
-      .select('*')
-      .order('año', { ascending: true })
-      .order('monto', { ascending: false });
-
-    if (error) {
-      console.error("Error fetching aportantes anual:", error);
-      return [];
-    }
-    return data;
-  } catch (err) {
-    console.error("FATAL ERROR getAportantesAnual:", err);
-    return [];
-  }
-}
-
 // --- PROYECTOS CRUD ACTIONS ---
 
 export async function createProyecto(formData: any) {

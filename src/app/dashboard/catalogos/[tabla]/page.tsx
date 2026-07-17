@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { ChevronLeft } from 'lucide-react';
 import { createClient } from '@/utils/supabase/server';
 import { getNormalizedEmail, SUPER_ADMIN } from '@/config/permissions';
-import { esTablaValida, etiquetaTabla, COLUMNAS_OCULTAS } from '../tablas';
+import { esTablaValida, etiquetaTabla, COLUMNAS_OCULTAS, ORDEN_FILAS } from '../tablas';
 import { getColumnas, getFilas, getOpcionesCombo } from '../actions';
 import CatalogoEditor from './CatalogoEditor';
 
@@ -65,7 +65,7 @@ export default async function CatalogoDetallePage({
                     habilitar la introspección incluso de tablas vacías.
                 </div>
             ) : (
-                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} opcionesCombo={opcionesCombo} />
+                <CatalogoEditor tabla={tabla} columnas={columnas} filas={filas} opcionesCombo={opcionesCombo} ordenFilas={ORDEN_FILAS[tabla]} />
             )}
         </div>
     );
