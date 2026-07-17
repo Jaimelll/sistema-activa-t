@@ -1,5 +1,5 @@
 import { getAportantesData, getSectoresDistintos, getUnidadesOperativas } from './actions';
-import { getFinanzasAnual } from '../actions';
+import { getFinanzasAnual, getSaldosBancarios } from '../actions';
 import InfGerencialView from './InfGerencialView';
 
 export const dynamic = 'force-dynamic';
@@ -10,14 +10,16 @@ export default async function InfGerencialPage() {
     const sectores = await getSectoresDistintos();
     const finanzas = await getFinanzasAnual();
     const unidades = await getUnidadesOperativas();
+    const saldosBancarios = await getSaldosBancarios();
 
     return (
-        <InfGerencialView 
-            initialData={data} 
+        <InfGerencialView
+            initialData={data}
             annualTotals={annualTotals}
-            sectores={sectores} 
+            sectores={sectores}
             finanzasData={finanzas}
             unidades={unidades}
+            saldosBancarios={saldosBancarios}
         />
     );
 }

@@ -730,6 +730,39 @@ export async function getTimelineData(especialistaId?: number) {
   }
 }
 
+// --- SALDOS BANCARIOS POR BANCO (editados desde Catálogos) ---
+
+const _getSaldosBancarios = unstable_cache(
+  async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // select('*'): el parser de tipos de supabase-js no soporta la "ñ" de "año"
+      // en la lista de columnas.
+      const { data, error } = await supabase
+        .from('saldo_bancario')
+        .select('*')
+        .order('año', { ascending: true })
+        .order('monto', { ascending: false });
+
+      if (error) {
+        // La tabla puede no existir aún (se crea por SQL): degradar sin romper la página.
+        console.error("Error fetching saldos bancarios:", error.message);
+        return [];
+      }
+      return data || [];
+    } catch (err) {
+      console.error("FATAL ERROR getSaldosBancarios:", err);
+      return [];
+    }
+  },
+  ['catalog:saldos-bancarios'],
+  { revalidate: CATALOG_REVALIDATE_SECONDS, tags: [CATALOG_TAG] } // ediciones desde Catálogos lo invalidan
+);
+export async function getSaldosBancarios() { return _getSaldosBancarios(); }
+
 // --- INFORMES DE IMPACTO (por grupo, editados desde Catálogos) ---
 
 const _getInformesImpacto = unstable_cache(

@@ -147,13 +147,15 @@ export default function InfGerencialView({
     annualTotals,
     sectores,
     finanzasData,
-    unidades
+    unidades,
+    saldosBancarios = []
 }: {
     initialData: AporteFlat[],
     annualTotals: Record<number, number>,
     sectores: string[],
     finanzasData: FinanzasItem[],
-    unidades: UnidadOperativa[]
+    unidades: UnidadOperativa[],
+    saldosBancarios?: { id: number; año: number; banco: string; monto: number }[]
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSector, setSelectedSector] = useState<string>('all');
@@ -236,14 +238,23 @@ const mensual = await getPresupuestoMensual();
 
     const activeRubros = Object.keys(COLORS_FINANZAS);
 
+    // Saldos bancarios por banco (tabla saldo_bancario, editada en Catálogos):
+    // una tarjeta por año con el desglose por banco y el total calculado.
     const historicalSaldos = useMemo(() => {
-        return finanzasData
-            .filter(d => d.rubro === 'Saldos en Bancos' && d.año >= 2024 && !(d.año === 2026 && d.escenario === 'Proyectado'))
-            .sort((a, b) => {
-                if (a.año !== b.año) return a.año - b.año;
-                return (a.escenario === 'Proyectado' ? 1 : -1);
+        const porAño = new Map<number, { año: number; total: number; bancos: { banco: string; monto: number }[] }>();
+        saldosBancarios
+            .filter(s => Number(s.año) >= 2024)
+            .forEach(s => {
+                const año = Number(s.año);
+                if (!porAño.has(año)) porAño.set(año, { año, total: 0, bancos: [] });
+                const entry = porAño.get(año)!;
+                entry.total += Number(s.monto) || 0;
+                entry.bancos.push({ banco: s.banco, monto: Number(s.monto) || 0 });
             });
-    }, [finanzasData]);
+        return Array.from(porAño.values())
+            .map(e => ({ ...e, bancos: e.bancos.sort((a, b) => b.monto - a.monto) }))
+            .sort((a, b) => a.año - b.año);
+    }, [saldosBancarios]);
 
     const last5Years = useMemo(() => {
         const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
@@ -711,16 +722,32 @@ const mensual = await getPresupuestoMensual();
                 <div className="mb-6 text-center">
                     <h3 className="text-xl font-black text-slate-900 tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
                 </div>
-                <div className="flex flex-nowrap gap-4 min-w-full pb-2">
-                    {historicalSaldos.map((item) => (
-                        <div key={`${item.año}-${item.escenario}`} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[150px] flex flex-col items-center justify-center shadow-sm">
-                            <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest mb-1">
-                                {item.año}
-                            </span>
-                            <span className="text-lg font-bold text-[#1e293b] tabular-nums">{formatCurrencyWithCents(item.monto)}</span>
-                        </div>
-                    ))}
-                </div>
+                {historicalSaldos.length === 0 ? (
+                    <p className="text-center text-sm text-slate-400 font-semibold italic py-6">
+                        Sin saldos registrados (Catálogos → Saldos Bancarios)
+                    </p>
+                ) : (
+                    <div className="flex flex-col md:flex-row gap-4 min-w-full pb-2">
+                        {historicalSaldos.map((item) => (
+                            <div key={item.año} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[180px] flex flex-col shadow-sm">
+                                <div className="text-center mb-2">
+                                    <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest block">
+                                        {item.año}
+                                    </span>
+                                    <span className="text-lg font-bold text-[#1e293b] tabular-nums">{formatCurrencyWithCents(item.total)}</span>
+                                </div>
+                                <div className="space-y-1 border-t border-slate-200 pt-2">
+                                    {item.bancos.map((b, i) => (
+                                        <div key={i} className="flex justify-between items-center gap-3 text-[11px]">
+                                            <span className="font-bold text-slate-500 uppercase tracking-tight truncate" title={b.banco}>{b.banco}</span>
+                                            <span className="font-semibold text-slate-700 tabular-nums shrink-0">{formatCurrencyWithCents(b.monto)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Monthly Budget Chart (Moved to bottom) */}

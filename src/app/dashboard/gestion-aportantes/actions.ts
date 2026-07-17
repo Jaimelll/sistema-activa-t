@@ -99,7 +99,8 @@ export async function getFinancialSummary() {
     noStore();
     // También usamos el admin client para leer sin bloqueos de RLS
     const supabase = getAdminSupabase();
-    const rubros = ['Intereses', 'G. Operativos', 'Proyectos', 'Becas', 'Saldos en Bancos'];
+    // "Saldos en Bancos" se gestiona ahora por banco en Catálogos (saldo_bancario).
+    const rubros = ['Intereses', 'G. Operativos', 'Proyectos', 'Becas'];
 
     const { data, error } = await supabase
         .from('finanzas_anual')

@@ -174,15 +174,24 @@ export async function getOpcionesCombo(tabla: string): Promise<OpcionesCombo> {
             out[col] = { libre: Boolean(ref.libre), opciones: [] };
             continue;
         }
+        const opciones = (data || []).map((r: any) => {
+            const principal = String(r[ref.etiqueta!] ?? r[ref.valor!]).trim();
+            const extra = ref.etiquetaExtra ? String(r[ref.etiquetaExtra] ?? '').trim() : '';
+            return {
+                value: r[ref.valor!],
+                label: extra && extra !== principal ? `${principal} — ${extra}` : principal,
+            };
+        });
+        // Dedupe: necesario cuando las opciones salen de una columna con valores
+        // repetidos (p. ej. banco de saldo_bancario).
+        const vistos = new Set<string>();
         out[col] = {
             libre: Boolean(ref.libre),
-            opciones: (data || []).map((r: any) => {
-                const principal = String(r[ref.etiqueta!] ?? r[ref.valor!]).trim();
-                const extra = ref.etiquetaExtra ? String(r[ref.etiquetaExtra] ?? '').trim() : '';
-                return {
-                    value: r[ref.valor!],
-                    label: extra && extra !== principal ? `${principal} — ${extra}` : principal,
-                };
+            opciones: opciones.filter((o) => {
+                const k = String(o.value);
+                if (vistos.has(k)) return false;
+                vistos.add(k);
+                return true;
             }),
         };
     }

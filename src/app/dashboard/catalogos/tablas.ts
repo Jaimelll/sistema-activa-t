@@ -30,6 +30,7 @@ export const TABLAS = [
     'presupuesto_anual_comparativo',
     'presupuesto_mensual',
     'finanzas_anual',
+    'saldo_bancario',
 ] as const;
 
 export type Tabla = (typeof TABLAS)[number];
@@ -51,7 +52,8 @@ const ETIQUETAS: Record<string, string> = {
     unidades_operativas: 'Unidades Operativas',
     presupuesto_anual_comparativo: 'Presupuesto Anual (POI vs Ejecutado)',
     presupuesto_mensual: 'Presupuesto Mensual',
-    finanzas_anual: 'Finanzas Anuales (Rubros y Saldos)',
+    finanzas_anual: 'Finanzas Anuales (Rubros)',
+    saldo_bancario: 'Saldos Bancarios (por banco)',
 };
 
 /** Etiqueta legible para una tabla ("tipo_estudio" → "Tipo Estudio"). */
@@ -69,6 +71,7 @@ export function etiquetaTabla(t: string): string {
 export const COLUMNAS_OCULTAS: Record<string, string[]> = {
     informe_impacto: ['linea_id', 'created_at'],
     finanzas_anual: ['created_at'],
+    saldo_bancario: ['created_at'],
 };
 
 /**
@@ -79,6 +82,7 @@ export const ORDEN_FILAS: Record<string, string[]> = {
     finanzas_anual: ['año', 'rubro'],
     presupuesto_mensual: ['año', 'mes', 'unidad_operativa_id'],
     presupuesto_anual_comparativo: ['año', 'unidad_operativa_id'],
+    saldo_bancario: ['año', 'banco'],
 };
 
 /**
@@ -137,6 +141,10 @@ export const COLUMNAS_COMBO: Record<string, Record<string, ComboConfig>> = {
                 { value: 'Proyectado', label: 'Proyectado' },
             ],
         },
+    },
+    saldo_bancario: {
+        // Sugerencias con los bancos ya registrados + texto libre para nuevos.
+        banco: { tabla: 'saldo_bancario', valor: 'banco', etiqueta: 'banco', libre: true },
     },
 };
 

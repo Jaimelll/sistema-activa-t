@@ -27,13 +27,14 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
     const router = useRouter();
 
     // Financial Summary State
-    const rubrosFinancieros = ['Intereses', 'G. Operativos', 'Proyectos', 'Becas', 'Saldos en Bancos'];
+    // "Saldos en Bancos" ya no se edita aquí: ahora se desglosa por banco en
+    // Catálogos → Saldos Bancarios (tabla saldo_bancario).
+    const rubrosFinancieros = ['Intereses', 'G. Operativos', 'Proyectos', 'Becas'];
     const rubroIdMap: Record<string, number> = {
         'Intereses': 68,
         'G. Operativos': 69,
         'Proyectos': 70,
-        'Becas': 71,
-        'Saldos en Bancos': 72
+        'Becas': 71
     };
 
     const [finanzas, setFinanzas] = useState(() => {
