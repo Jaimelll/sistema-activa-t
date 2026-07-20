@@ -31,6 +31,7 @@ export const TABLAS = [
     'presupuesto_mensual',
     'finanzas_anual',
     'saldo_bancario',
+    'auditoria_eeff_historico',
 ] as const;
 
 export type Tabla = (typeof TABLAS)[number];
@@ -54,6 +55,7 @@ const ETIQUETAS: Record<string, string> = {
     presupuesto_mensual: 'Presupuesto Mensual',
     finanzas_anual: 'Finanzas Anuales (Rubros)',
     saldo_bancario: 'Saldos Bancarios (por banco)',
+    auditoria_eeff_historico: 'Auditoría EEFF (Gastos y Colaboradores)',
 };
 
 /** Etiqueta legible para una tabla ("tipo_estudio" → "Tipo Estudio"). */
@@ -83,6 +85,7 @@ export const ORDEN_FILAS: Record<string, string[]> = {
     presupuesto_mensual: ['año', 'mes', 'unidad_operativa_id'],
     presupuesto_anual_comparativo: ['año', 'unidad_operativa_id'],
     saldo_bancario: ['año', 'banco'],
+    auditoria_eeff_historico: ['anio'],
 };
 
 /**
@@ -133,6 +136,10 @@ export const COLUMNAS_COMBO: Record<string, Record<string, ComboConfig>> = {
                 { value: 'Proyectos', label: 'Proyectos' },
                 { value: 'Becas', label: 'Becas' },
                 { value: 'Saldos en Bancos', label: 'Saldos en Bancos' },
+                // Conteos (no son S/): alimentan las etiquetas de los gráficos
+                // "Proyectos/Becas ejecutados" de Inf. Gerencial (Sección II).
+                { value: 'Cantidad Proyectos', label: 'Cantidad Proyectos' },
+                { value: 'Cantidad Becas', label: 'Cantidad Becas' },
             ],
         },
         escenario: {
@@ -145,6 +152,18 @@ export const COLUMNAS_COMBO: Record<string, Record<string, ComboConfig>> = {
     saldo_bancario: {
         // Sugerencias con los bancos ya registrados + texto libre para nuevos.
         banco: { tabla: 'saldo_bancario', valor: 'banco', etiqueta: 'banco', libre: true },
+    },
+    auditoria_eeff_historico: {
+        // Combo fijo: el gráfico de la Sección IV colorea las barras según estos
+        // nombres exactos (ver AUDIT_CATEGORIA_COLOR en InfGerencialView).
+        categoria: {
+            estatico: [
+                { value: 'Monitoreo Financiero en la UPS', label: 'Monitoreo Financiero en la UPS' },
+                { value: 'Auditoría asume monit. financiero y auditoría', label: 'Auditoría asume monit. financiero y auditoría' },
+                { value: 'Auditoría sin monitoreo financiero', label: 'Auditoría sin monitoreo financiero' },
+                { value: '2026: retorno del Monitoreo Financiero a la UPS', label: '2026: retorno del Monitoreo Financiero a la UPS' },
+            ],
+        },
     },
 };
 

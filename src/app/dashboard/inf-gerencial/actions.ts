@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from '@/utils/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
@@ -128,7 +129,11 @@ export async function getPresupuestoMensual() {
 const FASES_EN_EJECUCION = ['Etapa Concursal', 'Acciones Preparatorias', 'En Ejecución'];
 
 function grupoBaseProyecto(descripcion: string): string {
-    return descripcion.replace(/ - Eje.*/i, '').replace(/^Actíva-T/, 'Activa-T').trim();
+    const base = descripcion.replace(/ - Eje.*/i, '').replace(/^Actíva-T/, 'Activa-T').trim();
+    // Unir "Sectorial 2026" + "Propuestas Sectorial" en una sola barra "Eje Sectorial 2026"
+    // (conserva el "2026" para mantener el asterisco de "en curso" y el orden por año).
+    if (/^(Sectorial 2026|Propuestas Sectorial)$/i.test(base)) return 'Eje Sectorial 2026';
+    return base;
 }
 
 function grupoBaseBeca(descripcion: string): string {
@@ -162,7 +167,8 @@ export async function getFinanciamientoEjecucion() {
         fetchAllRows((from, to) => supabase.from('proyectos').select(`
             monto_fondoempleo,
             grupo:grupo_id ( descripcion ),
-            etapa:etapa_id ( fase )
+            etapa:etapa_id ( fase ),
+            institucion:institucion_ejecutora_id ( nombre )
         `).not('grupo_id', 'is', null).order('id', { ascending: true }).range(from, to)),
         fetchAllRows((from, to) => supabase.from('becas_nueva').select(`
             presupuesto,
@@ -174,16 +180,19 @@ export async function getFinanciamientoEjecucion() {
     if (pErr) console.error('Error fetching proyectos para financiamiento en ejecución:', pErr);
     if (bErr) console.error('Error fetching becas para financiamiento en ejecución:', bErr);
 
-    const proyectosMap = new Map<string, { monto: number; count: number }>();
+    const proyectosMap = new Map<string, { monto: number; count: number; breakdown: Record<string, number> }>();
     (proyectosRaw || []).forEach((row: any) => {
         const fase = row.etapa?.fase;
         const descripcion = row.grupo?.descripcion;
         if (!descripcion || !FASES_EN_EJECUCION.includes(fase)) return;
 
         const label = grupoBaseProyecto(descripcion);
-        const entry = proyectosMap.get(label) || { monto: 0, count: 0 };
-        entry.monto += Number(row.monto_fondoempleo) || 0;
+        const monto = Number(row.monto_fondoempleo) || 0;
+        const entry = proyectosMap.get(label) || { monto: 0, count: 0, breakdown: {} };
+        entry.monto += monto;
         entry.count += 1;
+        const sigla = row.institucion?.nombre || 'S/D';
+        entry.breakdown[sigla] = (entry.breakdown[sigla] || 0) + monto;
         proyectosMap.set(label, entry);
     });
 
@@ -199,15 +208,45 @@ export async function getFinanciamientoEjecucion() {
         becasMap.set(label, entry);
     });
 
-    const toSortedArray = (map: Map<string, { monto: number; count: number }>) =>
+    const toSortedArray = (map: Map<string, { monto: number; count: number; breakdown?: Record<string, number> }>) =>
         Array.from(map.entries())
-            .map(([label, v]) => ({ label, monto: v.monto, count: v.count, proyectado: /2026/.test(label) }))
+            .map(([label, v]) => ({ label, monto: v.monto, count: v.count, proyectado: /2026/.test(label), breakdown: v.breakdown }))
             .sort((a, b) => sortYearFromLabel(a.label) - sortYearFromLabel(b.label));
 
     return {
         proyectos: toSortedArray(proyectosMap),
         becas: toSortedArray(becasMap),
     };
+}
+
+// --- SECCIÓN IV: ANÁLISIS - DIAGNÓSTICO (Sustento Retorno Monitoreo Financiero) ---
+// Serie histórica de gasto de proyectos/servicios (EEFF) vs. cantidad de
+// colaboradores, 1999-2025 + 2026 proyectado. Datos cargados vía SQL en la
+// tabla `auditoria_eeff_historico` (ver scripts/create_auditoria_eeff.sql).
+export async function getAuditoriaEeff() {
+    // Service role: la tabla tiene RLS (como saldo_bancario), el cliente anon
+    // devuelve vacío. Mismo patrón que getSaldosBancarios/getFinanzasAnual.
+    const supabase = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+    const { data, error } = await supabase
+        .from('auditoria_eeff_historico')
+        .select('*')
+        .order('anio', { ascending: true });
+
+    if (error) {
+        // La tabla puede no existir aún (se crea por SQL): degradar sin romper la página.
+        console.error('Error fetching auditoria_eeff_historico:', error.message);
+        return [];
+    }
+    return (data || []).map((r: any) => ({
+        anio: Number(r.anio),
+        gasto: Number(r.gasto_proyectos_servicios) || 0,
+        colaboradores: Number(r.colaboradores) || 0,
+        categoria: r.categoria || '',
+        proyectado: !!r.proyectado,
+    }));
 }
 
 export async function getPresupuestoComparativo() {

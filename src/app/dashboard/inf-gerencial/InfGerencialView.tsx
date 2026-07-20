@@ -4,11 +4,11 @@ import { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    LineChart, Line, Cell, LabelList
+    LineChart, Line, Cell, LabelList, ComposedChart
 } from 'recharts';
 import { Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
-import { getPresupuestoMensual, getFinanciamientoEjecucion } from './actions';
+import { getPresupuestoMensual, getFinanciamientoEjecucion, getAuditoriaEeff } from './actions';
 import { PresentationButton } from '@/components/PresentationButton';
 
 interface AporteFlat {
@@ -142,6 +142,33 @@ const CustomBudgetTooltip = ({ active, payload, label }: any) => {
 };
 
 
+// Encabezado de sección (I INGRESOS, II EGRESOS, III PRONÓSTICOS, IV ANÁLISIS)
+function SectionHeader({ num, title }: { num: string; title: string }) {
+    return (
+        <div className="flex items-center gap-4 pt-8 pb-1">
+            <span className="flex items-center justify-center min-w-12 h-12 px-3 rounded-2xl bg-blue-600 text-white text-xl font-black shrink-0 shadow-md">{num}</span>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight">{title}</h2>
+            <div className="flex-1 h-1.5 rounded-full bg-gradient-to-r from-blue-200 to-transparent" />
+        </div>
+    );
+}
+
+// Colores por etapa del sustento de retorno del Monitoreo Financiero (Sección IV)
+const AUDIT_CATEGORIA_COLOR: Record<string, string> = {
+    'Monitoreo Financiero en la UPS': '#0d9488',                       // verde/teal
+    'Auditoría asume monit. financiero y auditoría': '#3b82f6',        // azul
+    'Auditoría sin monitoreo financiero': '#94a3b8',                   // gris
+    '2026: retorno del Monitoreo Financiero a la UPS': '#ca8a04',      // dorado
+};
+
+interface AuditoriaEeffItem {
+    anio: number;
+    gasto: number;
+    colaboradores: number;
+    categoria: string;
+    proyectado: boolean;
+}
+
 export default function InfGerencialView({
     initialData,
     annualTotals,
@@ -163,6 +190,7 @@ export default function InfGerencialView({
     // Budgets are now global
     const [presupuestoMensual, setPresupuestoMensual] = useState<any[]>([]);
     const [financiamientoEjecucion, setFinanciamientoEjecucion] = useState<{ proyectos: any[]; becas: any[] }>({ proyectos: [], becas: [] });
+    const [auditoriaEeff, setAuditoriaEeff] = useState<AuditoriaEeffItem[]>([]);
     const [isLoadingBudget, setIsLoadingBudget] = useState(false);
     const [highlightedEmpresa, setHighlightedEmpresa] = useState<string | null>(null);
     const [isMobile, setIsMobile] = useState(false);
@@ -204,6 +232,15 @@ const mensual = await getPresupuestoMensual();
             .catch((error) => {
                 console.error('Error fetching financiamiento en ejecución:', error);
                 setFinanciamientoEjecucion({ proyectos: [], becas: [] });
+            });
+    }, []);
+
+    useEffect(() => {
+        getAuditoriaEeff()
+            .then(setAuditoriaEeff)
+            .catch((error) => {
+                console.error('Error fetching auditoría EEFF:', error);
+                setAuditoriaEeff([]);
             });
     }, []);
 
@@ -255,6 +292,51 @@ const mensual = await getPresupuestoMensual();
             .map(e => ({ ...e, bancos: e.bancos.sort((a, b) => b.monto - a.monto) }))
             .sort((a, b) => a.año - b.año);
     }, [saldosBancarios]);
+
+    // Totales para subtítulos de la Sección II (Egresos)
+    const totalesProyectos = useMemo(() => ({
+        count: financiamientoEjecucion.proyectos.reduce((s, p) => s + (p.count || 0), 0),
+        monto: financiamientoEjecucion.proyectos.reduce((s, p) => s + (p.monto || 0), 0),
+    }), [financiamientoEjecucion]);
+
+    const totalesBecas = useMemo(() => ({
+        count: financiamientoEjecucion.becas.reduce((s, p) => s + (p.count || 0), 0),
+        monto: financiamientoEjecucion.becas.reduce((s, p) => s + (p.monto || 0), 0),
+    }), [financiamientoEjecucion]);
+
+    // Ejecutados 2024-2026 (Sección II): monto = rubro Proyectos/Becas (Real) de
+    // finanzas_anual; conteo = rubros "Cantidad Proyectos"/"Cantidad Becas" (Real),
+    // editables desde Catálogos → Finanzas Anuales (Rubros).
+    const ejecutados = useMemo(() => {
+        const years = [2024, 2025, 2026];
+        const pick = (year: number, rubro: string) => {
+            const row = finanzasData.find(d => d.año === year && d.rubro === rubro && (d.escenario || 'Real') === 'Real');
+            return row ? Number(row.monto) || 0 : 0;
+        };
+        const build = (rubroMonto: string, rubroCount: string) => years.map(year => ({
+            year: String(year),
+            monto: pick(year, rubroMonto),
+            count: pick(year, rubroCount),
+        }));
+        return {
+            proyectos: build('Proyectos', 'Cantidad Proyectos'),
+            becas: build('Becas', 'Cantidad Becas'),
+        };
+    }, [finanzasData]);
+
+    // Serie de auditoría (Sección IV) con color por etapa y máximo de colaboradores
+    const auditoriaChart = useMemo(() => auditoriaEeff.map(d => ({
+        ...d,
+        anioLabel: d.proyectado ? `${d.anio}*` : String(d.anio),
+        fill: AUDIT_CATEGORIA_COLOR[d.categoria] || '#64748b',
+    })), [auditoriaEeff]);
+
+    const auditoriaCategorias = useMemo(() => {
+        const seen = new Set<string>();
+        const orden: string[] = [];
+        auditoriaEeff.forEach(d => { if (!seen.has(d.categoria)) { seen.add(d.categoria); orden.push(d.categoria); } });
+        return orden;
+    }, [auditoriaEeff]);
 
     const last5Years = useMemo(() => {
         const allYears = Array.from(new Set(initialData.map(d => d.anio))).sort((a, b) => a - b);
@@ -420,6 +502,9 @@ const mensual = await getPresupuestoMensual();
                 </div>
             </div>
 
+            {/* ============================ SECCIÓN I — INGRESOS ============================ */}
+            <SectionHeader num="I" title="Ingresos" />
+
             {/* Evolución de Aportes vs PBI Line Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center relative">
@@ -469,18 +554,18 @@ const mensual = await getPresupuestoMensual();
                 </div>
             </div>
 
-            {/* Bottom Row: Stacked Bar + Sector Bar */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+            {/* Distribución de Aportantes y por Sector — cada uno a ancho completo */}
+            <div className="space-y-8">
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                     <div className="mb-4 text-center relative">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución de Aportantes 2024 – 2026</h3>
-                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
+                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: A la fecha</p>
                         <div className="absolute top-0 right-0">
                             <PresentationButton chartId="distribucion-aportes" />
                         </div>
                     </div>
-                    <div className="h-[320px] w-full">
-                        <ResponsiveContainer width="100%" height={320}>
+                    <div className="h-[380px] w-full">
+                        <ResponsiveContainer width="100%" height={380}>
                             <BarChart
                                 data={annualTotalData}
                                 margin={{ top: 5, right: 30, left: 10, bottom: 10 }}
@@ -588,42 +673,80 @@ const mensual = await getPresupuestoMensual();
                                 <Bar
                                     dataKey="total"
                                     fill="#2563eb"
-                                    barSize={24}
-                                    radius={[6, 6, 0, 0]}
+                                    barSize={110}
+                                    radius={[8, 8, 0, 0]}
                                     animationDuration={1000}
-                                />
+                                >
+                                    <LabelList dataKey="total" position="top" formatter={(v: number) => fmtM(v)} fill="#1e293b" fontSize={13} fontWeight={700} />
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* Sector Bar Chart */}
-                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
+                <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                     <div className="mb-4 text-center relative">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Distribución por Sector 2024-2026</h3>
-                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: Cifras preliminares al cierre de abril</p>
+                        <p className="text-sm font-semibold text-amber-600 mt-1">Datos 2026: A la fecha</p>
                         <div className="absolute top-0 right-0">
                             <PresentationButton chartId="distribucion-sector" />
                         </div>
                     </div>
-                    <div className="h-[360px] w-full">
-                        <ResponsiveContainer width="100%" height={360}>
+                    <div className="h-[400px] w-full">
+                        <ResponsiveContainer width="100%" height={400}>
                             <BarChart
                                 data={pieData}
-                                margin={{ top: 20, right: 20, left: 10, bottom: 5 }}
+                                margin={{ top: 24, right: 20, left: 10, bottom: 5 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 9 : 11 }} interval={0} />
+                                <XAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 10 : 13 }} interval={0} />
                                 <YAxis type="number" hide />
                                 <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} />
-                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={20} animationDuration={1000}>
-                                    <LabelList dataKey="percent" position="top" fill="#1e293b" fontSize={11} fontWeight={600} />
+                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={90} animationDuration={1000}>
+                                    <LabelList dataKey="percent" position="top" fill="#1e293b" fontSize={13} fontWeight={700} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
+
+                {/* Saldos Bancarios (movido a Sección I — Ingresos) */}
+                <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
+                    <div className="mb-6 text-center">
+                        <h3 className="text-xl font-black tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
+                    </div>
+                    {historicalSaldos.length === 0 ? (
+                        <p className="text-center text-sm text-slate-400 font-semibold italic py-6">
+                            Sin saldos registrados (Catálogos → Saldos Bancarios)
+                        </p>
+                    ) : (
+                        <div className="flex flex-col md:flex-row gap-4 min-w-full pb-2">
+                            {historicalSaldos.map((item) => (
+                                <div key={item.año} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[180px] flex flex-col shadow-sm">
+                                    <div className="text-center mb-2">
+                                        <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest block">
+                                            {item.año}
+                                        </span>
+                                        <span className="text-lg font-bold text-[#1e293b] tabular-nums">{formatCurrencyWithCents(item.total)}</span>
+                                    </div>
+                                    <div className="space-y-1 border-t border-slate-200 pt-2">
+                                        {item.bancos.map((b, i) => (
+                                            <div key={i} className="flex justify-between items-center gap-3 text-[11px]">
+                                                <span className="font-bold text-slate-500 uppercase tracking-tight truncate" title={b.banco}>{b.banco}</span>
+                                                <span className="font-semibold text-slate-700 tabular-nums shrink-0">{formatCurrencyWithCents(b.monto)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* ============================ SECCIÓN II — EGRESOS ============================ */}
+            <SectionHeader num="II" title="Egresos" />
 
             {/* Financiamiento en curso: dos gráficos independientes a ancho completo */}
             {[
@@ -633,7 +756,11 @@ const mensual = await getPresupuestoMensual();
                 <div key={panel.key} className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                     <div className="mb-6 text-center">
                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">{panel.titulo}</h3>
-                        <p className="text-xs text-amber-600 font-semibold mt-1">*Grupos 2026: cifras en curso, aún no reflejan el total proyectado</p>
+                        <p className="text-sm text-slate-500 font-semibold mt-1">
+                            {panel.key === 'proyectos'
+                                ? `${totalesProyectos.count} proyectos · S/ ${(totalesProyectos.monto / 1000000).toFixed(1)} MM presupuestado`
+                                : `${totalesBecas.count} beneficiarios · S/ ${(totalesBecas.monto / 1000000).toFixed(1)} MM presupuestado`}
+                        </p>
                     </div>
                     {panel.data.length === 0 ? (
                         <div className="h-[340px] flex items-center justify-center text-sm text-slate-400 font-semibold italic">
@@ -682,8 +809,54 @@ const mensual = await getPresupuestoMensual();
                             </ResponsiveContainer>
                         </div>
                     )}
+                    {panel.key === 'proyectos' && (() => {
+                        const sect = panel.data.find((d: any) => d.label === 'Eje Sectorial 2026');
+                        if (!sect?.breakdown) return null;
+                        const detalle = Object.entries(sect.breakdown as Record<string, number>)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([sigla, m]) => `${sigla} ${(m / 1000000).toFixed(1)} MM`)
+                            .join('  ·  ');
+                        return (
+                            <p className="text-xs text-slate-500 text-center mt-3">
+                                <span className="font-bold text-slate-700">Eje Sectorial: </span>{detalle}
+                            </p>
+                        );
+                    })()}
                 </div>
             ))}
+
+            {/* Proyectos / Becas ejecutados 2024-2026 (monto = finanzas_anual; conteo = rubro Cantidad) */}
+            {[
+                { key: 'proy-ej', titulo: 'Proyectos ejecutados 2024-2026', color: '#0d9488', data: ejecutados.proyectos, unidad: 'proyectos' },
+                { key: 'becas-ej', titulo: 'Becas ejecutados 2024-2026', color: '#2563eb', data: ejecutados.becas, unidad: 'becas' },
+            ].map((panel) => (
+                <div key={panel.key} className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                    <div className="mb-6 text-center">
+                        <h3 className="text-2xl font-black text-slate-900 tracking-tight">{panel.titulo}</h3>
+                        <p className="text-sm text-slate-500 font-semibold mt-1">Monto de avance por año · cantidad dentro de cada barra</p>
+                    </div>
+                    <div className="h-[360px] w-full">
+                        <ResponsiveContainer width="100%" height={360}>
+                            <BarChart data={panel.data} margin={{ top: 30, right: 10, left: 10, bottom: 10 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '700', fontSize: 13 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => `S/ ${(v / 1000000).toFixed(1)} MM`} width={80} />
+                                <Tooltip
+                                    formatter={(value: number, _name: string, props: any) => [formatCurrency(value), `${props.payload.count} ${panel.unidad}`]}
+                                    contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '20px' }}
+                                />
+                                <Bar dataKey="monto" fill={panel.color} radius={[8, 8, 0, 0]} maxBarSize={110} animationDuration={1000}>
+                                    <LabelList dataKey="monto" position="top" fill="#1e293b" fontSize={13} fontWeight={700} formatter={(v: number) => `S/ ${(v / 1000000).toFixed(1)} MM`} />
+                                    <LabelList dataKey="count" position="insideTop" fill="#fff" fontSize={13} fontWeight={700} formatter={(v: number) => v ? `${v} ${panel.unidad}` : ''} />
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            ))}
+
+            {/* ============================ SECCIÓN III — PRONÓSTICOS ============================ */}
+            <SectionHeader num="III" title="Pronósticos" />
 
             {/* Financial Evolution Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
@@ -717,39 +890,6 @@ const mensual = await getPresupuestoMensual();
                 </div>
             </div>
 
-            {/* Bank Balances Cards */}
-            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 w-full overflow-x-auto">
-                <div className="mb-6 text-center">
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight text-blue-600">Saldos Bancarios al cierre del Ejercicio</h3>
-                </div>
-                {historicalSaldos.length === 0 ? (
-                    <p className="text-center text-sm text-slate-400 font-semibold italic py-6">
-                        Sin saldos registrados (Catálogos → Saldos Bancarios)
-                    </p>
-                ) : (
-                    <div className="flex flex-col md:flex-row gap-4 min-w-full pb-2">
-                        {historicalSaldos.map((item) => (
-                            <div key={item.año} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 min-w-[180px] flex flex-col shadow-sm">
-                                <div className="text-center mb-2">
-                                    <span className="text-xs font-black text-[#1e293b] uppercase tracking-widest block">
-                                        {item.año}
-                                    </span>
-                                    <span className="text-lg font-bold text-[#1e293b] tabular-nums">{formatCurrencyWithCents(item.total)}</span>
-                                </div>
-                                <div className="space-y-1 border-t border-slate-200 pt-2">
-                                    {item.bancos.map((b, i) => (
-                                        <div key={i} className="flex justify-between items-center gap-3 text-[11px]">
-                                            <span className="font-bold text-slate-500 uppercase tracking-tight truncate" title={b.banco}>{b.banco}</span>
-                                            <span className="font-semibold text-slate-700 tabular-nums shrink-0">{formatCurrencyWithCents(b.monto)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
             {/* Monthly Budget Chart (Moved to bottom) */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
                 <div className="mb-6 text-center relative">
@@ -777,6 +917,82 @@ const mensual = await getPresupuestoMensual();
                         </ResponsiveContainer>
 
                     )}
+                </div>
+            </div>
+
+            {/* ============================ SECCIÓN IV — ANÁLISIS / DIAGNÓSTICO ============================ */}
+            <SectionHeader num="IV" title="Análisis – Diagnóstico" />
+
+            {/* Sustento Retorno Monitoreo Financiero — gráfico combinado gastos + colaboradores */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                <div className="mb-2 text-center">
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Gastos de Proyectos / Servicios y Cantidad de Colaboradores</h3>
+                    <p className="text-sm font-semibold text-slate-500 mt-1">1999–2025 · *2026 proyectado — Barras: gastos S/ MM (EEFF) · Línea: colaboradores (eje derecho)</p>
+                </div>
+                {auditoriaChart.length === 0 ? (
+                    <p className="text-center text-sm text-slate-400 font-semibold italic py-16">
+                        Sin datos. Ejecutar <code className="bg-slate-100 px-1 rounded">scripts/create_auditoria_eeff.sql</code> en el SQL Editor de Supabase.
+                    </p>
+                ) : (
+                    <>
+                        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 my-4">
+                            {auditoriaCategorias.map(cat => (
+                                <div key={cat} className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: AUDIT_CATEGORIA_COLOR[cat] || '#64748b' }} />
+                                    <span className="text-xs font-bold text-slate-600">{cat}</span>
+                                </div>
+                            ))}
+                            <div className="flex items-center gap-2">
+                                <span className="w-6 h-1 rounded-full inline-block bg-slate-800" />
+                                <span className="text-xs font-bold text-slate-600">Colaboradores (línea, eje derecho)</span>
+                            </div>
+                        </div>
+                        <div className="w-full overflow-x-auto pb-4">
+                            <div className="min-w-[900px] h-[420px]">
+                                <ResponsiveContainer width="100%" height={420}>
+                                    <ComposedChart data={auditoriaChart} margin={{ top: 20, right: 20, left: 10, bottom: 10 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="anioLabel" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 10 }} interval={0} angle={-45} textAnchor="end" height={50} />
+                                        <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}`} width={40} />
+                                        <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} width={35} domain={[0, 50]} />
+                                        <Tooltip
+                                            formatter={(value: number, name: string) => name === 'colaboradores' ? [value, 'Colaboradores'] : [formatCurrency(value), 'Gasto Proy./Serv.']}
+                                            labelFormatter={(l) => `Año ${String(l).replace('*', '')}`}
+                                            contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', padding: '16px' }}
+                                        />
+                                        <Bar yAxisId="left" dataKey="gasto" radius={[4, 4, 0, 0]} maxBarSize={30}>
+                                            {auditoriaChart.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                                        </Bar>
+                                        <Line yAxisId="right" type="monotone" dataKey="colaboradores" stroke="#1e293b" strokeWidth={3} dot={{ r: 3, fill: '#fff', stroke: '#1e293b' }} activeDot={{ r: 6 }} />
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Sustento textual: ¿Por qué volver al modelo de Monitoreo Financiero? */}
+            <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight text-center mb-1">Sustento: Retorno del Monitoreo Financiero</h3>
+                <p className="text-sm font-semibold text-slate-500 text-center mb-6 max-w-3xl mx-auto">La evolución de la ejecución y del equipo de FONDOEMPLEO (1999–2026) sustenta el retorno del Monitoreo Financiero a la Unidad de Proyectos y Servicios.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                        { anios: '1999–2013', color: '#0d9488', titulo: 'Monitoreo Financiero en la UPS', texto: 'El área de Monitoreo Financiero, dentro de la Unidad de Proyectos y Servicios, acompañó el crecimiento de la ejecución hasta su máximo histórico (S/ 75.5 MM en 2013); el equipo pasó de 2 a 42 colaboradores. Control preventivo y concurrente permanente.' },
+                        { anios: '2014–2019', color: '#3b82f6', titulo: 'Auditoría asume monitoreo financiero y auditoría', texto: 'El área de Auditoría concentró las funciones de monitoreo financiero y de auditoría. El control preventivo se mantiene, pero fuera de la Unidad de Proyectos y Servicios.' },
+                        { anios: '2020–2025', color: '#94a3b8', titulo: 'Auditoría sin monitoreo financiero', texto: 'Solo control posterior: el control financiero quedó con actuación únicamente posterior. La ejecución cayó hasta S/ 3.0 MM (2022) y el equipo se redujo hasta 16 colaboradores (2020).' },
+                        { anios: '2026 · Proyección', color: '#ca8a04', titulo: 'Retorno del Monitoreo Financiero a la UPS', texto: 'La ejecución vuelve a crecer: S/ 57.5 MM y 41 colaboradores proyectados, magnitud comparable al máximo histórico, que exige retomar el control financiero preventivo. La UAC conserva la auditoría independiente.' },
+                    ].map(b => (
+                        <div key={b.anios} className="rounded-2xl border border-slate-100 p-5 bg-slate-50/60" style={{ borderLeftColor: b.color, borderLeftWidth: 5 }}>
+                            <p className="text-xs font-black uppercase tracking-widest" style={{ color: b.color }}>{b.anios}</p>
+                            <p className="text-base font-black text-slate-800 mb-1">{b.titulo}</p>
+                            <p className="text-sm text-slate-600 leading-relaxed">{b.texto}</p>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-6 rounded-2xl bg-blue-50 border border-blue-100 p-5">
+                    <p className="text-sm font-black text-blue-700 uppercase tracking-widest mb-1">Propuesta</p>
+                    <p className="text-sm text-slate-700 leading-relaxed">Retornar el Monitoreo Financiero a la Unidad de Proyectos y Servicios (control preventivo y concurrente, 1.ª/2.ª línea); la UAC conserva la auditoría independiente y posterior (3.ª línea, Estatuto Art. 33). El monitoreo reduce hallazgos y facilita auditorías limpias, sin duplicidad de funciones.</p>
                 </div>
             </div>
 
