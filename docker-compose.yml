@@ -5,20 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: deps
+      target: runner
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     ports:
       - "8081:3000"
-    volumes:
-      - ./:/app
-      - /app/node_modules
-      - /app/.next
-    command: npm run dev
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
-      - WATCHPACK_POLLING=true
+      - NODE_ENV=production
     restart: always
