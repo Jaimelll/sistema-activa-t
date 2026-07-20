@@ -9,7 +9,7 @@ export const metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function CampoPage({ searchParams }: { searchParams: { id?: string } }) {
+export default async function CampoPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const params = await searchParams;
   const planId = params?.id;
 
