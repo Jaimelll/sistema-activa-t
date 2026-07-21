@@ -81,7 +81,7 @@ export const COLUMNAS_OCULTAS: Record<string, string[]> = {
  * Sin entrada aquí, se ordena por la clave primaria.
  */
 export const ORDEN_FILAS: Record<string, string[]> = {
-    finanzas_anual: ['año', 'rubro'],
+    finanzas_anual: ['año', 'escenario', 'rubro'],
     presupuesto_mensual: ['año', 'mes', 'unidad_operativa_id'],
     presupuesto_anual_comparativo: ['año', 'unidad_operativa_id'],
     saldo_bancario: ['año', 'banco'],
