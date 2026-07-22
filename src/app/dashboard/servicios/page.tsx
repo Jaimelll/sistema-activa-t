@@ -10,6 +10,7 @@ import { ServiciosInstitucionChart } from '@/components/servicios/ServiciosInsti
 import { ServiciosDemografiaCharts } from '@/components/servicios/ServiciosDemografiaCharts';
 import ServicioModal from '@/components/servicios/ServicioModal';
 import { getServicioCompletoById } from '@/app/dashboard/gestion-servicios/actions';
+import { getInformesImpacto } from '@/app/dashboard/actions';
 import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
 export default function ServiciosPage() {
@@ -48,6 +49,9 @@ export default function ServiciosPage() {
     // -- Timeline options (for ServiciosTimeline) ------------------------------
     const [timelineOptions, setTimelineOptions] = useState<any>({});
 
+    // -- Informes de impacto (definen la etapa Impacto en la línea de tiempo) --
+    const [informesImpacto, setInformesImpacto] = useState<any[]>([]);
+
     // -- Active filter state (single-select, matches Proyectos pattern) ---------
     const [selectedFase, setSelectedFase] = useState<string>('all');       // Default: Todas las Fases
     const [selectedEtapa, setSelectedEtapa] = useState<string>('all');
@@ -82,6 +86,14 @@ export default function ServiciosPage() {
                 supabase.from('formato').select('id, descripcion').order('id'),
                 supabase.from('empresas').select('ruc, razon_social').order('razon_social')
             ]);
+
+            // Informes de impacto (tabla compartida con Proyectos, editada en
+            // Catálogos). Va por server action y NO por el cliente: la tabla tiene
+            // RLS activo y con la anon key devuelve siempre vacío. Se traen todos;
+            // la línea de tiempo se queda solo con los grupos de becas que dibuja.
+            getInformesImpacto()
+                .then(setInformesImpacto)
+                .catch(err => console.error('Error fetching informes de impacto:', err));
 
             const etapasRaw = results[0].data || [];
             const ejes = results[1].data || [];
@@ -461,6 +473,7 @@ export default function ServiciosPage() {
                 <ServiciosTimeline
                     data={filteredData}
                     options={timelineOptions}
+                    informesImpacto={informesImpacto}
                 />
             </div>
 

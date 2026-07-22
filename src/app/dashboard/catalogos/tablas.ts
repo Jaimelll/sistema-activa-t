@@ -116,7 +116,10 @@ const MESES: { value: number; label: string }[] = [
 
 export const COLUMNAS_COMBO: Record<string, Record<string, ComboConfig>> = {
     informe_impacto: {
-        grupo_id: { tabla: 'grupo', valor: 'id', etiqueta: 'descripcion', filtro: ['tipo', 2] },
+        // Sin filtro por `tipo`: la misma tabla guarda los informes de Proyectos
+        // (grupo.tipo = 2) y los de Servicios/Becas (grupo.tipo = 1). Cada línea
+        // de tiempo toma solo los informes de los grupos que ella dibuja.
+        grupo_id: { tabla: 'grupo', valor: 'id', etiqueta: 'descripcion' },
     },
     presupuesto_anual_comparativo: {
         unidad_operativa_id: { tabla: 'unidades_operativas', valor: 'id', etiqueta: 'siglas', etiquetaExtra: 'nombre_completo' },

@@ -3,8 +3,9 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend,
-    ResponsiveContainer, CartesianGrid, Cell, ReferenceLine
+    ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, ReferenceDot
 } from 'recharts';
+import { FileText } from 'lucide-react';
 
 import { ServiciosTable as DetalleBecasTable } from './ServiciosTable';
 import { getServicioCompletoById } from '@/app/dashboard/gestion-servicios/actions';
@@ -13,6 +14,8 @@ import ServicioModal from './ServicioModal';
 interface ServiciosTimelineProps {
     data: any[];
     options: any;
+    /** Informes de impacto por grupo (tabla informe_impacto, editada en Catálogos). */
+    informesImpacto?: any[];
 }
 
 const STAGE_PALETTE = [
@@ -31,6 +34,13 @@ const STAGE_PALETTE = [
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const MARGIN_DAYS = 30;
 
+// Etapa "Impacto": igual que en la línea de tiempo de Proyectos, su segmento se
+// calcula SOLO desde los informes de impacto del grupo (tabla informe_impacto),
+// nunca desde los avances registrados en Gestión de Servicios.
+// Inicio = primer informe que inicia; fin = PRIMER informe presentado.
+const IMPACTO_STAGE_ID = 10;
+const EJECUTADO_STAGE_ID = 6;
+
 // Resuelve la fila (fusionada) y el año usado para ordenar cronológicamente.
 // Mismos nombres/agrupaciones que el gráfico de barras de Inf. Gerencial:
 // "Beca Trabajadores" (grupos 1 y 2) se junta en una sola fila 2024, y
@@ -47,7 +57,7 @@ function resolverGrupoDisplay(grupoId: number, descripcion: string): { key: stri
     return { key: String(grupoId), label, sortYear: yearMatch ? Number(yearMatch[0]) : 9999 };
 }
 
-export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
+export function ServiciosTimeline({ data, options, informesImpacto = [] }: ServiciosTimelineProps) {
     const [selectedGroup, setSelectedGroup] = useState<any>(null);
     
     // Modal states
@@ -104,6 +114,9 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
         // Agrupar por grupo "fusionado" (ver resolverGrupoDisplay)
         const groupMap = new Map<string, any>();
+        // grupo_id real → clave de la fila fusionada, para colgar ahí sus informes
+        // (los grupos 1 y 2 comparten una sola fila).
+        const grupoIdToKey = new Map<number, string>();
 
         data.forEach((beca: any) => {
             const grupoId = beca.grupo_id;
@@ -115,6 +128,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
             const grupoDescripcion = beca.grupo?.descripcion || '';
             const { key: displayKey, label: displayLabel, sortYear } = resolverGrupoDisplay(grupoId, grupoDescripcion);
+            grupoIdToKey.set(Number(grupoId), displayKey);
 
             if (!groupMap.has(displayKey)) {
                 groupMap.set(displayKey, {
@@ -145,9 +159,23 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 const t = new Date(av.fecha).getTime();
                 if (isNaN(t)) return;
                 const sid = Number(av.etapa_id);
+                // La etapa Impacto se alimenta SOLO de informe_impacto.
+                if (sid === IMPACTO_STAGE_ID) return;
                 if (!g.stageDates[sid]) g.stageDates[sid] = [];
                 g.stageDates[sid].push(t);
             });
+        });
+
+        // Informes de impacto colgados de la fila que les corresponde.
+        const informesByKey = new Map<string, any[]>();
+        (informesImpacto || []).forEach((inf: any) => {
+            const key = grupoIdToKey.get(Number(inf.grupo_id));
+            if (!key) return; // informe de un grupo que esta vista no dibuja (p. ej. de Proyectos)
+            const tsInicio = inf.fecha_inicio ? new Date(inf.fecha_inicio).getTime() : NaN;
+            if (isNaN(tsInicio)) return;
+            const tsFin = inf.fecha_fin ? new Date(inf.fecha_fin).getTime() : null;
+            if (!informesByKey.has(key)) informesByKey.set(key, []);
+            informesByKey.get(key)!.push({ ...inf, tsInicio, tsFin });
         });
 
         const stageOrder = Object.keys(stageById).map(Number).sort((a, b) => a - b);
@@ -155,6 +183,10 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
         let globalMin = Infinity;
         let globalMax = -Infinity;
+
+        const hoy = new Date();
+        hoy.setUTCHours(0, 0, 0, 0);
+        const TODAY_TS = hoy.getTime();
 
         const rowsRaw = Array.from(groupMap.values()).map(g => {
             const stageStart: Record<number, number> = {};
@@ -172,10 +204,53 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
             if (stageStart[1] === undefined) return null;
 
+            // Las fechas deben ser monótonas en el orden de las etapas: la cascada
+            // asume que cada etapa empieza después de la anterior. Un avance mal
+            // capturado (p. ej. una etapa 3 fechada en 1994 cuando la etapa 1 es de
+            // 2024) hacía que esa etapa se comiera décadas y desplazaba a la derecha
+            // TODO lo que viniera después. Se recorta hacia adelante: una etapa no
+            // puede empezar antes que la anterior.
+            let corrida = -Infinity;
+            Object.keys(stageStart).map(Number).sort((a, b) => a - b).forEach(sid => {
+                if (stageStart[sid] < corrida) stageStart[sid] = corrida;
+                else corrida = stageStart[sid];
+            });
+
+            // ── ETAPA IMPACTO: se calcula SOLO desde los informes del grupo ──
+            const informes = (informesByKey.get(g.key) || [])
+                .slice()
+                .sort((a: any, b: any) => a.tsInicio - b.tsInicio);
+            let impactoInicio: number | null = null;
+            let impactoFin: number | null = null;
+
+            if (informes.length > 0) {
+                impactoInicio = Math.min(...informes.map((i: any) => i.tsInicio));
+                const fines = informes.map((i: any) => i.tsFin).filter((f: any) => f !== null) as number[];
+                // Misma regla que en Proyectos: el segmento cierra con el PRIMER
+                // informe presentado; sin ninguno presentado sigue en curso.
+                impactoFin = fines.length > 0 ? Math.min(...fines) : null;
+
+                // El informe es la autoridad: ninguna etapa previa puede empezar
+                // después del inicio del Impacto. Se recorta para que la cascada
+                // no quede con duraciones negativas.
+                Object.keys(stageStart).forEach(k => {
+                    const sid = Number(k);
+                    if (stageStart[sid] > impactoInicio!) stageStart[sid] = impactoInicio!;
+                });
+                if (stageEnd[EJECUTADO_STAGE_ID] !== undefined && stageEnd[EJECUTADO_STAGE_ID] > impactoInicio) {
+                    stageEnd[EJECUTADO_STAGE_ID] = impactoInicio;
+                }
+
+                stageStart[IMPACTO_STAGE_ID] = impactoInicio;
+                foundStageIds.add(IMPACTO_STAGE_ID);
+            }
+
             const sortedSids = Object.keys(stageStart).map(Number).sort((a, b) => a - b);
 
             const etapa1Date = stageStart[1];
-            const endDate = stageEnd[6] ?? null;
+            const endDate = informes.length > 0
+                ? (impactoFin ?? TODAY_TS)
+                : (stageEnd[6] ?? null);
 
             if (etapa1Date < globalMin) globalMin = etapa1Date;
             if (endDate !== null && endDate > globalMax) globalMax = endDate;
@@ -197,6 +272,9 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 etapa1Date: etapa1Date,
                 totalBeneficiarios: g.totalBeneficiarios,
                 sortYear: g.sortYear,
+                informes,
+                impactoInicio,
+                impactoFin,
             };
             return row;
         }).filter(Boolean);
@@ -207,17 +285,14 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             globalMax = defaultDate + ONE_DAY * 365 * 5;
         }
 
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-        const todayTs = today.getTime();
-        if (todayTs > globalMax) globalMax = todayTs;
+        if (TODAY_TS > globalMax) globalMax = TODAY_TS;
 
         const marginMs = ONE_DAY * MARGIN_DAYS;
         const domainMin = globalMin - marginMs;
         const domainMax = globalMax + marginMs;
 
         const rows = rowsRaw.map(row => {
-            const { stageStart, stageEnd, sortedSids, firstStart, lastEnd, etapa1Date } = row;
+            const { stageStart, stageEnd, sortedSids, firstStart, lastEnd, etapa1Date, impactoFin } = row;
 
             const originalDurations: Record<number, number> = {};
 
@@ -227,12 +302,20 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
                 let sStart = stageStart[sid];
                 let sEnd: number;
-                if (sid === 6) {
-                    sEnd = stageEnd[6] ?? sStart;
-                } else if (nextSid !== undefined) {
+                if (nextSid !== undefined) {
+                    // Cascada pura: cada etapa termina donde empieza la siguiente.
+                    // Ahora incluye a "Ejecutado" (6) cuando hay etapas posteriores
+                    // (Pre-Impacto / Impacto); antes medía su duración interna y
+                    // dejaba un hueco que descuadraba todo lo que viniera después.
                     sEnd = stageStart[nextSid];
+                } else if (sid === IMPACTO_STAGE_ID) {
+                    // Impacto cierra con el primer informe presentado; si aún no
+                    // hay ninguno presentado, sigue en curso hasta hoy.
+                    sEnd = impactoFin ?? Math.max(sStart, TODAY_TS);
+                } else if (sid === EJECUTADO_STAGE_ID) {
+                    sEnd = stageEnd[EJECUTADO_STAGE_ID] ?? sStart;
                 } else {
-                    sEnd = Math.max(sStart, Date.now());
+                    sEnd = Math.max(sStart, TODAY_TS);
                 }
 
                 if (sStart < domainMin) sStart = domainMin;
@@ -246,7 +329,12 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
 
             const adjustedDurations = { ...originalDurations };
 
-            if (adjustedDurations[6] !== undefined) {
+            // "Ejecutado" se dibuja como marcador de 1 día (el resto del tiempo se
+            // le atribuye a "Ejecución") SOLO cuando es la última etapa de la fila.
+            // Si hay etapas posteriores ya entró en la cascada y no se toca.
+            const seisEsUltima = sortedSids[sortedSids.length - 1] === EJECUTADO_STAGE_ID;
+
+            if (seisEsUltima && adjustedDurations[6] !== undefined) {
                 const originalDur6 = adjustedDurations[6];
                 const newDur6 = Math.min(originalDur6, ONE_DAY);
                 const extra = originalDur6 - newDur6;
@@ -283,6 +371,9 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                 ...adjustedDurations,
                 totalBeneficiarios: row.totalBeneficiarios,
                 sortYear: row.sortYear,
+                informes: row.informes,
+                impactoInicio: row.impactoInicio,
+                impactoFin: row.impactoFin,
             };
 
             return rowData;
@@ -300,7 +391,7 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
             maxTimestamp: domainMax,
             stageById
         };
-    }, [data, options.etapas]);
+    }, [data, options.etapas, informesImpacto]);
 
     // Datos filtrados para la tabla de detalle
     const filteredData = useMemo(() => {
@@ -347,6 +438,13 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                             {fmtMoney(d.totalBeneficiarios > 0 ? (d.totalBudget / d.totalBeneficiarios) : 0)}
                         </span>
                     </TooltipRow>
+                    {d.informes && d.informes.length > 0 && (
+                        <TooltipRow label="Informes de impacto">
+                            <span className="font-black text-teal-600 px-2 bg-teal-50 rounded border border-teal-100">
+                                {d.informes.length} 📄
+                            </span>
+                        </TooltipRow>
+                    )}
                     <TooltipRow label="Avance total">
                         <span className="font-black tabular-nums px-2 bg-slate-50 rounded border border-slate-100" style={{ color: stageColor }}>
                             {fmtMoney(d.totalAvance)}
@@ -460,7 +558,9 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                                         fillOpacity={1}
                                         isAnimationActive={false}
                                         cursor="pointer"
-                                        minPointSize={1}
+                                        // El segmento Impacto siempre se nota, aunque el
+                                        // informe dure pocos días en un eje de años.
+                                        minPointSize={sid === IMPACTO_STAGE_ID ? 4 : 1}
                                         onClick={(eventData) => {
                                             if (eventData?.payload?.ids) {
                                                 const clickedIds = eventData.payload.ids;
@@ -472,7 +572,8 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                                                 setSelectedGroup({
                                                     items: filteredData,
                                                     start: eventData.payload.firstStart,
-                                                    end: eventData.payload.lastEnd
+                                                    end: eventData.payload.lastEnd,
+                                                    informes: eventData.payload.informes || []
                                                 });
                                             }
                                         }}
@@ -492,6 +593,46 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                                     </Bar>
                                 );
                             })}
+                            {/* Marcadores de informes de impacto (clic = abrir el PDF).
+                                Se ubican en la fecha de presentación; si el informe
+                                aún no se presenta, en el inicio de la evaluación. */}
+                            {chartData.flatMap((g: any) =>
+                                (g.informes || []).map((inf: any) => {
+                                    const tienePdf = Boolean(inf.archivo_url);
+                                    return (
+                                        <ReferenceDot
+                                            key={`informe-${g.key}-${inf.id}`}
+                                            xAxisId="main"
+                                            x={(inf.tsFin ?? inf.tsInicio) - minTimestamp}
+                                            y={g.name}
+                                            isFront
+                                            shape={(props: any) => (
+                                                <g
+                                                    transform={`translate(${props.cx}, ${props.cy})`}
+                                                    style={{ cursor: tienePdf ? 'pointer' : 'default', pointerEvents: 'all' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (tienePdf) window.open(inf.archivo_url, '_blank', 'noopener');
+                                                    }}
+                                                >
+                                                    <title>{`${inf.titulo}${tienePdf ? ' — clic para abrir el PDF' : ' (sin PDF)'}`}</title>
+                                                    <circle r={8} fill="#ffffff" stroke="#0d9488" strokeWidth={2} />
+                                                    <text
+                                                        textAnchor="middle"
+                                                        dominantBaseline="central"
+                                                        fontSize={9}
+                                                        fontWeight="bold"
+                                                        fill="#0d9488"
+                                                    >
+                                                        I
+                                                    </text>
+                                                </g>
+                                            )}
+                                        />
+                                    );
+                                })
+                            )}
+
                             {todayOffset !== null && (
                                 <ReferenceLine
                                     xAxisId="main"
@@ -520,8 +661,53 @@ export function ServiciosTimeline({ data, options }: ServiciosTimelineProps) {
                             Becas Vinculadas al Grupo
                         </h4>
                     </div>
+                    {selectedGroup.informes && selectedGroup.informes.length > 0 && (
+                        <div className="mb-4 rounded-lg border border-teal-200 bg-teal-50/60 p-3">
+                            <div className="mb-2 flex items-center gap-2 text-teal-800">
+                                <FileText className="h-4 w-4" />
+                                <span className="text-xs font-bold uppercase tracking-wide">Informes de Impacto</span>
+                            </div>
+                            <div className="space-y-1">
+                                {selectedGroup.informes.map((inf: any) => {
+                                    const lineaLabel = inf.linea_id
+                                        ? (options.lineas || []).find((l: any) => Number(l.value) === Number(inf.linea_id))?.label || `Línea ${inf.linea_id}`
+                                        : 'Todas las líneas';
+                                    const fmt = (ts: number | null) => {
+                                        if (!ts || isNaN(ts)) return '-';
+                                        const f = new Date(ts);
+                                        return `${f.getUTCDate().toString().padStart(2, '0')}/${(f.getUTCMonth() + 1).toString().padStart(2, '0')}/${f.getUTCFullYear()}`;
+                                    };
+                                    return (
+                                        <div key={inf.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-3 py-2 text-xs border border-teal-100">
+                                            <div>
+                                                <span className="font-bold text-gray-800">{inf.titulo}</span>
+                                                <span className="ml-2 text-gray-500">({lineaLabel})</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-gray-600">
+                                                    {fmt(inf.tsInicio)} – {inf.tsFin ? fmt(inf.tsFin) : 'en curso'}
+                                                </span>
+                                                {inf.archivo_url ? (
+                                                    <a
+                                                        href={inf.archivo_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-semibold text-teal-700 hover:underline"
+                                                    >
+                                                        Ver PDF
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-gray-400">Sin PDF</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-                        <DetalleBecasTable 
+                        <DetalleBecasTable
                             data={filteredData} 
                             loading={false} 
                             groupStartDate={selectedGroup.start}
