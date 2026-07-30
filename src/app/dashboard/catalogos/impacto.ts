@@ -1,30 +1,36 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Sincronización  informe_impacto (Catálogos)  →  avance_proyecto (Gestión de
-// Proyectos).
+// Sincronización  informe_impacto (Catálogos)  →  bitácora de etapas.
 //
 // PROBLEMA QUE RESUELVE
 // La fase "Impacto" se declara en Catálogos a nivel de GRUPO (tabla
 // informe_impacto: grupo, línea, fecha de inicio y de cierre de la evaluación),
-// pero la etapa de cada proyecto se deriva de su bitácora de eventos
-// (avance_proyecto → recalculateProyectoAvance → proyectos.etapa_id). Eran dos
-// verdades desconectadas: un grupo con informe registrado seguía teniendo todos
-// sus proyectos en Pre-Impacto, y el dashboard los contaba en las dos fases.
+// pero la etapa de cada proyecto/beca se deriva de su bitácora de eventos
+// (avance_* → recalculate* → etapa_id). Eran dos verdades desconectadas: un
+// grupo con informe registrado seguía teniendo a los suyos en la etapa anterior,
+// el dashboard los contaba en dos fases a la vez y el filtro de fase ni siquiera
+// ofrecía "Impacto".
 //
 // REGLA
 // El informe es la fuente de verdad; el evento de etapa Impacto es su proyección
-// sobre cada proyecto alcanzado:
+// sobre cada registro alcanzado:
 //
 //   crear informe        → evento etapa 10 con fecha = informe.fecha_inicio
 //   editar fecha_inicio  → se mueve la fecha de esos eventos
-//   editar grupo/línea   → se borran los eventos de los proyectos que ya no
-//                          alcanza y se crean los de los nuevos
-//   borrar informe       → ON DELETE CASCADE borra sus eventos y el proyecto
-//                          vuelve solo a su etapa anterior (Pre-Impacto)
+//   editar grupo/línea   → se borran los eventos de los que ya no alcanza y se
+//                          crean los de los nuevos
+//   borrar informe       → ON DELETE CASCADE borra sus eventos y el registro
+//                          vuelve solo a su etapa anterior
 //
-// Proyectos alcanzados: grupo_id del informe y, si el informe declara linea_id,
-// solo esa línea (linea_id NULL = todas las líneas del grupo).
+// DOS DESTINOS, SEGÚN EL TIPO DE GRUPO
+//   grupo.tipo = 2 (proyectos) → proyectos    / avance_proyecto
+//   grupo.tipo = 1 (becas)     → becas_nueva  / avance_beca
 //
-// El vínculo vive en avance_proyecto.informe_impacto_id
+// Alcance: grupo_id del informe y, si declara linea_id, solo esa línea.
+// En becas se exige además que la beca YA HAYA TERMINADO (Ejecutado o Resuelto):
+// no tiene sentido declarar en impacto una beca que sigue en ejecución. Las que
+// aún no terminaron entran solas cuando terminen, con una reconciliación.
+//
+// El vínculo vive en avance_*.informe_impacto_id
 // (ver scripts/migration_impacto_avance.sql). Un evento con esa columna en NULL
 // es carga manual y NUNCA se borra desde aquí.
 //
@@ -33,9 +39,12 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recalcularEtapasProyectos } from '@/app/dashboard/actions';
+import { recalcularEtapasBecas } from '@/app/dashboard/gestion-servicios/actions';
 
 /** Etapa "Impacto" del catálogo `etapas`. */
 export const ETAPA_IMPACTO = 10;
+/** Etapas terminales: Ejecutado y Resuelto. */
+const ETAPAS_TERMINADAS = [6, 7];
 
 type Informe = {
     id: number;
@@ -45,6 +54,41 @@ type Informe = {
     fecha_inicio: string;
 };
 
+/** A qué mundo proyecta un informe, según el tipo de su grupo. */
+type Destino = {
+    /** Nombre en singular para los mensajes ("proyecto" / "beca"). */
+    etiqueta: string;
+    tablaEntidad: string;
+    tablaAvance: string;
+    /** Columna de avance_* que apunta a la entidad. */
+    fk: string;
+    /**
+     * Etapas desde las que se admite el salto a Impacto. `null` = cualquiera.
+     * En becas solo las terminadas; en proyectos no se restringe porque el
+     * cierre ya viene dado por las etapas 8/9.
+     */
+    etapasElegibles: number[] | null;
+    recalcular: (ids: number[]) => Promise<void>;
+};
+
+const DESTINO_PROYECTOS: Destino = {
+    etiqueta: 'proyecto',
+    tablaEntidad: 'proyectos',
+    tablaAvance: 'avance_proyecto',
+    fk: 'proyecto_id',
+    etapasElegibles: null,
+    recalcular: recalcularEtapasProyectos,
+};
+
+const DESTINO_BECAS: Destino = {
+    etiqueta: 'beca',
+    tablaEntidad: 'becas_nueva',
+    tablaAvance: 'avance_beca',
+    fk: 'beca_id',
+    etapasElegibles: ETAPAS_TERMINADAS,
+    recalcular: recalcularEtapasBecas,
+};
+
 export type ResultadoSync = {
     informeId: number;
     titulo: string;
@@ -52,26 +96,29 @@ export type ResultadoSync = {
     creados: number;
     /** Eventos de etapa Impacto ya existentes que se vincularon al informe. */
     adoptados: number;
-    /** Eventos vinculados cuya fecha se corrigió a la del informe. */
+    /** Eventos vinculados cuya fecha se corrigió. */
     actualizados: number;
-    /** Eventos borrados porque su proyecto dejó de estar alcanzado. */
+    /** Eventos borrados porque su registro dejó de estar alcanzado. */
     eliminados: number;
     /** Situaciones que requieren mirada humana (no bloquean la sincronización). */
     avisos: string[];
 };
 
-/** Proyectos que un informe alcanza (grupo + línea opcional). */
-async function proyectosAlcanzados(
+/** Destino de un informe según el tipo de su grupo. */
+async function resolverDestino(
     sb: SupabaseClient,
-    informe: Informe,
-): Promise<number[]> {
-    let q = sb.from('proyectos').select('id').eq('grupo_id', informe.grupo_id);
-    if (informe.linea_id !== null && informe.linea_id !== undefined) {
-        q = q.eq('linea_id', informe.linea_id);
-    }
-    const { data, error } = await q;
-    if (error) throw new Error(`No se pudieron leer los proyectos del grupo: ${error.message}`);
-    return (data ?? []).map((p: any) => Number(p.id));
+    grupoId: number,
+): Promise<Destino | null> {
+    const { data, error } = await sb
+        .from('grupo')
+        .select('tipo')
+        .eq('id', grupoId)
+        .maybeSingle();
+    if (error) throw new Error(`No se pudo leer el grupo ${grupoId}: ${error.message}`);
+    if (!data) return null;
+    if (Number(data.tipo) === 1) return DESTINO_BECAS;
+    if (Number(data.tipo) === 2) return DESTINO_PROYECTOS;
+    return null;
 }
 
 /**
@@ -82,7 +129,7 @@ async function proyectosAlcanzados(
 export async function sincronizarInformeImpacto(
     sb: SupabaseClient,
     informeId: number,
-): Promise<{ resultado: ResultadoSync; proyectosAfectados: number[] } | null> {
+): Promise<{ resultado: ResultadoSync; destino: Destino; afectados: number[] } | null> {
     const { data: informe, error: errInforme } = await sb
         .from('informe_impacto')
         .select('id, grupo_id, linea_id, titulo, fecha_inicio')
@@ -103,167 +150,199 @@ export async function sincronizarInformeImpacto(
         avisos: [],
     };
 
+    const destino = await resolverDestino(sb, inf.grupo_id);
+    if (!destino) {
+        resultado.avisos.push(
+            `El grupo ${inf.grupo_id} no es de proyectos ni de becas: el informe no proyecta ninguna etapa.`,
+        );
+        return { resultado, destino: DESTINO_PROYECTOS, afectados: [] };
+    }
+
     // Sin fecha de inicio no hay etapa Impacto que proyectar.
     if (!inf.fecha_inicio) {
         resultado.avisos.push('El informe no tiene fecha de inicio: no se generó ningún evento.');
-        return { resultado, proyectosAfectados: [] };
+        return { resultado, destino, afectados: [] };
     }
 
-    const objetivo = await proyectosAlcanzados(sb, inf);
-    const objetivoSet = new Set(objetivo);
-    const afectados = new Set<number>(objetivo);
+    // ── Alcance ──────────────────────────────────────────────────────────────
+    let q = sb.from(destino.tablaEntidad).select('id, etapa_id').eq('grupo_id', inf.grupo_id);
+    if (inf.linea_id !== null && inf.linea_id !== undefined) q = q.eq('linea_id', inf.linea_id);
+    const { data: entidades, error: errEnt } = await q;
+    if (errEnt) throw new Error(`No se pudieron leer los ${destino.etiqueta}s del grupo: ${errEnt.message}`);
 
-    if (objetivo.length === 0) {
-        // Los grupos de becas (tipo 1) no tienen filas en `proyectos`: que no
-        // alcancen nada es lo normal, no un problema que reportar.
-        const { data: grupo } = await sb
-            .from('grupo')
-            .select('tipo')
-            .eq('id', inf.grupo_id)
-            .maybeSingle();
-        if (Number(grupo?.tipo) === 2) {
-            resultado.avisos.push(
-                inf.linea_id !== null
-                    ? `Ningún proyecto en el grupo ${inf.grupo_id} con línea ${inf.linea_id}.`
-                    : `Ningún proyecto en el grupo ${inf.grupo_id}.`,
-            );
-        }
+    const alcanzados = (entidades ?? []).map((e: any) => Number(e.id));
+    const alcanzadosSet = new Set(alcanzados);
+    const etapaDe = new Map<number, number>(
+        (entidades ?? []).map((e: any) => [Number(e.id), Number(e.etapa_id)]),
+    );
+    const afectados = new Set<number>();
+
+    if (alcanzados.length === 0) {
+        resultado.avisos.push(
+            inf.linea_id !== null
+                ? `Ningún ${destino.etiqueta} en el grupo ${inf.grupo_id} con línea ${inf.linea_id}.`
+                : `Ningún ${destino.etiqueta} en el grupo ${inf.grupo_id}: el informe no se ve en ninguna línea de tiempo.`,
+        );
+        return { resultado, destino, afectados: [] };
     }
 
-    // ── Fecha del evento, por proyecto ───────────────────────────────────────
-    // La etapa de un proyecto se deriva de su evento MÁS RECIENTE
-    // (recalculateProyectoAvance), así que el evento de Impacto no puede quedar
-    // por detrás de un evento posterior del mismo proyecto: lo dejaría en la
-    // etapa vieja. Cuando el proyecto tiene un avance con fecha posterior al
-    // inicio del informe, el evento se ancla en esa fecha y se avisa, porque es
-    // una contradicción entre el informe y la bitácora que alguien debe zanjar.
-    const fechaPorProyecto = new Map<number, string>();
-    if (objetivo.length > 0) {
-        const { data: previos, error: errPrev } = await sb
-            .from('avance_proyecto')
-            .select('proyecto_id, fecha')
-            .in('proyecto_id', objetivo)
+    // ── 1. Eventos ya vinculados a este informe ──────────────────────────────
+    const { data: vinculadosRaw, error: errVinc } = await sb
+        .from(destino.tablaAvance)
+        .select(`id, ${destino.fk}, fecha`)
+        .eq('informe_impacto_id', inf.id);
+    if (errVinc) throw new Error(`No se pudieron leer los eventos del informe: ${errVinc.message}`);
+    // El nombre de la columna FK es dinámico: el select no es tipable, se trata como any.
+    const vinculados = (vinculadosRaw ?? []) as any[];
+
+    const idEntidad = (a: any) => Number(a[destino.fk]);
+    const yaVinculados = new Set(vinculados.map(idEntidad));
+
+    // ── Elegibles ────────────────────────────────────────────────────────────
+    // Los ya vinculados siguen siéndolo aunque su etapa actual sea Impacto —
+    // si no, la segunda corrida los vería "no elegibles" y borraría su evento.
+    const elegibles = alcanzados.filter(
+        (id) =>
+            yaVinculados.has(id) ||
+            destino.etapasElegibles === null ||
+            destino.etapasElegibles.includes(etapaDe.get(id) ?? -1),
+    );
+    const elegiblesSet = new Set(elegibles);
+    elegibles.forEach((id) => afectados.add(id));
+
+    const pendientes = alcanzados.length - elegibles.length;
+    if (pendientes > 0) {
+        resultado.avisos.push(
+            `${pendientes} ${destino.etiqueta}(s) del grupo aún no terminan su ejecución: quedan fuera del impacto y entrarán al reconciliar cuando pasen a Ejecutado o Resuelto.`,
+        );
+    }
+
+    // ── Fecha del evento, por registro ───────────────────────────────────────
+    // La etapa se deriva del evento MÁS RECIENTE, así que el evento de Impacto
+    // no puede quedar por detrás de un avance posterior del mismo registro: lo
+    // dejaría en la etapa vieja. Cuando lo hay, el evento se ancla en esa fecha
+    // y se avisa, porque es una contradicción entre el informe y la bitácora.
+    const fechaPorEntidad = new Map<number, string>();
+    {
+        const { data: posterioresRaw, error: errPost } = await sb
+            .from(destino.tablaAvance)
+            .select(`${destino.fk}, fecha`)
+            .in(destino.fk, elegibles)
             .neq('etapa_id', ETAPA_IMPACTO)
             .gt('fecha', inf.fecha_inicio);
-        if (errPrev) throw new Error(`No se pudieron leer los avances posteriores: ${errPrev.message}`);
+        if (errPost) throw new Error(`No se pudieron leer los avances posteriores: ${errPost.message}`);
+        const posteriores = (posterioresRaw ?? []) as any[];
 
         const ultimoPosterior = new Map<number, string>();
-        for (const a of previos ?? []) {
-            const pid = Number(a.proyecto_id);
-            const actual = ultimoPosterior.get(pid);
-            if (!actual || a.fecha > actual) ultimoPosterior.set(pid, a.fecha);
+        for (const a of posteriores) {
+            const eid = idEntidad(a);
+            const actual = ultimoPosterior.get(eid);
+            if (!actual || a.fecha > actual) ultimoPosterior.set(eid, a.fecha);
         }
-        for (const pid of objetivo) {
-            const posterior = ultimoPosterior.get(pid);
-            fechaPorProyecto.set(pid, posterior ?? inf.fecha_inicio);
+        for (const eid of elegibles) {
+            const posterior = ultimoPosterior.get(eid);
+            fechaPorEntidad.set(eid, posterior ?? inf.fecha_inicio);
             if (posterior) {
                 resultado.avisos.push(
-                    `El proyecto ${pid} tiene un avance del ${posterior}, posterior al inicio del informe (${inf.fecha_inicio}); el evento de Impacto se ancló en esa fecha para que la etapa quede correcta.`,
+                    `El ${destino.etiqueta} ${eid} tiene un avance del ${posterior}, posterior al inicio del informe (${inf.fecha_inicio}); el evento de Impacto se ancló en esa fecha para que la etapa quede correcta.`,
                 );
             }
         }
     }
-    const fechaDe = (pid: number) => fechaPorProyecto.get(pid) ?? inf.fecha_inicio;
+    const fechaDe = (eid: number) => fechaPorEntidad.get(eid) ?? inf.fecha_inicio;
 
-    // ── 1. Eventos ya vinculados a este informe ──────────────────────────────
-    const { data: vinculados, error: errVinc } = await sb
-        .from('avance_proyecto')
-        .select('id, proyecto_id, fecha')
-        .eq('informe_impacto_id', inf.id);
-    if (errVinc) throw new Error(`No se pudieron leer los eventos del informe: ${errVinc.message}`);
-
-    const sobrantes = (vinculados ?? []).filter((a: any) => !objetivoSet.has(Number(a.proyecto_id)));
+    // ── 2. Eventos que sobran (su registro salió del alcance) ────────────────
+    const sobrantes = vinculados.filter((a: any) => !alcanzadosSet.has(idEntidad(a)));
     if (sobrantes.length > 0) {
         const { error } = await sb
-            .from('avance_proyecto')
+            .from(destino.tablaAvance)
             .delete()
             .in('id', sobrantes.map((a: any) => a.id));
         if (error) throw new Error(`No se pudieron borrar los eventos sobrantes: ${error.message}`);
         resultado.eliminados = sobrantes.length;
-        sobrantes.forEach((a: any) => afectados.add(Number(a.proyecto_id)));
+        sobrantes.forEach((a: any) => afectados.add(idEntidad(a)));
     }
 
-    // Corregir la fecha de los que siguen vigentes (agrupando por fecha destino,
-    // que puede diferir entre proyectos por el anclaje de arriba).
-    const vigentes = (vinculados ?? []).filter((a: any) => objetivoSet.has(Number(a.proyecto_id)));
-    const desfasados = vigentes.filter((a: any) => a.fecha !== fechaDe(Number(a.proyecto_id)));
+    // ── 3. Corregir la fecha de los vigentes ─────────────────────────────────
+    const vigentes = vinculados.filter((a: any) => elegiblesSet.has(idEntidad(a)));
+    const desfasados = vigentes.filter((a: any) => a.fecha !== fechaDe(idEntidad(a)));
     if (desfasados.length > 0) {
         const porFecha = new Map<string, number[]>();
         for (const a of desfasados) {
-            const f = fechaDe(Number(a.proyecto_id));
+            const f = fechaDe(idEntidad(a));
             if (!porFecha.has(f)) porFecha.set(f, []);
             porFecha.get(f)!.push(a.id);
         }
         for (const [fecha, ids] of porFecha) {
-            const { error } = await sb.from('avance_proyecto').update({ fecha }).in('id', ids);
+            const { error } = await sb.from(destino.tablaAvance).update({ fecha }).in('id', ids);
             if (error) throw new Error(`No se pudo corregir la fecha de los eventos: ${error.message}`);
         }
         resultado.actualizados = desfasados.length;
     }
 
-    // ── 2. Proyectos alcanzados que todavía no tienen su evento ──────────────
-    const yaVinculados = new Set(vigentes.map((a: any) => Number(a.proyecto_id)));
-    const faltantes = objetivo.filter((id) => !yaVinculados.has(id));
-    if (faltantes.length === 0) return { resultado, proyectosAfectados: [...afectados] };
+    // ── 4. Elegibles que todavía no tienen su evento ─────────────────────────
+    const faltantes = elegibles.filter((id) => !yaVinculados.has(id));
+    if (faltantes.length === 0) return { resultado, destino, afectados: [...afectados] };
 
     // Eventos de etapa Impacto cargados a mano: se adoptan en lugar de crear un
-    // duplicado, y se les corrige la fecha a la que declara el informe.
-    const { data: huerfanos, error: errHuerf } = await sb
-        .from('avance_proyecto')
-        .select('id, proyecto_id, fecha, sustento')
-        .in('proyecto_id', faltantes)
+    // duplicado, y se les corrige la fecha.
+    const { data: huerfanosRaw, error: errHuerf } = await sb
+        .from(destino.tablaAvance)
+        .select(`id, ${destino.fk}, fecha, sustento`)
+        .in(destino.fk, faltantes)
         .eq('etapa_id', ETAPA_IMPACTO)
         .is('informe_impacto_id', null)
         .order('fecha', { ascending: true });
     if (errHuerf) throw new Error(`No se pudieron leer los eventos de impacto existentes: ${errHuerf.message}`);
+    const huerfanos = (huerfanosRaw ?? []) as any[];
 
     const adoptables = new Map<number, any>();
-    for (const h of huerfanos ?? []) {
-        const pid = Number(h.proyecto_id);
-        if (adoptables.has(pid)) {
-            // Más de un evento de Impacto para el mismo proyecto: se adopta el
+    for (const h of huerfanos) {
+        const eid = idEntidad(h);
+        if (adoptables.has(eid)) {
+            // Más de un evento de Impacto para el mismo registro: se adopta el
             // más antiguo y el resto queda como estaba, para revisión manual.
             resultado.avisos.push(
-                `El proyecto ${pid} tiene más de un evento de etapa Impacto; se vinculó el más antiguo (${adoptables.get(pid).fecha}) y quedó suelto el del ${h.fecha}.`,
+                `El ${destino.etiqueta} ${eid} tiene más de un evento de etapa Impacto; se vinculó el más antiguo (${adoptables.get(eid).fecha}) y quedó suelto el del ${h.fecha}.`,
             );
             continue;
         }
-        adoptables.set(pid, h);
+        adoptables.set(eid, h);
     }
 
     const sustentoAuto = `Informe de impacto: ${resultado.titulo}`;
 
-    for (const [pid, h] of adoptables) {
+    for (const [eid, h] of adoptables) {
         const patch: Record<string, any> = {
             informe_impacto_id: inf.id,
-            fecha: fechaDe(pid),
+            fecha: fechaDe(eid),
         };
         if (!h.sustento || String(h.sustento).trim() === '') patch.sustento = sustentoAuto;
-        const { error } = await sb.from('avance_proyecto').update(patch).eq('id', h.id);
-        if (error) throw new Error(`No se pudo vincular el evento del proyecto ${pid}: ${error.message}`);
+        const { error } = await sb.from(destino.tablaAvance).update(patch).eq('id', h.id);
+        if (error) throw new Error(`No se pudo vincular el evento del ${destino.etiqueta} ${eid}: ${error.message}`);
         resultado.adoptados++;
     }
 
     const porCrear = faltantes.filter((id) => !adoptables.has(id));
     if (porCrear.length > 0) {
-        const filas = porCrear.map((proyecto_id) => ({
-            proyecto_id,
+        const filas = porCrear.map((eid) => ({
+            [destino.fk]: eid,
             etapa_id: ETAPA_IMPACTO,
-            fecha: fechaDe(proyecto_id),
+            fecha: fechaDe(eid),
             sustento: sustentoAuto,
             monto: 0,
             informe_impacto_id: inf.id,
         }));
-        const { error } = await sb.from('avance_proyecto').insert(filas);
+        const { error } = await sb.from(destino.tablaAvance).insert(filas);
         if (error) throw new Error(`No se pudieron crear los eventos de impacto: ${error.message}`);
         resultado.creados = porCrear.length;
     }
 
-    return { resultado, proyectosAfectados: [...afectados] };
+    return { resultado, destino, afectados: [...afectados] };
 }
 
 /**
- * Sincroniza un informe y recalcula la etapa de los proyectos que tocó.
+ * Sincroniza un informe y recalcula la etapa de lo que tocó.
  * Es el punto de entrada normal desde el CRUD de Catálogos.
  */
 export async function sincronizarYRecalcular(
@@ -272,24 +351,35 @@ export async function sincronizarYRecalcular(
 ): Promise<ResultadoSync | null> {
     const salida = await sincronizarInformeImpacto(sb, informeId);
     if (!salida) return null;
-    await recalcularEtapasProyectos(salida.proyectosAfectados);
+    await salida.destino.recalcular(salida.afectados);
     return salida.resultado;
 }
 
 /**
- * Proyectos alcanzados por un informe ANTES de borrarlo. Hay que capturarlos
- * antes porque el ON DELETE CASCADE se lleva los eventos y después ya no queda
- * rastro de a quién había que recalcular.
+ * Registros alcanzados por un informe ANTES de borrarlo, con su destino. Hay que
+ * capturarlos antes porque el ON DELETE CASCADE se lleva los eventos y después
+ * ya no queda rastro de a quién había que recalcular.
  */
-export async function proyectosDeInforme(
+export async function afectadosDeInforme(
     sb: SupabaseClient,
     informeId: number,
-): Promise<number[]> {
+): Promise<{ destino: Destino; ids: number[] } | null> {
+    const { data: inf } = await sb
+        .from('informe_impacto')
+        .select('grupo_id')
+        .eq('id', informeId)
+        .maybeSingle();
+    if (!inf) return null;
+
+    const destino = await resolverDestino(sb, Number(inf.grupo_id));
+    if (!destino) return null;
+
     const { data } = await sb
-        .from('avance_proyecto')
-        .select('proyecto_id')
+        .from(destino.tablaAvance)
+        .select(destino.fk)
         .eq('informe_impacto_id', informeId);
-    return Array.from(new Set((data ?? []).map((a: any) => Number(a.proyecto_id))));
+    const ids = Array.from(new Set((data ?? []).map((a: any) => Number(a[destino.fk]))));
+    return { destino, ids };
 }
 
 /**
@@ -307,15 +397,21 @@ export async function reconciliarTodosLosInformes(
     if (error) throw new Error(`No se pudieron listar los informes: ${error.message}`);
 
     const resultados: ResultadoSync[] = [];
-    const afectados = new Set<number>();
+    // Un recálculo por destino, al final: así una beca tocada por dos informes
+    // se recalcula una sola vez.
+    const porDestino = new Map<Destino, Set<number>>();
 
     for (const inf of informes ?? []) {
         const salida = await sincronizarInformeImpacto(sb, Number(inf.id));
         if (!salida) continue;
         resultados.push(salida.resultado);
-        salida.proyectosAfectados.forEach((id) => afectados.add(id));
+        if (salida.afectados.length === 0) continue;
+        if (!porDestino.has(salida.destino)) porDestino.set(salida.destino, new Set());
+        salida.afectados.forEach((id) => porDestino.get(salida.destino)!.add(id));
     }
 
-    await recalcularEtapasProyectos([...afectados]);
+    for (const [destino, ids] of porDestino) {
+        await destino.recalcular([...ids]);
+    }
     return resultados;
 }

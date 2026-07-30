@@ -30,3 +30,23 @@ create unique index if not exists avance_proyecto_informe_uq
 create index if not exists avance_proyecto_informe_idx
   on public.avance_proyecto (informe_impacto_id)
   where informe_impacto_id is not null;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Lo mismo para BECAS: un informe cuyo grupo es de tipo 1 se proyecta sobre
+-- becas_nueva / avance_beca en vez de proyectos / avance_proyecto.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table public.avance_beca
+  add column if not exists informe_impacto_id bigint
+  references public.informe_impacto(id) on delete cascade;
+
+comment on column public.avance_beca.informe_impacto_id is
+  'Informe de impacto (Catálogos) que generó este evento. NULL = evento cargado manualmente en Gestión de Servicios.';
+
+create unique index if not exists avance_beca_informe_uq
+  on public.avance_beca (beca_id, informe_impacto_id)
+  where informe_impacto_id is not null;
+
+create index if not exists avance_beca_informe_idx
+  on public.avance_beca (informe_impacto_id)
+  where informe_impacto_id is not null;

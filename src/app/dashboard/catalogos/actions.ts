@@ -16,12 +16,11 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { getNormalizedEmail, SUPER_ADMIN, puedeVerCatalogos } from '@/config/permissions';
 import { esTablaValida, COLUMNAS_COMBO, type Columna } from './tablas';
 import {
-    proyectosDeInforme,
+    afectadosDeInforme,
     reconciliarTodosLosInformes,
     sincronizarYRecalcular,
     type ResultadoSync,
 } from './impacto';
-import { recalcularEtapasProyectos } from '@/app/dashboard/actions';
 
 // Tabla cuyos cambios se proyectan sobre la bitácora de etapas de los proyectos
 // (ver impacto.ts): declarar un informe de impacto mueve a sus proyectos a la
@@ -39,10 +38,12 @@ function invalidarCatalogos(tabla: string) {
     revalidatePath(`/dashboard/catalogos/${tabla}`);
     revalidatePath('/dashboard/catalogos');
     if (tabla === TABLA_INFORMES) {
-        // Los informes cambian la etapa de los proyectos: refrescar también las
-        // bandejas que la leen.
+        // Los informes cambian la etapa de proyectos y becas: refrescar también
+        // las bandejas que la leen.
         revalidatePath('/dashboard');
         revalidatePath('/dashboard/gestion-proyectos');
+        revalidatePath('/dashboard/servicios');
+        revalidatePath('/dashboard/gestion-servicios');
     }
 }
 
@@ -441,9 +442,9 @@ export async function eliminarFila(
     // Los eventos de etapa Impacto se van solos con el informe (ON DELETE
     // CASCADE), pero hay que saber A QUIÉN recalcular antes de que desaparezcan:
     // después del borrado no queda rastro del vínculo.
-    let proyectosARecalcular: number[] = [];
+    let porRecalcular: { destino: { etiqueta: string; recalcular: (ids: number[]) => Promise<void> }; ids: number[] } | null = null;
     if (tabla === TABLA_INFORMES) {
-        proyectosARecalcular = await proyectosDeInforme(sb, Number(pkVal));
+        porRecalcular = await afectadosDeInforme(sb, Number(pkVal));
     }
 
     // Capturar el archivo_url antes de borrar (si la tabla tiene esa columna)
@@ -467,12 +468,13 @@ export async function eliminarFila(
     // El CASCADE ya borró los eventos: al recalcular, cada proyecto vuelve a la
     // etapa de su evento anterior (normalmente Pre-Impacto).
     let aviso: string | undefined;
-    if (proyectosARecalcular.length > 0) {
+    if (porRecalcular && porRecalcular.ids.length > 0) {
+        const { destino, ids } = porRecalcular;
         try {
-            await recalcularEtapasProyectos(proyectosARecalcular);
-            aviso = `Se revirtió la etapa Impacto en ${proyectosARecalcular.length} proyecto(s).`;
+            await destino.recalcular(ids);
+            aviso = `Se revirtió la etapa Impacto en ${ids.length} ${destino.etiqueta}(s).`;
         } catch (e: any) {
-            aviso = `El informe se eliminó, pero no se pudo recalcular la etapa de sus proyectos: ${e?.message ?? e}.`;
+            aviso = `El informe se eliminó, pero no se pudo recalcular la etapa de sus ${destino.etiqueta}s: ${e?.message ?? e}.`;
         }
     }
 

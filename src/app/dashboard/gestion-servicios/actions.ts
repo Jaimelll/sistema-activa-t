@@ -215,6 +215,24 @@ async function recalculateBecaAvance(becaId: any, supabase: any) {
   }
 }
 
+/**
+ * Recalcula etapa/avance derivados de la bitácora para varias becas a la vez.
+ * Lo usa la sincronización de informes de impacto (módulo Catálogos), que
+ * escribe eventos de etapa Impacto directamente en avance_beca sin pasar por
+ * addAvanceServicio.
+ */
+export async function recalcularEtapasBecas(becaIds: number[]) {
+  const ids = Array.from(new Set((becaIds || []).filter((id) => id != null)));
+  if (ids.length === 0) return;
+
+  const supabase = getSupabase();
+  for (const id of ids) {
+    await recalculateBecaAvance(id, supabase);
+  }
+  revalidatePath('/dashboard/servicios');
+  revalidatePath('/dashboard/gestion-servicios');
+}
+
 export async function addAvanceServicio(becaId: any, avanceData: any) {
   const supabase = getSupabase();
   
