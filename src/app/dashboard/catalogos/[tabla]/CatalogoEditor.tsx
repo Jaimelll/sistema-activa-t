@@ -47,6 +47,9 @@ export default function CatalogoEditor({
     const [isPending, startTransition] = useTransition();
     const [busy, setBusy] = useState<string | null>(null); // id de fila en proceso
     const [error, setError] = useState<string | null>(null);
+    // Efectos colaterales de la escritura que el usuario debe conocer (p. ej.
+    // cuántos proyectos cambiaron de etapa al declarar un informe de impacto).
+    const [aviso, setAviso] = useState<string | null>(null);
     const [q, setQ] = useState('');
 
     const pk = useMemo(
@@ -97,6 +100,7 @@ export default function CatalogoEditor({
     async function handleCrear(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
+        setAviso(null);
         setBusy('nuevo');
         const res = await crearFila(tabla, nuevo);
         setBusy(null);
@@ -104,12 +108,14 @@ export default function CatalogoEditor({
             setError(res.error ?? 'No se pudo crear el elemento.');
             return;
         }
+        setAviso(res.aviso ?? null);
         setNuevo({});
         refrescar();
     }
 
     async function handleGuardar(fila: Fila, edits: Fila) {
         setError(null);
+        setAviso(null);
         const id = String(fila[pk]);
         setBusy(id);
         const res = await actualizarFila(tabla, pk, fila[pk], edits);
@@ -118,15 +124,21 @@ export default function CatalogoEditor({
             setError(res.error ?? 'No se pudo guardar.');
             return;
         }
+        setAviso(res.aviso ?? null);
         refrescar();
     }
 
     async function handleEliminar(fila: Fila) {
         const id = String(fila[pk]);
-        if (!confirm(`¿Eliminar el elemento ${id}? Esta acción no se puede deshacer.`)) {
+        const advertencia =
+            tabla === 'informe_impacto'
+                ? `¿Eliminar el informe ${id}? Los proyectos que pasó a la etapa Impacto volverán a su etapa anterior.`
+                : `¿Eliminar el elemento ${id}? Esta acción no se puede deshacer.`;
+        if (!confirm(advertencia)) {
             return;
         }
         setError(null);
+        setAviso(null);
         setBusy(id);
         const res = await eliminarFila(tabla, pk, fila[pk]);
         setBusy(null);
@@ -134,6 +146,7 @@ export default function CatalogoEditor({
             setError(res.error ?? 'No se pudo eliminar.');
             return;
         }
+        setAviso(res.aviso ?? null);
         refrescar();
     }
 
@@ -142,6 +155,12 @@ export default function CatalogoEditor({
             {error && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
                     {error}
+                </div>
+            )}
+
+            {aviso && (
+                <div className="rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-800">
+                    {aviso}
                 </div>
             )}
 

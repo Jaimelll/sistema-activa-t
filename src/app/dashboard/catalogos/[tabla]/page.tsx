@@ -7,6 +7,7 @@ import { puedeVerCatalogos, puedeEditarCatalogos } from '@/config/permissions';
 import { esTablaValida, etiquetaTabla, COLUMNAS_OCULTAS, ORDEN_FILAS } from '../tablas';
 import { getColumnas, getFilas, getOpcionesCombo } from '../actions';
 import CatalogoEditor from './CatalogoEditor';
+import ReconciliarImpacto from './ReconciliarImpacto';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -57,6 +58,8 @@ export default async function CatalogoDetallePage({
                     <span className="font-mono text-xs">{tabla}</span>
                 </p>
             </div>
+
+            {tabla === 'informe_impacto' && !soloLectura && <ReconciliarImpacto />}
 
             {columnas.length === 0 ? (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">

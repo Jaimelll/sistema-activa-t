@@ -1014,6 +1014,26 @@ async function recalculateProyectoAvance(proyectoId: any, supabase: any, current
   }
 }
 
+/**
+ * Recalcula etapa/sustento/avance derivados de la bitácora para varios
+ * proyectos a la vez. Lo usa la sincronización de informes de impacto
+ * (módulo Catálogos), que escribe eventos de etapa Impacto directamente en
+ * avance_proyecto sin pasar por addAvanceProyecto.
+ */
+export async function recalcularEtapasProyectos(proyectoIds: number[]) {
+  const ids = Array.from(new Set((proyectoIds || []).filter((id) => id != null)));
+  if (ids.length === 0) return;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  for (const id of ids) {
+    await recalculateProyectoAvance(id, supabase);
+  }
+  revalidatePath('/dashboard');
+}
+
 export async function addAvanceProyecto(proyectoId: any, avanceData: any) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
