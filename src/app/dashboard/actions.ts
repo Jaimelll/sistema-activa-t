@@ -669,7 +669,7 @@ export async function getTimelineData(especialistaId?: number) {
         grupo (id, descripcion, orden),
         avance_tecnico, provincia, especialista_id, contacto,
         especialista:especialistas(nombre),
-        avance_proyecto (id, fecha, etapa_id, sustento)
+        avance_proyecto (id, fecha, etapa_id, sustento, informe_impacto_id)
       `);
 
     if (especialistaId && Number(especialistaId) !== 0 && String(especialistaId) !== 'all' && String(especialistaId) !== 'undefined') {
@@ -715,11 +715,16 @@ export async function getTimelineData(especialistaId?: number) {
       avance_tecnico: Number(p.avance_tecnico) || 0,
       fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
+      // OJO: este mapeo reconstruye el avance campo por campo, así que toda
+      // columna nueva hay que agregarla ACÁ además de en el select o se pierde
+      // en silencio. `informe_impacto_id` lo necesita la línea de tiempo para
+      // saber qué informes de impacto corresponden a los proyectos visibles.
       avances: (p.avance_proyecto || []).map((a: any) => ({
         id: a.id,
         fecha: a.fecha,
         etapa_id: a.etapa_id,
-        sustento: a.sustento || ''
+        sustento: a.sustento || '',
+        informe_impacto_id: a.informe_impacto_id ?? null
       })),
       provincia: p.provincia || '',
       especialista_id: p.especialista_id,

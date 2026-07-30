@@ -27,11 +27,11 @@
 //
 // Alcance: grupo_id del informe y, si declara linea_id, solo esa línea.
 //
-// En BECAS la prueba de impacto se hace sobre las que llevan al menos UN AÑO
+// En BECAS la prueba de impacto se hace sobre las que llevan al menos SEIS MESES
 // ejecutadas a la fecha de inicio del informe: esa fecha es la que identifica a
 // qué becas corresponde cada informe. Un grupo puede tener VARIOS informes, y
 // cada beca pertenece a UNO solo — el primero (por fecha de inicio) que ya la
-// alcanza. Las que aún no cumplen el año entran solas en un informe posterior.
+// alcanza. Las que aún no cumplen el plazo entran solas en un informe posterior.
 // La antigüedad se mide contra el evento de cierre de la bitácora, nunca contra
 // la etapa guardada, que puede estar desfasada.
 //
@@ -72,16 +72,16 @@ type Destino = {
      * Antigüedad mínima del cierre para entrar a la evaluación de impacto.
      * `null` = sin requisito.
      *
-     * En BECAS la prueba de impacto se hace sobre las que llevan al menos un
-     * año ejecutadas al momento del informe: el informe evalúa el efecto de la
-     * beca pasado ese tiempo, no el cierre administrativo. Se mide contra el
+     * En BECAS la prueba de impacto se hace sobre las que llevan al menos seis
+     * meses ejecutadas al momento del informe: el informe evalúa el efecto de
+     * la beca pasado ese tiempo, no el cierre administrativo. Se mide contra el
      * evento de cierre de la bitácora, no contra la etapa guardada (que puede
      * estar desfasada).
      *
      * En PROYECTOS no hay requisito: el informe se registra cuando corresponde
      * y el ciclo ya trae sus propias etapas de Cierre y Pre-Impacto.
      */
-    anhosDesdeCierre: number | null;
+    mesesDesdeCierre: number | null;
     /** Etapa que marca el cierre (para medir la antigüedad). */
     etapaCierre: number;
     recalcular: (ids: number[]) => Promise<void>;
@@ -92,7 +92,7 @@ const DESTINO_PROYECTOS: Destino = {
     tablaEntidad: 'proyectos',
     tablaAvance: 'avance_proyecto',
     fk: 'proyecto_id',
-    anhosDesdeCierre: null,
+    mesesDesdeCierre: null,
     etapaCierre: ETAPA_EJECUTADO,
     recalcular: recalcularEtapasProyectos,
 };
@@ -102,15 +102,15 @@ const DESTINO_BECAS: Destino = {
     tablaEntidad: 'becas_nueva',
     tablaAvance: 'avance_beca',
     fk: 'beca_id',
-    anhosDesdeCierre: 1,
+    mesesDesdeCierre: 6,
     etapaCierre: ETAPA_EJECUTADO,
     recalcular: recalcularEtapasBecas,
 };
 
-/** Resta años a una fecha 'YYYY-MM-DD'. */
-function restarAnhos(fecha: string, anhos: number): string {
+/** Resta meses a una fecha 'YYYY-MM-DD'. */
+function restarMeses(fecha: string, meses: number): string {
     const d = new Date(`${fecha}T00:00:00Z`);
-    d.setUTCFullYear(d.getUTCFullYear() - anhos);
+    d.setUTCMonth(d.getUTCMonth() - meses);
     return d.toISOString().split('T')[0];
 }
 
@@ -257,7 +257,7 @@ export async function sincronizarInformeImpacto(
     // Fecha de cierre de cada registro (primer evento de Ejecutado en su
     // bitácora). Es la referencia real: la etapa guardada puede estar desfasada.
     const cierreDe = new Map<number, string>();
-    if (destino.anhosDesdeCierre !== null) {
+    if (destino.mesesDesdeCierre !== null) {
         const { data: cierresRaw, error: errCierre } = await fetchAllRows((from, to) =>
             sb
                 .from(destino.tablaAvance)
@@ -284,9 +284,9 @@ export async function sincronizarInformeImpacto(
         const cierre = cierreDe.get(eid);
         for (const h of hermanos) {
             if (h.linea_id !== null && Number(h.linea_id) !== Number(linea)) continue;
-            if (destino.anhosDesdeCierre !== null) {
+            if (destino.mesesDesdeCierre !== null) {
                 if (!cierre) continue;
-                if (cierre > restarAnhos(h.fecha_inicio, destino.anhosDesdeCierre)) continue;
+                if (cierre > restarMeses(h.fecha_inicio, destino.mesesDesdeCierre)) continue;
             }
             return h;
         }
@@ -305,8 +305,8 @@ export async function sincronizarInformeImpacto(
 
     if (sinCumplir > 0) {
         resultado.avisos.push(
-            destino.anhosDesdeCierre !== null
-                ? `${sinCumplir} ${destino.etiqueta}(s) del grupo aún no cumplen ${destino.anhosDesdeCierre} año(s) desde su cierre (o no lo tienen registrado): entrarán al reconciliar cuando corresponda.`
+            destino.mesesDesdeCierre !== null
+                ? `${sinCumplir} ${destino.etiqueta}(s) del grupo aún no cumplen ${destino.mesesDesdeCierre} mes(es) desde su cierre (o no lo tienen registrado): entrarán al reconciliar cuando corresponda.`
                 : `${sinCumplir} ${destino.etiqueta}(s) del grupo no están cubiertos por ningún informe.`,
         );
     }
