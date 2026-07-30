@@ -26,9 +26,14 @@
 //   grupo.tipo = 1 (becas)     → becas_nueva  / avance_beca
 //
 // Alcance: grupo_id del informe y, si declara linea_id, solo esa línea.
-// En becas se exige además que la beca YA HAYA TERMINADO (Ejecutado o Resuelto):
-// no tiene sentido declarar en impacto una beca que sigue en ejecución. Las que
-// aún no terminaron entran solas cuando terminen, con una reconciliación.
+//
+// En BECAS la prueba de impacto se hace sobre las que llevan al menos UN AÑO
+// ejecutadas a la fecha de inicio del informe: esa fecha es la que identifica a
+// qué becas corresponde cada informe. Un grupo puede tener VARIOS informes, y
+// cada beca pertenece a UNO solo — el primero (por fecha de inicio) que ya la
+// alcanza. Las que aún no cumplen el año entran solas en un informe posterior.
+// La antigüedad se mide contra el evento de cierre de la bitácora, nunca contra
+// la etapa guardada, que puede estar desfasada.
 //
 // El vínculo vive en avance_*.informe_impacto_id
 // (ver scripts/migration_impacto_avance.sql). Un evento con esa columna en NULL
@@ -44,8 +49,8 @@ import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
 /** Etapa "Impacto" del catálogo `etapas`. */
 export const ETAPA_IMPACTO = 10;
-/** Etapas terminales: Ejecutado y Resuelto. */
-const ETAPAS_TERMINADAS = [6, 7];
+/** Etapa "Ejecutado": marca el cierre desde el que se cuenta la antigüedad. */
+const ETAPA_EJECUTADO = 6;
 
 type Informe = {
     id: number;
@@ -64,11 +69,21 @@ type Destino = {
     /** Columna de avance_* que apunta a la entidad. */
     fk: string;
     /**
-     * Etapas desde las que se admite el salto a Impacto. `null` = cualquiera.
-     * En becas solo las terminadas; en proyectos no se restringe porque el
-     * cierre ya viene dado por las etapas 8/9.
+     * Antigüedad mínima del cierre para entrar a la evaluación de impacto.
+     * `null` = sin requisito.
+     *
+     * En BECAS la prueba de impacto se hace sobre las que llevan al menos un
+     * año ejecutadas al momento del informe: el informe evalúa el efecto de la
+     * beca pasado ese tiempo, no el cierre administrativo. Se mide contra el
+     * evento de cierre de la bitácora, no contra la etapa guardada (que puede
+     * estar desfasada).
+     *
+     * En PROYECTOS no hay requisito: el informe se registra cuando corresponde
+     * y el ciclo ya trae sus propias etapas de Cierre y Pre-Impacto.
      */
-    etapasElegibles: number[] | null;
+    anhosDesdeCierre: number | null;
+    /** Etapa que marca el cierre (para medir la antigüedad). */
+    etapaCierre: number;
     recalcular: (ids: number[]) => Promise<void>;
 };
 
@@ -77,7 +92,8 @@ const DESTINO_PROYECTOS: Destino = {
     tablaEntidad: 'proyectos',
     tablaAvance: 'avance_proyecto',
     fk: 'proyecto_id',
-    etapasElegibles: null,
+    anhosDesdeCierre: null,
+    etapaCierre: ETAPA_EJECUTADO,
     recalcular: recalcularEtapasProyectos,
 };
 
@@ -86,9 +102,17 @@ const DESTINO_BECAS: Destino = {
     tablaEntidad: 'becas_nueva',
     tablaAvance: 'avance_beca',
     fk: 'beca_id',
-    etapasElegibles: ETAPAS_TERMINADAS,
+    anhosDesdeCierre: 1,
+    etapaCierre: ETAPA_EJECUTADO,
     recalcular: recalcularEtapasBecas,
 };
+
+/** Resta años a una fecha 'YYYY-MM-DD'. */
+function restarAnhos(fecha: string, anhos: number): string {
+    const d = new Date(`${fecha}T00:00:00Z`);
+    d.setUTCFullYear(d.getUTCFullYear() - anhos);
+    return d.toISOString().split('T')[0];
+}
 
 export type ResultadoSync = {
     informeId: number;
@@ -170,15 +194,18 @@ export async function sincronizarInformeImpacto(
     // becas puede pasarse (avance_beca ya ronda las 4500 filas). Sin paginar, la
     // reconciliación dejaría fuera lo que quedara más allá del corte.
     const { data: entidades, error: errEnt } = await fetchAllRows((from, to) => {
-        let q = sb.from(destino.tablaEntidad).select('id, etapa_id').eq('grupo_id', inf.grupo_id);
+        let q = sb
+            .from(destino.tablaEntidad)
+            .select('id, linea_id')
+            .eq('grupo_id', inf.grupo_id);
         if (inf.linea_id !== null && inf.linea_id !== undefined) q = q.eq('linea_id', inf.linea_id);
         return q.range(from, to);
     });
     if (errEnt) throw new Error(`No se pudieron leer los ${destino.etiqueta}s del grupo: ${errEnt.message}`);
 
     const alcanzados = (entidades ?? []).map((e: any) => Number(e.id));
-    const etapaDe = new Map<number, number>(
-        (entidades ?? []).map((e: any) => [Number(e.id), Number(e.etapa_id)]),
+    const lineaDe = new Map<number, number | null>(
+        (entidades ?? []).map((e: any) => [Number(e.id), e.linea_id === null ? null : Number(e.linea_id)]),
     );
     const afectados = new Set<number>();
 
@@ -207,19 +234,85 @@ export async function sincronizarInformeImpacto(
     const yaVinculados = new Set(vinculados.map(idEntidad));
 
     // ── Candidatos ───────────────────────────────────────────────────────────
-    // Los ya vinculados siguen siendo candidatos aunque su etapa actual sea
-    // Impacto — si no, la segunda corrida los vería fuera y borraría su evento.
-    const candidatos = alcanzados.filter(
-        (id) =>
-            yaVinculados.has(id) ||
-            destino.etapasElegibles === null ||
-            destino.etapasElegibles.includes(etapaDe.get(id) ?? -1),
+    // Un grupo puede tener VARIOS informes, y cada registro pertenece a UNO
+    // solo: el primero (por fecha de inicio) que ya lo alcanza. Se decide igual
+    // desde cualquier informe que se sincronice, así que el resultado no depende
+    // del orden en que se procesen.
+    const { data: hermanosRaw, error: errHerm } = await fetchAllRows((from, to) =>
+        sb
+            .from('informe_impacto')
+            .select('id, linea_id, fecha_inicio')
+            .eq('grupo_id', inf.grupo_id)
+            .range(from, to),
     );
+    if (errHerm) throw new Error(`No se pudieron leer los informes del grupo: ${errHerm.message}`);
+    const hermanos = ((hermanosRaw ?? []) as any[])
+        .filter((h) => h.fecha_inicio)
+        .sort((a, b) =>
+            a.fecha_inicio === b.fecha_inicio
+                ? Number(a.id) - Number(b.id)
+                : a.fecha_inicio < b.fecha_inicio ? -1 : 1,
+        );
 
-    const sinTerminar = alcanzados.length - candidatos.length;
-    if (sinTerminar > 0) {
+    // Fecha de cierre de cada registro (primer evento de Ejecutado en su
+    // bitácora). Es la referencia real: la etapa guardada puede estar desfasada.
+    const cierreDe = new Map<number, string>();
+    if (destino.anhosDesdeCierre !== null) {
+        const { data: cierresRaw, error: errCierre } = await fetchAllRows((from, to) =>
+            sb
+                .from(destino.tablaAvance)
+                .select(`${destino.fk}, fecha`)
+                .in(destino.fk, alcanzados)
+                .eq('etapa_id', destino.etapaCierre)
+                .range(from, to),
+        );
+        if (errCierre) throw new Error(`No se pudieron leer los cierres: ${errCierre.message}`);
+        for (const c of (cierresRaw ?? []) as any[]) {
+            const eid = idEntidad(c);
+            const actual = cierreDe.get(eid);
+            if (!actual || c.fecha < actual) cierreDe.set(eid, c.fecha);
+        }
+    }
+
+    /**
+     * Informe al que pertenece un registro: el primero del grupo que cubre su
+     * línea y para el que, a su fecha de inicio, ya cumplía la antigüedad de
+     * cierre exigida. `null` = todavía no le toca ningún informe.
+     */
+    const informeDe = (eid: number) => {
+        const linea = lineaDe.get(eid);
+        const cierre = cierreDe.get(eid);
+        for (const h of hermanos) {
+            if (h.linea_id !== null && Number(h.linea_id) !== Number(linea)) continue;
+            if (destino.anhosDesdeCierre !== null) {
+                if (!cierre) continue;
+                if (cierre > restarAnhos(h.fecha_inicio, destino.anhosDesdeCierre)) continue;
+            }
+            return h;
+        }
+        return null;
+    };
+
+    const candidatos: number[] = [];
+    let deOtroInforme = 0;
+    let sinCumplir = 0;
+    for (const id of alcanzados) {
+        const duenho = informeDe(id);
+        if (!duenho) sinCumplir++;
+        else if (Number(duenho.id) === Number(inf.id)) candidatos.push(id);
+        else deOtroInforme++;
+    }
+
+    if (sinCumplir > 0) {
         resultado.avisos.push(
-            `${sinTerminar} ${destino.etiqueta}(s) del grupo aún no terminan su ejecución: quedan fuera del impacto y entrarán al reconciliar cuando pasen a Ejecutado o Resuelto.`,
+            destino.anhosDesdeCierre !== null
+                ? `${sinCumplir} ${destino.etiqueta}(s) del grupo aún no cumplen ${destino.anhosDesdeCierre} año(s) desde su cierre (o no lo tienen registrado): entrarán al reconciliar cuando corresponda.`
+                : `${sinCumplir} ${destino.etiqueta}(s) del grupo no están cubiertos por ningún informe.`,
+        );
+    }
+    if (deOtroInforme > 0) {
+        resultado.avisos.push(
+            `${deOtroInforme} ${destino.etiqueta}(s) del grupo pertenecen a otro informe anterior del mismo grupo.`,
         );
     }
 

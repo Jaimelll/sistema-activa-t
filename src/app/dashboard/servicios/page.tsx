@@ -136,20 +136,16 @@ export default function ServiciosPage() {
                 }
             });
             setEtapaFaseMap(faseMap);
-            // Preserve canonical order defined in spec
-            const FASE_ORDER = [
-                'Etapa Concursal',
-                'Acciones Preparatorias',
-                'Ejecución del Proyecto',
-                'Cierre Administrativo',
-                'Resuelto',
-                'Pre-Impacto',
-                'Impacto',
-            ];
-            const sortedFases = FASE_ORDER.filter(f => fasesSet.has(f));
-            // Append any DB fases not in the canonical list, preserving flexibility
-            fasesSet.forEach(f => { if (!sortedFases.includes(f)) sortedFases.push(f); });
-            setFases(sortedFases);
+            // El orden de las fases sale del propio catálogo de etapas, que llega
+            // ordenado por id: recorrerlo da Etapa Concursal → Acciones
+            // Preparatorias → En Ejecución → Cierre Administrativo → Resuelto →
+            // Pre-Impacto → Impacto, que es el avance real del ciclo.
+            //
+            // Antes había una lista fija con "Ejecución del Proyecto", nombre que
+            // no existe en `etapas.fase` (el valor real es "En Ejecución"): nunca
+            // casaba, caía en el "append lo que no reconozco" y terminaba al
+            // final, después de Impacto. Derivarlo del catálogo no se desincroniza.
+            setFases(Array.from(fasesSet));
 
             setFilterOptions({
                 etapas: dedupEtapas.map((e: any) => ({ id: e.id, descripcion: e.descripcion })),
