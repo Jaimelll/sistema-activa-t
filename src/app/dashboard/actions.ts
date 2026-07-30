@@ -43,7 +43,8 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
           fecha,
           etapa_id,
           sustento,
-          monto
+          monto,
+          informe_impacto_id
         ),
         grupo:grupo_id(descripcion)
       `);
@@ -190,7 +191,8 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
           fecha,
           etapa_id,
           sustento,
-          monto
+          monto,
+          informe_impacto_id
         ),
         grupo:grupo_id(descripcion)
       `);

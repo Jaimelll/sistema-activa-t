@@ -193,7 +193,7 @@ export default function ServiciosPage() {
                     linea:linea_id(descripcion),
                     etapa:etapa_id(descripcion),
                     condicion:condicion_id(descripcion),
-                    avances:avance_beca(id, fecha, etapa_id, sustento, monto),
+                    avances:avance_beca(id, fecha, etapa_id, sustento, monto, informe_impacto_id),
                     grupo:grupo_id(descripcion, orden)
                 `)
                 .order('id', { ascending: true })
@@ -305,6 +305,25 @@ export default function ServiciosPage() {
             return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio && matchGrupo;
         });
     }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupo]);
+
+    // -- Informes visibles -----------------------------------------------------
+    // La línea de tiempo dibuja la etapa Impacto a partir de los informes, no de
+    // la etapa de las becas. Si se pasan todos, filtrar por "En Ejecución" seguía
+    // pintando el segmento de Impacto: basta con que UNA beca del grupo pase el
+    // filtro para que la fila exista, y el informe cuelga del grupo.
+    //
+    // El criterio correcto no es "el grupo está visible" sino "alguna beca DE
+    // ESTE INFORME está visible": se resuelve por el vínculo real que dejó la
+    // sincronización (avance_beca.informe_impacto_id).
+    const filteredInformesImpacto = useMemo(() => {
+        const vinculados = new Set<number>();
+        filteredData.forEach((beca: any) => {
+            (beca.avances || []).forEach((a: any) => {
+                if (a.informe_impacto_id) vinculados.add(Number(a.informe_impacto_id));
+            });
+        });
+        return informesImpacto.filter((i: any) => vinculados.has(Number(i.id)));
+    }, [filteredData, informesImpacto]);
 
     // -- Derived chart data (reactive to filteredData) -------------------------
     const bubbleMapData = useMemo(() => {
@@ -469,7 +488,7 @@ export default function ServiciosPage() {
                 <ServiciosTimeline
                     data={filteredData}
                     options={timelineOptions}
-                    informesImpacto={informesImpacto}
+                    informesImpacto={filteredInformesImpacto}
                 />
             </div>
 

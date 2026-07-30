@@ -384,12 +384,20 @@ export default function DashboardView({ initialData, timelineData = [], years = 
         return timelineDataState.filter(t => activeIds.has(t.id));
     }, [filteredData, timelineDataState]);
 
-    // Los informes se dibujan por grupo: hay que recortarlos a los grupos que
-    // sobrevivieron al filtro, o la línea de tiempo pintaría el segmento de
-    // Impacto de un grupo cuyos proyectos están excluidos de la vista.
+    // La línea de tiempo dibuja la etapa Impacto a partir de los informes, no de
+    // la etapa de los proyectos. El criterio para mostrar uno no es "su grupo
+    // está visible" — bastaría con que UN proyecto del grupo pase el filtro para
+    // que reapareciera el segmento de Impacto — sino "algún proyecto DE ESTE
+    // INFORME está visible", que se resuelve por el vínculo real que dejó la
+    // sincronización (avance_proyecto.informe_impacto_id).
     const filteredInformesImpacto = useMemo(() => {
-        const gruposVisibles = new Set(filteredTimelineData.map((t: any) => Number(t.grupo_id)));
-        return (informesImpacto || []).filter((i: any) => gruposVisibles.has(Number(i.grupo_id)));
+        const vinculados = new Set<number>();
+        filteredTimelineData.forEach((p: any) => {
+            (p.avances || []).forEach((a: any) => {
+                if (a.informe_impacto_id) vinculados.add(Number(a.informe_impacto_id));
+            });
+        });
+        return (informesImpacto || []).filter((i: any) => vinculados.has(Number(i.id)));
     }, [filteredTimelineData, informesImpacto]);
 
     const selectedFaseLabel = useMemo(() => {
