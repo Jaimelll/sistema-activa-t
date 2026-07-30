@@ -40,6 +40,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recalcularEtapasProyectos } from '@/app/dashboard/actions';
 import { recalcularEtapasBecas } from '@/app/dashboard/gestion-servicios/actions';
+import { fetchAllRows } from '@/utils/supabase/fetchAll';
 
 /** Etapa "Impacto" del catálogo `etapas`. */
 export const ETAPA_IMPACTO = 10;
@@ -165,13 +166,17 @@ export async function sincronizarInformeImpacto(
     }
 
     // ── Alcance ──────────────────────────────────────────────────────────────
-    let q = sb.from(destino.tablaEntidad).select('id, etapa_id').eq('grupo_id', inf.grupo_id);
-    if (inf.linea_id !== null && inf.linea_id !== undefined) q = q.eq('linea_id', inf.linea_id);
-    const { data: entidades, error: errEnt } = await q;
+    // Todas las lecturas paginan: PostgREST corta en 1000 filas y un grupo de
+    // becas puede pasarse (avance_beca ya ronda las 4500 filas). Sin paginar, la
+    // reconciliación dejaría fuera lo que quedara más allá del corte.
+    const { data: entidades, error: errEnt } = await fetchAllRows((from, to) => {
+        let q = sb.from(destino.tablaEntidad).select('id, etapa_id').eq('grupo_id', inf.grupo_id);
+        if (inf.linea_id !== null && inf.linea_id !== undefined) q = q.eq('linea_id', inf.linea_id);
+        return q.range(from, to);
+    });
     if (errEnt) throw new Error(`No se pudieron leer los ${destino.etiqueta}s del grupo: ${errEnt.message}`);
 
     const alcanzados = (entidades ?? []).map((e: any) => Number(e.id));
-    const alcanzadosSet = new Set(alcanzados);
     const etapaDe = new Map<number, number>(
         (entidades ?? []).map((e: any) => [Number(e.id), Number(e.etapa_id)]),
     );
@@ -187,10 +192,13 @@ export async function sincronizarInformeImpacto(
     }
 
     // ── 1. Eventos ya vinculados a este informe ──────────────────────────────
-    const { data: vinculadosRaw, error: errVinc } = await sb
-        .from(destino.tablaAvance)
-        .select(`id, ${destino.fk}, fecha`)
-        .eq('informe_impacto_id', inf.id);
+    const { data: vinculadosRaw, error: errVinc } = await fetchAllRows((from, to) =>
+        sb
+            .from(destino.tablaAvance)
+            .select(`id, ${destino.fk}, fecha`)
+            .eq('informe_impacto_id', inf.id)
+            .range(from, to),
+    );
     if (errVinc) throw new Error(`No se pudieron leer los eventos del informe: ${errVinc.message}`);
     // El nombre de la columna FK es dinámico: el select no es tipable, se trata como any.
     const vinculados = (vinculadosRaw ?? []) as any[];
@@ -198,22 +206,20 @@ export async function sincronizarInformeImpacto(
     const idEntidad = (a: any) => Number(a[destino.fk]);
     const yaVinculados = new Set(vinculados.map(idEntidad));
 
-    // ── Elegibles ────────────────────────────────────────────────────────────
-    // Los ya vinculados siguen siéndolo aunque su etapa actual sea Impacto —
-    // si no, la segunda corrida los vería "no elegibles" y borraría su evento.
-    const elegibles = alcanzados.filter(
+    // ── Candidatos ───────────────────────────────────────────────────────────
+    // Los ya vinculados siguen siendo candidatos aunque su etapa actual sea
+    // Impacto — si no, la segunda corrida los vería fuera y borraría su evento.
+    const candidatos = alcanzados.filter(
         (id) =>
             yaVinculados.has(id) ||
             destino.etapasElegibles === null ||
             destino.etapasElegibles.includes(etapaDe.get(id) ?? -1),
     );
-    const elegiblesSet = new Set(elegibles);
-    elegibles.forEach((id) => afectados.add(id));
 
-    const pendientes = alcanzados.length - elegibles.length;
-    if (pendientes > 0) {
+    const sinTerminar = alcanzados.length - candidatos.length;
+    if (sinTerminar > 0) {
         resultado.avisos.push(
-            `${pendientes} ${destino.etiqueta}(s) del grupo aún no terminan su ejecución: quedan fuera del impacto y entrarán al reconciliar cuando pasen a Ejecutado o Resuelto.`,
+            `${sinTerminar} ${destino.etiqueta}(s) del grupo aún no terminan su ejecución: quedan fuera del impacto y entrarán al reconciliar cuando pasen a Ejecutado o Resuelto.`,
         );
     }
 
@@ -224,12 +230,15 @@ export async function sincronizarInformeImpacto(
     // y se avisa, porque es una contradicción entre el informe y la bitácora.
     const fechaPorEntidad = new Map<number, string>();
     {
-        const { data: posterioresRaw, error: errPost } = await sb
-            .from(destino.tablaAvance)
-            .select(`${destino.fk}, fecha`)
-            .in(destino.fk, elegibles)
-            .neq('etapa_id', ETAPA_IMPACTO)
-            .gt('fecha', inf.fecha_inicio);
+        const { data: posterioresRaw, error: errPost } = await fetchAllRows((from, to) =>
+            sb
+                .from(destino.tablaAvance)
+                .select(`${destino.fk}, fecha`)
+                .in(destino.fk, candidatos)
+                .neq('etapa_id', ETAPA_IMPACTO)
+                .gt('fecha', inf.fecha_inicio)
+                .range(from, to),
+        );
         if (errPost) throw new Error(`No se pudieron leer los avances posteriores: ${errPost.message}`);
         const posteriores = (posterioresRaw ?? []) as any[];
 
@@ -239,20 +248,42 @@ export async function sincronizarInformeImpacto(
             const actual = ultimoPosterior.get(eid);
             if (!actual || a.fecha > actual) ultimoPosterior.set(eid, a.fecha);
         }
-        for (const eid of elegibles) {
-            const posterior = ultimoPosterior.get(eid);
-            fechaPorEntidad.set(eid, posterior ?? inf.fecha_inicio);
-            if (posterior) {
-                resultado.avisos.push(
-                    `El ${destino.etiqueta} ${eid} tiene un avance del ${posterior}, posterior al inicio del informe (${inf.fecha_inicio}); el evento de Impacto se ancló en esa fecha para que la etapa quede correcta.`,
-                );
-            }
+        for (const eid of candidatos) {
+            fechaPorEntidad.set(eid, ultimoPosterior.get(eid) ?? inf.fecha_inicio);
         }
     }
     const fechaDe = (eid: number) => fechaPorEntidad.get(eid) ?? inf.fecha_inicio;
 
-    // ── 2. Eventos que sobran (su registro salió del alcance) ────────────────
-    const sobrantes = vinculados.filter((a: any) => !alcanzadosSet.has(idEntidad(a)));
+    // ── Elegibles: los que ya entraron al impacto DE VERDAD ──────────────────
+    // Si el anclaje deja el evento en el futuro es porque la bitácora todavía
+    // proyecta el cierre (p. ej. un "Ejecutado" fechado en 2027). Ese registro
+    // no ha terminado, por más que su etapa guardada diga lo contrario: crear el
+    // evento no lo movería a Impacto (recalculate* ignora fechas futuras) y sí
+    // ensuciaría la bitácora. Entra solo cuando llegue esa fecha.
+    const hoy = new Date().toISOString().split('T')[0];
+    const elegibles = candidatos.filter((id) => fechaDe(id) <= hoy);
+    const elegiblesSet = new Set(elegibles);
+    elegibles.forEach((id) => afectados.add(id));
+
+    const proyectados = candidatos.length - elegibles.length;
+    if (proyectados > 0) {
+        resultado.avisos.push(
+            `${proyectados} ${destino.etiqueta}(s) tienen su cierre proyectado a futuro en la bitácora: quedan fuera del impacto hasta que llegue esa fecha.`,
+        );
+    }
+
+    const anclados = elegibles.filter((id) => fechaDe(id) !== inf.fecha_inicio).length;
+    if (anclados > 0) {
+        resultado.avisos.push(
+            `${anclados} ${destino.etiqueta}(s) tienen un avance posterior al inicio del informe (${inf.fecha_inicio}); su evento de Impacto se ancló en esa fecha para que la etapa quede correcta.`,
+        );
+    }
+
+    // ── 2. Eventos que sobran ────────────────────────────────────────────────
+    // Su registro salió del alcance (cambió el grupo o la línea del informe) o
+    // dejó de ser elegible (su cierre volvió a estar proyectado a futuro). La
+    // regla se autocorrige: lo que no debe estar, se borra.
+    const sobrantes = vinculados.filter((a: any) => !elegiblesSet.has(idEntidad(a)));
     if (sobrantes.length > 0) {
         const { error } = await sb
             .from(destino.tablaAvance)
@@ -286,13 +317,16 @@ export async function sincronizarInformeImpacto(
 
     // Eventos de etapa Impacto cargados a mano: se adoptan en lugar de crear un
     // duplicado, y se les corrige la fecha.
-    const { data: huerfanosRaw, error: errHuerf } = await sb
-        .from(destino.tablaAvance)
-        .select(`id, ${destino.fk}, fecha, sustento`)
-        .in(destino.fk, faltantes)
-        .eq('etapa_id', ETAPA_IMPACTO)
-        .is('informe_impacto_id', null)
-        .order('fecha', { ascending: true });
+    const { data: huerfanosRaw, error: errHuerf } = await fetchAllRows((from, to) =>
+        sb
+            .from(destino.tablaAvance)
+            .select(`id, ${destino.fk}, fecha, sustento`)
+            .in(destino.fk, faltantes)
+            .eq('etapa_id', ETAPA_IMPACTO)
+            .is('informe_impacto_id', null)
+            .order('fecha', { ascending: true })
+            .range(from, to),
+    );
     if (errHuerf) throw new Error(`No se pudieron leer los eventos de impacto existentes: ${errHuerf.message}`);
     const huerfanos = (huerfanosRaw ?? []) as any[];
 
