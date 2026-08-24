@@ -508,7 +508,7 @@ const mensual = await getPresupuestoMensual();
             {/* Evolución de Aportes vs PBI Line Chart */}
             <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
                 <div className="mb-6 text-center relative">
-                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026)</h3>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Evolución de Aportes (1998-2026) vs PBI (1998-2025)</h3>
                     <p className="text-sm font-semibold text-slate-500 mt-1">Aportes 2026: Información actualizada a la fecha</p>
                     <div className="absolute top-0 right-0">
                         <PresentationButton chartId="evolucion-aportes" />
@@ -519,6 +519,10 @@ const mensual = await getPresupuestoMensual();
                         <span className="w-8 h-1 bg-blue-600 inline-block rounded-full" />
                         <span className="text-sm font-bold text-slate-600">Aportes Totales (S/)</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-8 h-1 bg-red-600 inline-block rounded-full" />
+                        <span className="text-sm font-bold text-slate-600">Crecimiento PBI Perú (%)</span>
+                    </div>
                 </div>
                 <div className="w-full overflow-x-auto pb-4">
                     <div className="min-w-[800px] h-[400px]">
@@ -527,11 +531,13 @@ const mensual = await getPresupuestoMensual();
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="anio" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} />
                                 <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={fmtM} width={85} />
+                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: 11 }} tickFormatter={(v) => v === 0 ? '' : `${v}%`} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }}
-                                    formatter={(value: any) => [formatCurrency(value), 'Aportes Totales']}
+                                    formatter={(value: any, name: string) => name === 'pbi' ? (value != null ? [`${value}%`, 'Crecimiento PBI'] : null) : [formatCurrency(value), 'Aportes Totales']}
                                 />
                                 <Line yAxisId="left" type="monotone" dataKey="total" name="total" stroke="#2563eb" strokeWidth={4} dot={{ r: 4, fill: '#fff' }} activeDot={{ r: 8 }} />
+                                <Line yAxisId="right" type="monotone" dataKey="pbi" name="pbi" stroke="#dc2626" strokeWidth={2} dot={{ r: 3, fill: '#fff', stroke: '#dc2626' }} activeDot={{ r: 6 }} connectNulls />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
