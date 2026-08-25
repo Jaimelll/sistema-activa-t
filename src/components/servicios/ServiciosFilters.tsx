@@ -1,5 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
+import MultiSelectFilter from "@/components/MultiSelectFilter";
+
 interface ServiciosFiltersProps {
     fases: string[];
     selectedFase: string;
@@ -26,8 +29,8 @@ interface ServiciosFiltersProps {
     setSelectedInstitucion: (v: string) => void;
     selectedTipoEstudio: string;
     setSelectedTipoEstudio: (v: string) => void;
-    selectedGrupo: string;
-    setSelectedGrupo: (v: string) => void;
+    selectedGrupos: string[];
+    setSelectedGrupos: (v: string[]) => void;
 }
 
 export function ServiciosFilters({
@@ -47,9 +50,17 @@ export function ServiciosFilters({
     setSelectedInstitucion,
     selectedTipoEstudio,
     setSelectedTipoEstudio,
-    selectedGrupo,
-    setSelectedGrupo,
+    selectedGrupos,
+    setSelectedGrupos,
 }: ServiciosFiltersProps) {
+    const grupoOptions = useMemo(
+        () =>
+            [...(options.grupos || [])]
+                .sort((a, b) => a.orden - b.orden)
+                .map(item => ({ value: String(item.id), label: `${item.orden} - ${item.descripcion}` })),
+        [options.grupos],
+    );
+
     return (
         <div className="flex flex-col gap-3 w-full">
             {/* Badge Fase Activa */}
@@ -81,25 +92,20 @@ export function ServiciosFilters({
                     </select>
                 </div>
 
-                {/* Grupo */}
+                {/* Grupo — multi-selección con checkboxes */}
                 <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">
                         Grupo
                     </label>
-                    <select
-                        className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white text-gray-700 cursor-pointer font-bold"
-                        value={selectedGrupo}
-                        onChange={(e) => setSelectedGrupo(e.target.value)}
-                    >
-                        <option value="all">Todos los Grupos</option>
-                        {(options.grupos || [])
-                            .sort((a, b) => a.orden - b.orden)
-                            .map((item) => (
-                                <option key={item.id} value={String(item.id)}>
-                                    {item.orden} - {item.descripcion}
-                                </option>
-                            ))}
-                    </select>
+                    <MultiSelectFilter
+                        options={grupoOptions}
+                        selected={selectedGrupos}
+                        onChange={setSelectedGrupos}
+                        placeholder="Todos los Grupos"
+                        singularLabel="grupo"
+                        pluralLabel="grupos"
+                        size="sm"
+                    />
                 </div>
 
                 {/* Institución */}

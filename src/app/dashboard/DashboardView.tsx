@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { clsx } from 'clsx';
 import { GestoraChart } from '@/components/dashboard/charts/GestoraChart';
 import ProyectoModal from '@/components/ProyectoModal';
+import MultiSelectFilter from '@/components/MultiSelectFilter';
 
 // ── Lazy load de componentes pesados ─────────────────────────────────────────
 // PeruMapChart (~540 líneas de SVG + lógica) y TimelineChart (~519 líneas con
@@ -61,6 +62,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     const [selectedFase, setSelectedFase] = useState<any>("En Ejecución");
     const [selectedRegion, setSelectedRegion] = useState<any>(null);
     const [selectedEspecialista, setSelectedEspecialista] = useState<any>('all');
+    // Grupo es multi-selección: lista vacía = todos los grupos (igual que 'all'
+    // en el resto de filtros), para que arranque neutro y cruce sin casos especiales.
+    const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
     const [dashboardData, setDashboardData] = useState(initialData);
     const [timelineDataState, setTimelineDataState] = useState(timelineData);
     const [isInitialMount, setIsInitialMount] = useState(true);
@@ -93,6 +97,9 @@ export default function DashboardView({ initialData, timelineData = [], years = 
     // Catálogos genera el evento de etapa Impacto en cada proyecto alcanzado
     // (ver catalogos/impacto.ts), así que aquí no hace falta ningún caso
     // especial: si el grupo está en impacto, sus proyectos ya lo dicen.
+    const matchesGrupo = (item: any) =>
+        selectedGrupos.length === 0 || selectedGrupos.includes(String(item.grupo_id));
+
     const filteredData = useMemo(() => {
         const res = dashboardData.filter(item => {
             const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
@@ -104,10 +111,10 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
 
-            return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad;
+            return matchYear && matchLinea && matchEje && matchEtapa && matchFase && matchModalidad && matchesGrupo(item);
         });
         return res;
-    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad]);
+    }, [dashboardData, selectedYear, selectedLinea, selectedEje, selectedEtapa, selectedFase, selectedModalidad, selectedGrupos]);
 
     // REACTIVE GLOBAL FILTER EFFECT
     useEffect(() => {
@@ -147,7 +154,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
             const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
-            return matchYear && matchFase && matchLinea && matchEtapa && matchModalidad;
+            return matchYear && matchFase && matchLinea && matchEtapa && matchModalidad && matchesGrupo(item);
         });
         const uniqueEjes = Array.from(new Set(dataForEjes.map(d => String(d.ejeId || d.eje_id || d.eje))));
         const dynamicEjes = ejesList
@@ -161,7 +168,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
-            return matchYear && matchFase && matchEje && matchEtapa && matchModalidad;
+            return matchYear && matchFase && matchEje && matchEtapa && matchModalidad && matchesGrupo(item);
         });
         const uniqueLineas = Array.from(new Set(dataForLineas.map(d => String(d.lineaId))));
         const dynamicLineas = lines
@@ -175,7 +182,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
-            return matchYear && matchFase && matchEje && matchLinea && matchModalidad;
+            return matchYear && matchFase && matchEje && matchLinea && matchModalidad && matchesGrupo(item);
         });
         const uniqueEtapasSet = new Set(dataForEtapas.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
         const uniqueEtapas = Array.from(uniqueEtapasSet)
@@ -189,7 +196,7 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
             const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
-            return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad;
+            return matchYear && matchEje && matchLinea && matchEtapa && matchModalidad && matchesGrupo(item);
         });
         const fasesPresentes = new Set(dataForFases.map(d => d.fase).filter(Boolean));
         const dynamicFases = Array.from(fasesPresentes)
@@ -209,15 +216,39 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
             const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
             const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
-            return matchYear && matchFase && matchEje && matchLinea && matchEtapa;
+            return matchYear && matchFase && matchEje && matchLinea && matchEtapa && matchesGrupo(item);
         });
         const uniqueModalidades = Array.from(new Set(dataForModalidades.map(d => String(d.modalidadId))));
         const dynamicModalidades = modalidades
             .filter((m: any) => uniqueModalidades.includes(String(m.value)))
             .sort((a: any, b: any) => a.label.localeCompare(b.label));
 
-        return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades };
-    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades, fases]);
+        // 6. Opciones de Grupos (dependen de Año, Fase, Eje, Línea, Etapa, Modalidad).
+        // No se filtra por el propio grupo seleccionado: si lo hiciera, marcar un
+        // grupo escondería a los demás y no se podría marcar un segundo.
+        const dataForGrupos = dashboardData.filter(item => {
+            const matchYear = isIgnored(selectedYear) || String(item.año) === String(selectedYear);
+            const matchFase = isIgnored(selectedFase) || item.fase === selectedFase;
+            const matchEje = isIgnored(selectedEje) || String(item.ejeId || item.eje_id || item.eje) === String(selectedEje);
+            const matchLinea = isIgnored(selectedLinea) || String(item.lineaId) === String(selectedLinea);
+            const matchEtapa = isIgnored(selectedEtapa) || String(item.etapaId) === String(selectedEtapa);
+            const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
+            return matchYear && matchFase && matchEje && matchLinea && matchEtapa && matchModalidad;
+        });
+        const uniqueGrupos = Array.from(new Set(dataForGrupos.filter(d => d.grupo_id).map(d => String(d.grupo_id))));
+        const dynamicGrupos = grupos.filter((g: any) => uniqueGrupos.includes(String(g.value)));
+
+        return { dynamicLineas, dynamicEjes, uniqueEtapas, dynamicFases, dynamicModalidades, dynamicGrupos };
+    }, [dashboardData, selectedYear, selectedFase, selectedLinea, selectedEje, selectedEtapa, selectedModalidad, lines, ejesList, modalidades, fases, grupos]);
+
+    // Si otro filtro deja fuera un grupo ya marcado, se descarta la marca para
+    // que el resumen del combo nunca prometa un filtro que no está aplicando.
+    useEffect(() => {
+        if (selectedGrupos.length === 0) return;
+        const vigentes = new Set(availableFilters.dynamicGrupos.map((g: any) => String(g.value)));
+        const podados = selectedGrupos.filter(v => vigentes.has(v));
+        if (podados.length !== selectedGrupos.length) setSelectedGrupos(podados);
+    }, [availableFilters.dynamicGrupos, selectedGrupos]);
 
     // Aggregate Metrics - FORCE SUM (Simplified)
     const metrics = useMemo(() => {
@@ -509,7 +540,17 @@ export default function DashboardView({ initialData, timelineData = [], years = 
                             {availableFilters.dynamicModalidades.map((m: any) => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
 
-                        {/* 7. Especialista (Global) */}
+                        {/* 7. Grupo (multi-selección con checkboxes) */}
+                        <MultiSelectFilter
+                            options={availableFilters.dynamicGrupos}
+                            selected={selectedGrupos}
+                            onChange={setSelectedGrupos}
+                            placeholder="Todos los Grupos"
+                            singularLabel="grupo"
+                            pluralLabel="grupos"
+                        />
+
+                        {/* 8. Especialista (Global) */}
                         <select
                             className="input h-10 py-2 px-3 text-sm border-blue-200 w-full rounded shadow-sm bg-blue-50/30 font-semibold text-blue-800"
                             value={selectedEspecialista}

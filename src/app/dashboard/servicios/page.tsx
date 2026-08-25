@@ -60,7 +60,9 @@ export default function ServiciosPage() {
     const [selectedCondicion, setSelectedCondicion] = useState<string>('all');
     const [selectedInstitucion, setSelectedInstitucion] = useState<string>('all');
     const [selectedTipoEstudio, setSelectedTipoEstudio] = useState<string>('all');
-    const [selectedGrupo, setSelectedGrupo] = useState<string>('all');
+    // Grupo es multi-selección: lista vacía = todos los grupos (misma convención
+    // que 'all' en el resto de filtros), igual que el filtro de Proyectos.
+    const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
 
     // -- Modal and loading states for map click --------------------------------
     const [selectedModalServicio, setSelectedModalServicio] = useState<any>(null);
@@ -234,7 +236,7 @@ export default function ServiciosPage() {
                 const matchCondicion = excludeKey === 'condicion' || selectedCondicion === 'all' || String(item.condicion_id) === selectedCondicion;
                 const matchInstitucion = excludeKey === 'institucion' || selectedInstitucion === 'all' || String(item.institucion_id) === selectedInstitucion;
                 const matchTipoEstudio = excludeKey === 'tipoEstudio' || selectedTipoEstudio === 'all' || String(item.tipo_estudio_id) === selectedTipoEstudio;
-                const matchGrupo = excludeKey === 'grupo' || selectedGrupo === 'all' || String(item.grupo_id) === selectedGrupo;
+                const matchGrupo = excludeKey === 'grupo' || selectedGrupos.length === 0 || selectedGrupos.includes(String(item.grupo_id));
                 
                 return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio && matchGrupo;
             });
@@ -257,7 +259,16 @@ export default function ServiciosPage() {
             grupos: filterOptions.grupos.filter(g => usedInSubset(getFilteredSubset('grupo'), 'grupo_id').has(g.id)),
             modalidades: filterOptions.modalidades,
         };
-    }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupo, etapaFaseMap, fases]);
+    }, [data, filterOptions, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupos, etapaFaseMap, fases]);
+
+    // Si otro filtro deja fuera un grupo ya marcado, se descarta la marca para
+    // que el resumen del combo nunca prometa un filtro que no está aplicando.
+    useEffect(() => {
+        if (selectedGrupos.length === 0) return;
+        const vigentes = new Set((availableFilterOptions.grupos || []).map((g: any) => String(g.id)));
+        const podados = selectedGrupos.filter(v => vigentes.has(v));
+        if (podados.length !== selectedGrupos.length) setSelectedGrupos(podados);
+    }, [availableFilterOptions.grupos, selectedGrupos]);
 
     // -- Filtering Logic -------------------------------------------------------
     const filteredData = useMemo(() => {
@@ -297,14 +308,14 @@ export default function ServiciosPage() {
                 selectedTipoEstudio === 'all' ||
                 String(item.tipo_estudio_id) === selectedTipoEstudio;
 
-            // 8. Grupo filter
+            // 8. Grupo filter (multi-selección: lista vacía = todos)
             const matchGrupo =
-                selectedGrupo === 'all' ||
-                String(item.grupo_id) === selectedGrupo;
+                selectedGrupos.length === 0 ||
+                selectedGrupos.includes(String(item.grupo_id));
 
             return matchFase && matchEtapa && matchEje && matchLinea && matchCondicion && matchInstitucion && matchTipoEstudio && matchGrupo;
         });
-    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupo]);
+    }, [data, etapaFaseMap, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedCondicion, selectedInstitucion, selectedTipoEstudio, selectedGrupos]);
 
     // -- Informes visibles -----------------------------------------------------
     // La línea de tiempo dibuja la etapa Impacto a partir de los informes, no de
@@ -474,8 +485,8 @@ export default function ServiciosPage() {
                         setSelectedInstitucion={setSelectedInstitucion}
                         selectedTipoEstudio={selectedTipoEstudio}
                         setSelectedTipoEstudio={setSelectedTipoEstudio}
-                        selectedGrupo={selectedGrupo}
-                        setSelectedGrupo={setSelectedGrupo}
+                        selectedGrupos={selectedGrupos}
+                        setSelectedGrupos={setSelectedGrupos}
                     />
                 </div>
             </div>
