@@ -6,6 +6,7 @@ import { Search, Plus, Building2, Wallet, ChevronDown, ChevronRight, Pencil, Tra
 import { createEmpresa, updateEmpresa, createAporte, updateAporte, deleteAporte, getEmpresasData, getAniosAportes, updateFinancialSummary } from "./actions";
 import EmpresaModal from "./EmpresaModal";
 import AporteModal from "./AporteModal";
+import { SECTORES_AGRUPADOS, sectorAgrupado, type SectorAgrupado } from "@/config/sectoresAgrupados";
 
 interface Aporte { id: string; anio: number; monto: number; }
 interface EmpresaRow {
@@ -14,6 +15,7 @@ interface EmpresaRow {
     ciiu_id: number;
     sector: string;
     ciiu_codigo?: string;
+    sector_grupo?: SectorAgrupado;
     total_aportes: number;
     aportes_count: number;
     aportes: Aporte[];
@@ -74,6 +76,8 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
     // Search & Filter
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedAnio, setSelectedAnio] = useState<string>('Todos');
+    const [selectedSector, setSelectedSector] = useState<string>('Todos');
+    const [selectedGrupo, setSelectedGrupo] = useState<string>('Todos');
     const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
     const [empresasData, setEmpresasData] = useState<EmpresaRow[]>(initialData);
     const [expandedRuc, setExpandedRuc] = useState<string | null>(null);
@@ -118,8 +122,26 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
     const ITEMS_PER_PAGE = 10;
     const [currentPage, setCurrentPage] = useState(1);
 
+    // Secciones CIIU presentes en la data, sin repetir (la tabla `sectores_ciiu`
+    // tiene varias filas por sección, una por código).
+    const sectoresDisponibles = useMemo(() => {
+        const nombres = new Set<string>();
+        empresasData.forEach(e => { if (e.sector) nombres.add(e.sector); });
+        return Array.from(nombres).sort((a, b) => a.localeCompare(b, 'es'));
+    }, [empresasData]);
+
+    const grupoDe = (e: EmpresaRow) => e.sector_grupo ?? sectorAgrupado(e.ciiu_codigo, e.sector);
+
     const filteredData = useMemo(() => {
         let result = [...empresasData];
+
+        if (selectedSector !== 'Todos') {
+            result = result.filter(e => e.sector === selectedSector);
+        }
+
+        if (selectedGrupo !== 'Todos') {
+            result = result.filter(e => grupoDe(e) === selectedGrupo);
+        }
 
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
@@ -137,12 +159,12 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
         });
 
         return result;
-    }, [empresasData, searchTerm]);
+    }, [empresasData, searchTerm, selectedSector, selectedGrupo]);
 
     // Reset de página separado del useMemo para evitar anti-patrón de setState dentro de memo
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, empresasData]);
+    }, [searchTerm, empresasData, selectedSector, selectedGrupo]);
 
     const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
     const paginatedData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -293,6 +315,32 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
                                 ))}
                             </select>
                         </div>
+                        <div className="w-full sm:w-64">
+                            <select
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                value={selectedSector}
+                                onChange={e => setSelectedSector(e.target.value)}
+                                title="Sector (CIIU)"
+                            >
+                                <option value="Todos">Todos los sectores (CIIU)</option>
+                                {sectoresDisponibles.map(s => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="w-full sm:w-56">
+                            <select
+                                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                value={selectedGrupo}
+                                onChange={e => setSelectedGrupo(e.target.value)}
+                                title="Sector agrupado"
+                            >
+                                <option value="Todos">Todos los grupos</option>
+                                {SECTORES_AGRUPADOS.map(g => (
+                                    <option key={g} value={g}>{g}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <button onClick={() => setShowNuevaEmpresa(true)} className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-md shadow-blue-500/20 w-full sm:w-auto mt-4 md:mt-0">
                         <Plus className="w-5 h-5" /> Nueva Empresa
@@ -333,7 +381,12 @@ export default function GestionAportantesView({ initialData, sectores, initialFi
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-sm text-gray-800 max-w-xs truncate" title={empresa.sector}>{empresa.sector}</div>
-                                            <div className="text-xs text-gray-400">{empresa.ciiu_codigo}</div>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <span className="text-xs text-gray-400">{empresa.ciiu_codigo}</span>
+                                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">
+                                                    {grupoDe(empresa)}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right relative group">
                                             <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-700 cursor-help transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">

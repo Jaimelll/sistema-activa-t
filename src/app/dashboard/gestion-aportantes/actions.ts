@@ -15,6 +15,7 @@ function getAdminSupabase() {
 
 // ─── Helper: cliente regular (solo lectura pública / con RLS) ────────────────
 import { createClient as createSSRClient } from '@/utils/supabase/server';
+import { sectorAgrupado } from '@/config/sectoresAgrupados';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -36,15 +37,21 @@ export async function getEmpresasData(anioFiltro: string | number = 'Todos') {
     const { data, error } = result;
     if (error) return [];
 
-    return data.map((e: any) => ({
-        ruc: e.ruc,
-        razon_social: e.razon_social,
-        ciiu_id: e.ciiu_id,
-        sector: e.sectores_ciiu?.seccion_desc || 'Desconocido',
-        total_aportes: e.aportes?.reduce((sum: number, a: any) => sum + Number(a.monto), 0) || 0,
-        aportes_count: e.aportes?.length || 0,
-        aportes: (e.aportes || []).sort((a: any, b: any) => b.anio - a.anio)
-    }));
+    return data.map((e: any) => {
+        const ciiuCodigo = e.sectores_ciiu?.ciiu_codigo?.trim() || '';
+        const seccionDesc = e.sectores_ciiu?.seccion_desc || 'Desconocido';
+        return {
+            ruc: e.ruc,
+            razon_social: e.razon_social,
+            ciiu_id: e.ciiu_id,
+            sector: seccionDesc,
+            ciiu_codigo: ciiuCodigo,
+            sector_grupo: sectorAgrupado(ciiuCodigo, seccionDesc),
+            total_aportes: e.aportes?.reduce((sum: number, a: any) => sum + Number(a.monto), 0) || 0,
+            aportes_count: e.aportes?.length || 0,
+            aportes: (e.aportes || []).sort((a: any, b: any) => b.anio - a.anio)
+        };
+    });
 }
 
 export async function getAllSectores() {

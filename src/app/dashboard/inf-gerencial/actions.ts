@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { fetchAllRows } from '@/utils/supabase/fetchAll';
+import { sectorAgrupado } from '@/config/sectoresAgrupados';
 
 export async function getAportantesData() {
     const supabase = await createClient();
@@ -20,6 +21,7 @@ export async function getAportantesData() {
                 ciiu_id,
                 sectores_ciiu!inner (
                     id,
+                    ciiu_codigo,
                     seccion_desc
                 )
             )
@@ -36,13 +38,18 @@ export async function getAportantesData() {
         const anio = Number(row.anio);
         annualTotals[anio] = (annualTotals[anio] || 0) + monto;
 
+        const ciiuCodigo = row.empresas?.sectores_ciiu?.ciiu_codigo?.trim() || '';
+        const seccionDesc = row.empresas?.sectores_ciiu?.seccion_desc || 'Desconocido';
+
         return {
             id: row.id,
             ruc: row.empresa_ruc,
             anio,
             monto,
             razon_social: row.empresas?.razon_social || 'Desconocido',
-            seccion_desc: row.empresas?.sectores_ciiu?.seccion_desc || 'Desconocido'
+            seccion_desc: seccionDesc,
+            ciiu_codigo: ciiuCodigo,
+            sector_grupo: sectorAgrupado(ciiuCodigo, seccionDesc)
         };
     });
 

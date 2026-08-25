@@ -10,6 +10,7 @@ import { Search, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { getPresupuestoMensual, getFinanciamientoEjecucion, getAuditoriaEeff } from './actions';
 import { PresentationButton } from '@/components/PresentationButton';
+import { SECTORES_AGRUPADOS, sectorAgrupado, type SectorAgrupado } from '@/config/sectoresAgrupados';
 
 interface AporteFlat {
     id: string;
@@ -18,6 +19,8 @@ interface AporteFlat {
     monto: number;
     razon_social: string;
     seccion_desc: string;
+    ciiu_codigo?: string;
+    sector_grupo?: SectorAgrupado;
 }
 
 interface FinanzasItem {
@@ -34,35 +37,39 @@ interface UnidadOperativa {
     orden: number;
 }
 
-// Nombres cortos para el eje de categorías del gráfico "Distribución por Sector"
-// (las descripciones CIIU completas son muy largas para caber como etiqueta).
-const SECTOR_SHORT_NAMES: [RegExp, string][] = [
-    [/explotaci[oó]n de minas/i, 'Minas'],
-    [/electricidad/i, 'Electricidad'],
-    [/agua|alcantarillado|desechos/i, 'Agua/Residuos'],
-    [/construcci[oó]n/i, 'Construcción'],
-    [/comercio/i, 'Comercio'],
-    [/transporte|almacenamiento/i, 'Transporte'],
-    [/alojamiento|comidas/i, 'Alojamiento'],
-    [/informaci[oó]n y comunicaci[oó]n/i, 'Comunicación'],
-    [/financiera|seguros/i, 'Finanzas'],
-    [/inmobiliaria/i, 'Inmobiliaria'],
-    [/profesionales|cient[ií]ficas|t[eé]cnicas/i, 'Profesionales'],
-    [/administrativos y de apoyo/i, 'Servicios admin.'],
-    [/administraci[oó]n p[uú]blica/i, 'Adm. pública'],
-    [/enseñanza/i, 'Educación'],
-    [/salud/i, 'Salud'],
-    [/art[ií]sticas|entretenimiento|recreativ/i, 'Entretenimiento'],
-    [/otras actividades de servicios/i, 'Otros servicios'],
-    [/hogares/i, 'Hogares'],
-    [/agricultura|ganader[ií]a|silvicultura|pesca/i, 'Agro'],
-    [/manufacturer[ao]s?/i, 'Manufactura'],
-];
-
-function shortSectorName(fullName: string): string {
-    const match = SECTOR_SHORT_NAMES.find(([pattern]) => pattern.test(fullName));
-    return match ? match[1] : fullName.split(/[,;]| y /i)[0];
+// Etiquetas del eje de "Distribución por Sector": los nombres de los
+// macro-sectores ("Infraestructuras de transporte") no caben en una línea,
+// así que se parten en renglones de ~16 caracteres.
+function wrapLabel(text: string, maxChars = 16): string[] {
+    const lines: string[] = [];
+    let current = '';
+    text.split(' ').forEach(word => {
+        if (!current) current = word;
+        else if ((current + ' ' + word).length <= maxChars) current += ' ' + word;
+        else { lines.push(current); current = word; }
+    });
+    if (current) lines.push(current);
+    return lines;
 }
+
+const SectorTick = ({ x, y, payload, fontSize }: any) => (
+    <g transform={`translate(${x},${y})`}>
+        {wrapLabel(String(payload.value)).map((line, i) => (
+            <text
+                key={i}
+                x={0}
+                y={0}
+                dy={16 + i * (fontSize + 3)}
+                textAnchor="middle"
+                fill="#1e293b"
+                fontWeight={600}
+                fontSize={fontSize}
+            >
+                {line}
+            </text>
+        ))}
+    </g>
+);
 
 const VIBRANT_PALETTE = [
     '#ff7f50', '#ffdb58', '#8a2be2', '#008080', '#ff4500',
@@ -186,6 +193,7 @@ export default function InfGerencialView({
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSector, setSelectedSector] = useState<string>('all');
+    const [selectedGrupo, setSelectedGrupo] = useState<string>('all');
     
     // Budgets are now global
     const [presupuestoMensual, setPresupuestoMensual] = useState<any[]>([]);
@@ -353,21 +361,21 @@ const mensual = await getPresupuestoMensual();
         : '';
     const latestYear = last3Years.length > 0 ? last3Years[last3Years.length - 1] : null;
 
+    // Macro-sector FONDOEMPLEO del aporte (ver src/config/sectoresAgrupados.ts)
+    const grupoDe = (d: AporteFlat): SectorAgrupado =>
+        d.sector_grupo ?? sectorAgrupado(d.ciiu_codigo, d.seccion_desc);
+
+    const pasaFiltroSector = (d: AporteFlat) =>
+        (selectedSector === 'all' || d.seccion_desc === selectedSector) &&
+        (selectedGrupo === 'all' || grupoDe(d) === selectedGrupo);
+
     const baseData = useMemo(() => {
-        return initialData.filter(d => {
-            const inYear = last5Years.includes(d.anio);
-            const inSector = selectedSector === 'all' || d.seccion_desc === selectedSector;
-            return inYear && inSector;
-        });
-    }, [initialData, last5Years, selectedSector]);
+        return initialData.filter(d => last5Years.includes(d.anio) && pasaFiltroSector(d));
+    }, [initialData, last5Years, selectedSector, selectedGrupo]);
 
     const baseData3Y = useMemo(() => {
-        return initialData.filter(d => {
-            const inYear = last3Years.includes(d.anio);
-            const inSector = selectedSector === 'all' || d.seccion_desc === selectedSector;
-            return inYear && inSector;
-        });
-    }, [initialData, last3Years, selectedSector]);
+        return initialData.filter(d => last3Years.includes(d.anio) && pasaFiltroSector(d));
+    }, [initialData, last3Years, selectedSector, selectedGrupo]);
 
     const empresaSuggestions = useMemo(() => {
         if (!searchTerm.trim()) return [];
@@ -398,7 +406,7 @@ const mensual = await getPresupuestoMensual();
     }, [last3Years, annualTotals]);
 
     const lineData = useMemo(() => {
-        const sectorFiltered = initialData.filter(d => selectedSector === 'all' || d.seccion_desc === selectedSector);
+        const sectorFiltered = initialData.filter(pasaFiltroSector);
         const yearGroups = new Map<number, number>();
         sectorFiltered.forEach(d => yearGroups.set(d.anio, (yearGroups.get(d.anio) || 0) + d.monto));
         return Array.from(yearGroups.entries())
@@ -411,28 +419,27 @@ const mensual = await getPresupuestoMensual();
                 }
                 return item;
             });
-    }, [initialData, selectedSector]);
+    }, [initialData, selectedSector, selectedGrupo]);
 
+    // Distribución por los 6 macro-sectores FONDOEMPLEO (ya no por sección CIIU).
+    // Barras ordenadas de mayor a menor monto; se ocultan los grupos sin aportes
+    // en el período, para no dibujar barras vacías.
     const pieData = useMemo(() => {
-        const groups = new Map<string, number>();
+        const groups = new Map<SectorAgrupado, number>();
         let total = 0;
         baseData3Y.forEach(d => {
-            groups.set(d.seccion_desc, (groups.get(d.seccion_desc) || 0) + d.monto);
+            const grupo = grupoDe(d);
+            groups.set(grupo, (groups.get(grupo) || 0) + d.monto);
             total += d.monto;
         });
-        const ordenados = Array.from(groups.entries())
-            .map(([name, value]) => ({ name: shortSectorName(name), value }))
-            .sort((a, b) => b.value - a.value);
-        // Solo 4 barras: los 3 sectores principales + "Otros" con el resto acumulado
-        const top = ordenados.slice(0, 3);
-        const resto = ordenados.slice(3);
-        if (resto.length > 0) {
-            top.push({ name: 'Otros', value: resto.reduce((s, r) => s + r.value, 0) });
-        }
-        return top.map(item => ({
-            ...item,
-            percent: total > 0 ? (item.value / total * 100).toFixed(1) + '%' : '0.0%',
-        }));
+        return SECTORES_AGRUPADOS
+            .map(name => ({ name, value: groups.get(name) || 0 }))
+            .filter(item => item.value > 0)
+            .sort((a, b) => b.value - a.value)
+            .map(item => ({
+                ...item,
+                percent: total > 0 ? (item.value / total * 100).toFixed(1) + '%' : '0.0%',
+            }));
     }, [baseData3Y]);
 
     const total3Y = useMemo(() => baseData3Y.reduce((s, d) => s + d.monto, 0), [baseData3Y]);
@@ -498,6 +505,19 @@ const mensual = await getPresupuestoMensual();
                     >
                         <option value="all">Todos los sectores</option>
                         {sectores.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+
+                {/* Grouped Sector Filter (macro-sectores FONDOEMPLEO) */}
+                <div className="w-full md:w-64">
+                    <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Sector Agrupado</label>
+                    <select
+                        className="w-full border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-slate-50"
+                        value={selectedGrupo}
+                        onChange={e => setSelectedGrupo(e.target.value)}
+                    >
+                        <option value="all">Todos los grupos</option>
+                        {SECTORES_AGRUPADOS.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                 </div>
             </div>
@@ -703,13 +723,21 @@ const mensual = await getPresupuestoMensual();
                         <ResponsiveContainer width="100%" height={400}>
                             <BarChart
                                 data={pieData}
-                                margin={{ top: 24, right: 20, left: 10, bottom: 5 }}
+                                margin={{ top: 24, right: 20, left: 10, bottom: 28 }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontWeight: '600', fontSize: isMobile ? 10 : 13 }} interval={0} />
+                                <XAxis
+                                    dataKey="name"
+                                    type="category"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    height={56}
+                                    interval={0}
+                                    tick={<SectorTick fontSize={isMobile ? 9 : 12} />}
+                                />
                                 <YAxis type="number" hide />
                                 <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '24px' }} />
-                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={90} animationDuration={1000}>
+                                <Bar dataKey="value" name="Monto" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={isMobile ? 34 : 70} animationDuration={1000}>
                                     <LabelList dataKey="percent" position="top" fill="#1e293b" fontSize={13} fontWeight={700} />
                                 </Bar>
                             </BarChart>
