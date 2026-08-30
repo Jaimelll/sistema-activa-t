@@ -24,6 +24,58 @@ const formatCurrency = (value: number) => {
     }).format(value);
 };
 
+// Prefijos genéricos que se repiten en casi todo el catálogo y no distinguen nada.
+// Solo se aplican cuando el nombre no trae siglas y es más largo que el eje.
+const PREFIJOS_GENERICOS: [RegExp, string][] = [
+    [/^Instituto de Educaci[oó]n Superior Tecnol[oó]gico (P[uú]blico|Privado)\s+/i, 'IESTP '],
+    [/^Instituto de Educaci[oó]n Superior Tecnol[oó]gico\s+/i, 'IESTP '],
+    [/^Instituto de Educaci[oó]n Superior Pedag[oó]gico P[uú]blico\s+/i, 'IESPP '],
+    [/^Instituto de Educaci[oó]n Superior Pedag[oó]gico\s+/i, 'IESP '],
+    [/^Instituto de Educaci[oó]n Superior Privado\s+/i, 'IESP '],
+    [/^Instituto de Educaci[oó]n Superior\s+/i, 'IES '],
+    [/^Escuela de Educaci[oó]n Superior Pedag[oó]gica (Privada|P[uú]blica)\s+/i, 'EESPP '],
+    [/^Escuela de Educaci[oó]n Superior Pedag[oó]gica\s+/i, 'EESPP '],
+    [/^Escuela de Educaci[oó]n Superior\s+/i, 'EES '],
+    [/^Escuela Superior T[eé]cnica del\s+/i, 'EST '],
+    [/^Escuela Superior\s+/i, 'ES '],
+    [/^Universidad Nacional de\s+/i, 'UN '],
+    [/^Universidad Nacional\s+/i, 'UN '],
+    [/^Universidad\s+/i, 'U. '],
+    [/^Instituto\s+/i, 'Inst. '],
+];
+
+// El catálogo escribe "Nombre largo - SIGLA". Preferimos la sigla: es lo que
+// identifica a la institución cuando el eje solo da para unas pocas decenas de
+// caracteres (ver tickTruncate).
+export function abreviarInstitucion(nombreCompleto: string): string {
+    const nombre = (nombreCompleto || '').trim();
+    if (!nombre) return 'Sin Institución';
+
+    const partes = nombre.split(/\s[-–]\s/);
+
+    // 1. Sigla al final: "... - SENATI", "... - UNMSM"
+    if (partes.length > 1) {
+        const sigla = partes[partes.length - 1].trim();
+        if (sigla && sigla.length <= 30) return sigla;
+    }
+
+    // 2. Sigla al inicio: "CEAM - Centro de Altos Estudios de la Moda"
+    if (partes.length > 1) {
+        const cabecera = partes[0].trim();
+        if (cabecera.length <= 10 && cabecera === cabecera.toUpperCase()) return cabecera;
+    }
+
+    // 3. Ya entra en el eje tal cual
+    if (nombre.length <= 26) return nombre;
+
+    // 4. Sin siglas: comprimir el prefijo genérico
+    for (const [patron, reemplazo] of PREFIJOS_GENERICOS) {
+        if (patron.test(nombre)) return nombre.replace(patron, reemplazo);
+    }
+
+    return nombre;
+}
+
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
@@ -80,7 +132,8 @@ export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartPro
     const tickFontSize = isMobile ? 9 : 11;
     const labelFontSize = isMobile ? 9 : 11;
     const barSize = isMobile ? 16 : 24;
-    const tickTruncate = isMobile ? 14 : 25;
+    // Con siglas la mayoría de etiquetas son cortas, así que el eje admite más caracteres
+    const tickTruncate = isMobile ? 16 : 28;
 
     return (
         <div className="bg-white p-4 md:p-10 rounded-[2.5rem] shadow-sm border border-slate-100 w-full">
@@ -106,7 +159,10 @@ export function ServiciosInstitucionChart({ data }: ServiciosInstitucionChartPro
                             tickLine={false}
                             tick={{ fill: '#1e293b', fontWeight: '600', fontSize: tickFontSize }}
                             width={yAxisWidth}
-                            tickFormatter={(val) => val.length > tickTruncate ? `${val.substring(0, tickTruncate)}...` : val}
+                            tickFormatter={(val) => {
+                                const corto = abreviarInstitucion(val);
+                                return corto.length > tickTruncate ? `${corto.substring(0, tickTruncate)}…` : corto;
+                            }}
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Bar
