@@ -98,6 +98,16 @@ export function ServiciosTimeline({ data, options, informesImpacto = [] }: Servi
         return () => clearTimeout(timer);
     }, []);
 
+    // Mismo criterio que la línea de tiempo de Proyectos: por debajo de 768px el
+    // gráfico se ajusta al ancho de la pantalla en vez de forzar scroll horizontal.
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // ── BUILD CHART ROWS & DYNAMIC DOMAIN ───────────────────────────────────
     const { chartData, usedStageIds, minTimestamp, maxTimestamp, stageById } = useMemo(() => {
         const stagesFromProps = options?.etapas || [];
@@ -481,21 +491,31 @@ export function ServiciosTimeline({ data, options, informesImpacto = [] }: Servi
             <div className="mb-6 flex items-center gap-4 pb-2">
                 <div className="w-2.5 h-10 bg-blue-600 rounded-full shadow-lg shadow-blue-500/30 flex-shrink-0" />
                 <div>
-                    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                    <h3 className="text-xl md:text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
                         Línea de Tiempo de Becas
                     </h3>
                 </div>
             </div>
 
-            <div className="w-full overflow-x-auto pb-4 custom-scrollbar-timeline">
-                <div style={{ width: '100%', minWidth: '800px', height: 500 }}>
+            <div className={`w-full pb-4 ${isMobile ? '' : 'overflow-x-auto custom-scrollbar-timeline'}`}>
+                <div
+                    style={{
+                        width: '100%',
+                        // En móvil el gráfico se adapta al ancho disponible; en escritorio
+                        // se mantiene el mínimo para que el eje de años no se apelmace.
+                        minWidth: isMobile ? undefined : '800px',
+                        // Alto proporcional a la cantidad de filas, como en Proyectos, para
+                        // que las barras no se aplasten cuando hay muchos grupos.
+                        height: Math.max(isMobile ? 360 : 500, chartData.length * (isMobile ? 38 : 48)),
+                    }}
+                >
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             key={forceRender}
                             layout="vertical"
                             data={chartData}
-                            margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
-                            barSize={30}
+                            margin={{ top: 20, right: isMobile ? 12 : 30, left: isMobile ? 0 : 10, bottom: 20 }}
+                            barSize={isMobile ? 18 : 30}
                             barCategoryGap="10%"
                         >
                             <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#e2e8f0" opacity={0.6} />
@@ -506,7 +526,7 @@ export function ServiciosTimeline({ data, options, informesImpacto = [] }: Servi
                                 domain={[0, maxTimestamp - minTimestamp]}
                                 ticks={yearTicks}
                                 tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
-                                tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                                tick={{ fontSize: isMobile ? 10 : 12, fill: '#475569', fontWeight: 700 }}
                                 axisLine={{ stroke: '#cbd5e1' }}
                                 tickLine={{ stroke: '#cbd5e1' }}
                             />
@@ -517,7 +537,7 @@ export function ServiciosTimeline({ data, options, informesImpacto = [] }: Servi
                                 domain={[0, maxTimestamp - minTimestamp]}
                                 ticks={yearTicks}
                                 tickFormatter={(val: number) => new Date(minTimestamp + val).getUTCFullYear().toString()}
-                                tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                                tick={{ fontSize: isMobile ? 10 : 12, fill: '#475569', fontWeight: 700 }}
                                 axisLine={{ stroke: '#cbd5e1' }}
                                 tickLine={{ stroke: '#cbd5e1' }}
                             />
@@ -525,16 +545,16 @@ export function ServiciosTimeline({ data, options, informesImpacto = [] }: Servi
                                 orientation="left"
                                 type="category"
                                 dataKey="name"
-                                width={280}
+                                width={isMobile ? 118 : 280}
                                 interval={0}
-                                tick={{ fontSize: 11, fontWeight: 500, fill: '#374151' }}
+                                tick={{ fontSize: isMobile ? 9 : 11, fontWeight: 500, fill: '#374151', width: isMobile ? 110 : 270 }}
                                 axisLine={{ stroke: '#e2e8f0' }}
                                 tickLine={false}
                             />
                             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59,130,246,0.06)' }} wrapperStyle={{ zIndex: 9999 }} />
                             <Legend
                                 verticalAlign="top"
-                                wrapperStyle={{ paddingBottom: '20px' }}
+                                wrapperStyle={{ paddingBottom: '20px', fontSize: isMobile ? '10px' : '12px' }}
                             />
                             <Bar
                                 dataKey="inicioVacio"
