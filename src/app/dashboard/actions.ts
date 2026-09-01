@@ -13,6 +13,23 @@ import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 const CATALOG_REVALIDATE_SECONDS = 3600; // 1 hora
 const CATALOG_TAG = "catalogos";
 
+/**
+ * Fecha de inicio de un proyecto: el hito más antiguo de su bitácora.
+ *
+ * Antes se buscaba el avance de etapa 1 (Bases). Eso deja sin fecha a los
+ * proyectos que no pasan por Bases —los del Eje Sectorial, cuyo primer hito es
+ * Lanzamiento, porque las Bases del eje se aprueban una vez para todo el eje y
+ * no por proyecto—. Tomar el avance más antiguo sirve para ambos casos: en los
+ * concursales sigue siendo el de Bases, que es justamente el primero.
+ */
+function primeraFechaAvance(avances?: any[] | null): string | null {
+  if (!avances || avances.length === 0) return null;
+  return avances.reduce(
+    (min: string | null, a: any) => (a?.fecha && (!min || a.fecha < min) ? a.fecha : min),
+    null,
+  );
+}
+
 
 export async function getDashboardData(filters?: { periodo?: string; eje?: string; linea?: string; etapa?: string; modalidad?: string; especialistaId?: string }) {
   try {
@@ -125,7 +142,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         monto_total: (Number(p.monto_fondoempleo) || 0) + (Number(p.contrapartida) || 0),
         beneficiarios: Number(p.beneficiarios) || 0,
         avance_tecnico: Number(p.avance_tecnico) || 0,
-        fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+        fecha_inicio: primeraFechaAvance(p.avance_proyecto),
         fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
         avances: p.avance_proyecto || [],
         grupo_id: p.grupo_id,
@@ -277,7 +294,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         monto_total: (Number(p.monto_fondoempleo) || 0) + (Number(p.contrapartida) || 0),
         beneficiarios: Number(p.beneficiarios) || 0,
         avance_tecnico: Number(p.avance_tecnico) || 0,
-        fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+        fecha_inicio: primeraFechaAvance(p.avance_proyecto),
         fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
         avances: p.avance_proyecto || [],
         grupo_id: p.grupo_id,
@@ -376,7 +393,7 @@ export async function getProyectoCompletoById(id: string) {
       monto_total: Number(p.monto_total) || 0,
       beneficiarios: Number(p.beneficiarios) || 0,
       avance_tecnico: Number(p.avance_tecnico) || 0,
-      fecha_inicio: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 1)?.fecha || null,
+      fecha_inicio: primeraFechaAvance(p.avance_proyecto),
       fecha_fin: p.avance_proyecto?.find((a: any) => Number(a.etapa_id) === 6)?.fecha || null,
       avances: p.avance_proyecto?.map((av: any) => ({
         ...av,
@@ -728,7 +745,7 @@ export async function getTimelineData(especialistaId?: number) {
       etapa: p.etapas?.descripcion || 'Sin Etapa',
       fase: p.etapas?.fase || '',
       avance_tecnico: Number(p.avance_tecnico) || 0,
-      fecha_inicio: p.avance_proyecto?.find((a: any) => a.etapa_id === 1)?.fecha || null,
+      fecha_inicio: primeraFechaAvance(p.avance_proyecto),
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,
       // OJO: este mapeo reconstruye el avance campo por campo, así que toda
       // columna nueva hay que agregarla ACÁ además de en el select o se pierde
