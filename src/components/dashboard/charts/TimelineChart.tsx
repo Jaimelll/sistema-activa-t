@@ -316,6 +316,17 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
 
     const formatYAxis = (name: string) => name;
 
+    /**
+     * Color de una etapa a partir de su descripción, el mismo que pinta su
+     * segmento en la barra (STAGE_PALETTE va indexada por id de etapa). Sirve
+     * para que la columna Estado de la tabla se lea contra la leyenda.
+     */
+    const colorEtapa = (descripcion?: string) => {
+        const buscada = String(descripcion || '').trim().toLowerCase();
+        const etapa = allStages.find((s: any) => String(s.label).trim().toLowerCase() === buscada);
+        return (etapa && STAGE_PALETTE[Number(etapa.value) - 1]) || '#64748b';
+    };
+
     const SimpleTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const d = payload[0].payload;
@@ -541,7 +552,13 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                         </div>
                         <div className="flex-1 text-right">
                             <span className="text-xs font-semibold uppercase text-gray-500 block">Resumen</span>
-                            <span className="text-sm font-bold text-blue-700">{selectedGroup.count} proyectos encontrados</span>
+                            {/* `projects` ya viene filtrado por los filtros del tablero, así que
+                                su largo es la cantidad realmente visible en la tabla de abajo.
+                                Antes se leía `count`, que no existe en el objeto del grupo. */}
+                            <span className="text-sm font-bold text-blue-700">
+                                {selectedGroup.projects.length}{' '}
+                                {selectedGroup.projects.length === 1 ? 'proyecto encontrado' : 'proyectos encontrados'}
+                            </span>
                         </div>
                     </div>
                     {selectedGroup.informes && selectedGroup.informes.length > 0 && (
@@ -593,6 +610,7 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                                     <th className="text-left py-3 px-4 font-bold text-gray-700">Código</th>
                                     <th className="text-left py-3 px-4 font-bold text-gray-700">Institución Ejecutora</th>
                                     <th className="text-left py-3 px-4 font-bold text-gray-700">Región</th>
+                                    <th className="text-left py-3 px-4 font-bold text-gray-700">Estado</th>
                                     <th className="text-right py-3 px-4 font-bold text-gray-700">Presupuesto</th>
                                     <th className="text-right py-3 px-4 font-bold text-gray-700">Avance</th>
                                     <th className="text-right py-3 px-4 font-bold text-gray-700">%</th>
@@ -649,6 +667,19 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                                                 <td className="py-3 px-4 text-gray-600" style={{ minWidth: '200px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{p.institucion}</td>
                                                 <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
                                                     {p.region || '-'}
+                                                </td>
+                                                {/* La cabecera dice "Múltiples etapas" cuando el grupo mezcla estados;
+                                                    esta columna es la que dice cuál le toca a cada proyecto. */}
+                                                <td className="py-3 px-4 whitespace-nowrap">
+                                                    <span
+                                                        className="inline-block rounded-full px-2.5 py-1 text-xs font-bold"
+                                                        style={{
+                                                            backgroundColor: `${colorEtapa(p.etapa)}1f`,
+                                                            color: colorEtapa(p.etapa),
+                                                        }}
+                                                    >
+                                                        {p.etapa || 'No definida'}
+                                                    </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-right text-blue-700 font-semibold whitespace-nowrap">S/ {presupuestado.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
                                                 <td className="py-3 px-4 text-right text-emerald-700 font-semibold whitespace-nowrap">S/ {avance.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
