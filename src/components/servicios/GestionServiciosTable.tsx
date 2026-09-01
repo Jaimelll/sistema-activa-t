@@ -12,6 +12,7 @@ import {
 import * as XLSX from 'xlsx';
 import { clsx } from 'clsx';
 import ServicioModal from './ServicioModal';
+import MultiSelectFilter from '@/components/MultiSelectFilter';
 import { createServicio, updateServicio, deleteServicio } from '@/app/dashboard/gestion-servicios/actions';
 
 interface GestionServiciosTableProps {
@@ -51,7 +52,8 @@ export default function GestionServiciosTable({
   const [selectedLinea, setSelectedLinea] = useState('all');
   const [selectedModalidad, setSelectedModalidad] = useState('all');
   const [selectedCondicion, setSelectedCondicion] = useState('all');
-  const [selectedGrupo, setSelectedGrupo] = useState('all');
+  // Multi-selección: la lista vacía significa "todos", igual que el 'all' de los <select>
+  const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
   const [searchId, setSearchId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -82,15 +84,15 @@ export default function GestionServiciosTable({
       // 6. Condicion filter
       const matchesCondicion = selectedCondicion === 'all' || String(item.condicion_id) === String(selectedCondicion);
 
-      // 7. Grupo filter
-      const matchesGrupo = selectedGrupo === 'all' || String(item.grupo_id) === String(selectedGrupo);
+      // 7. Grupo filter (multi-selección: lista vacía = todos)
+      const matchesGrupo = selectedGrupos.length === 0 || selectedGrupos.includes(String(item.grupo_id));
 
       // 8. Exact ID filter
       const matchesId = !searchId || String(item.id) === String(searchId);
 
       return matchesSearch && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesCondicion && matchesGrupo && matchesId;
     });
-  }, [initialData, searchTerm, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedCondicion, selectedGrupo, searchId]);
+  }, [initialData, searchTerm, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedCondicion, selectedGrupos, searchId]);
 
   // Excel Export
   const downloadExcel = () => {
@@ -217,21 +219,18 @@ export default function GestionServiciosTable({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
-          {/* Grupo Filter */}
+          {/* Grupo Filter — multi-selección con checkboxes, igual que en Servicios */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Grupo</label>
-            <select
-              className="w-full h-9 px-3 py-1 text-[11px] border border-gray-200 rounded-lg focus:outline-none font-medium"
-              value={selectedGrupo}
-              onChange={(e) => setSelectedGrupo(e.target.value)}
-            >
-              <option value="all">Todos los Grupos</option>
-              {grupos.map((g: any) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
+            <MultiSelectFilter
+              options={grupos}
+              selected={selectedGrupos}
+              onChange={setSelectedGrupos}
+              placeholder="Todos los Grupos"
+              singularLabel="grupo"
+              pluralLabel="grupos"
+              size="sm"
+            />
           </div>
 
           {/* Eje Filter */}

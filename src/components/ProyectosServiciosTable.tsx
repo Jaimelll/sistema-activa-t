@@ -15,6 +15,7 @@ import {
 import * as XLSX from 'xlsx';
 import { clsx } from 'clsx';
 import ProyectoModal from './ProyectoModal';
+import MultiSelectFilter from './MultiSelectFilter';
 import { createProyecto, updateProyecto, deleteProyecto } from '@/app/dashboard/actions';
 
 interface ProyectosServiciosTableProps {
@@ -51,7 +52,8 @@ export default function ProyectosServiciosTable({
   const [selectedLinea, setSelectedLinea] = useState('all');
   const [selectedModalidad, setSelectedModalidad] = useState('all');
   const [selectedEspecialista, setSelectedEspecialista] = useState('all');
-  const [selectedGrupo, setSelectedGrupo] = useState('all');
+  // Multi-selección: la lista vacía significa "todos", igual que el 'all' de los <select>
+  const [selectedGrupos, setSelectedGrupos] = useState<string[]>([]);
   const [searchId, setSearchId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -85,15 +87,15 @@ export default function ProyectosServiciosTable({
       // 7. Especialista filter
       const matchesEspecialista = selectedEspecialista === 'all' || String(item.especialista_id) === String(selectedEspecialista);
 
-      // 8. Grupo filter
-      const matchesGrupo = !selectedGrupo || selectedGrupo === 'all' || selectedGrupo === 'undefined' || String(item.grupo_id) === String(selectedGrupo);
+      // 8. Grupo filter (multi-selección: lista vacía = todos)
+      const matchesGrupo = selectedGrupos.length === 0 || selectedGrupos.includes(String(item.grupo_id));
 
       // 9. Exact ID filter
       const matchesId = !searchId || searchId === '' || searchId === 'undefined' || String(item.id) === String(searchId);
 
       return matchesSearch && matchesFase && matchesEtapa && matchesEje && matchesLinea && matchesModalidad && matchesEspecialista && matchesGrupo && matchesId;
     });
-  }, [initialData, searchTerm, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedEspecialista, selectedGrupo, searchId]);
+  }, [initialData, searchTerm, selectedFase, selectedEtapa, selectedEje, selectedLinea, selectedModalidad, selectedEspecialista, selectedGrupos, searchId]);
 
   // Excel Export
   const downloadExcel = () => {
@@ -232,21 +234,18 @@ export default function ProyectosServiciosTable({
             </select>
           </div>
 
-          {/* Grupo Filter */}
+          {/* Grupo Filter — multi-selección con checkboxes, igual que en Proyectos */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Grupo</label>
-            <select
-              className="w-full h-9 px-3 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none"
-              value={selectedGrupo}
-              onChange={(e) => setSelectedGrupo(e.target.value)}
-            >
-              <option value="all">Todos los Grupos</option>
-              {grupos.map((g: any) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
+            <MultiSelectFilter
+              options={grupos}
+              selected={selectedGrupos}
+              onChange={setSelectedGrupos}
+              placeholder="Todos los Grupos"
+              singularLabel="grupo"
+              pluralLabel="grupos"
+              size="sm"
+            />
           </div>
 
           {/* Etapa Filter */}
