@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { etiquetaEtapa, etiquetaFase } from "@/config/etapas";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers de caché para catálogos (líneas, ejes, etc.) — datos que rara vez
@@ -123,7 +124,7 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         lineaId: p.linea_id,
         eje: p.ejes?.descripcion || 'Sin Eje',
         ejeId: p.eje_id,
-        etapa: p.etapas?.descripcion || 'Sin Etapa',
+        etapa: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Sin Etapa',
         etapaId: p.etapa_id,
         institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
         institucionId: p.institucion_ejecutora_id,
@@ -131,11 +132,11 @@ export async function getDashboardData(filters?: { periodo?: string; eje?: strin
         regionId: p.region_id,
         modalidad: p.modalidades?.descripcion || 'Desconocido',
         modalidadId: p.modalidad_id,
-        estado: p.etapas?.descripcion || 'Activo',
+        estado: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Activo',
         sustento: p.sustento || '',
         year: year,
         año: Number(p.año) || 0,
-        fase: p.etapas?.fase || '',
+        fase: etiquetaFase(p.etapa_id, p.eje_id, p.etapas?.fase),
         monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
         avance: Number(p.avance) || 0,
         contrapartida: Number(p.contrapartida) || 0,
@@ -275,7 +276,7 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         lineaId: p.linea_id,
         eje: p.ejes?.descripcion || 'Sin Eje',
         ejeId: p.eje_id,
-        etapa: p.etapas?.descripcion || 'Sin Etapa',
+        etapa: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Sin Etapa',
         etapaId: p.etapa_id,
         institucion: p.instituciones_ejecutoras?.nombre || 'Sin Institucion',
         institucionId: p.institucion_ejecutora_id,
@@ -283,11 +284,11 @@ export async function getGestionProyectosData(filters?: { periodo?: string; eje?
         regionId: p.region_id,
         modalidad: p.modalidades?.descripcion || 'Desconocido',
         modalidadId: p.modalidad_id,
-        estado: p.etapas?.descripcion || 'Activo',
+        estado: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Activo',
         sustento: p.sustento || '',
         year: year,
         año: Number(p.año) || 0,
-        fase: p.etapas?.fase || '',
+        fase: etiquetaFase(p.etapa_id, p.eje_id, p.etapas?.fase),
         monto_fondoempleo: Number(p.monto_fondoempleo) || 0,
         avance: Number(p.avance) || 0,
         contrapartida: Number(p.contrapartida) || 0,
@@ -377,13 +378,13 @@ export async function getProyectoCompletoById(id: string) {
       lineaId: p.linea_id,
       eje: p.ejes?.descripcion || 'Desconocido',
       ejeId: p.eje_id,
-      etapa: p.etapas?.descripcion || 'Desconocido',
+      etapa: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Desconocido',
       etapaId: p.etapa_id,
       region: p.regiones?.descripcion || 'Multirregional',
       regionId: p.region_id,
       modalidad: p.modalidades?.descripcion || 'Desconocido',
       modalidadId: p.modalidad_id,
-      estado: p.etapas?.descripcion || 'Activo',
+      estado: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Activo',
       sustento: p.sustento || '',
       year: year,
       año: Number(p.año) || 0,
@@ -727,7 +728,7 @@ export async function getTimelineData(especialistaId?: number) {
     return proyectosValidos.map((p: any) => ({
       id: p.id,
       nombre: p.nombre,
-      estado: p.etapas?.descripcion || 'Activo',
+      estado: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Activo',
       grupo_id: p.grupo_id,
       grupo_descripcion: p.grupo?.descripcion || 'Sin Grupo',
       grupo_orden: p.grupo?.orden || 999,
@@ -742,8 +743,11 @@ export async function getTimelineData(especialistaId?: number) {
       avance: Number(p.avance) || 0,
       institucion: p.instituciones_ejecutoras?.nombre || '-',
       region: p.regiones?.descripcion || '-',
-      etapa: p.etapas?.descripcion || 'Sin Etapa',
-      fase: p.etapas?.fase || '',
+      etapa: etiquetaEtapa(p.etapa_id, p.eje_id, p.etapas?.descripcion) || 'Sin Etapa',
+      // El id crudo, para colorear la etiqueta de estado sin depender del rótulo
+      // (que cambia según el eje, ver src/config/etapas.ts).
+      etapa_id: p.etapa_id,
+      fase: etiquetaFase(p.etapa_id, p.eje_id, p.etapas?.fase),
       avance_tecnico: Number(p.avance_tecnico) || 0,
       fecha_inicio: primeraFechaAvance(p.avance_proyecto),
       fecha_fin: p.avance_proyecto?.find((a: any) => a.etapa_id === 6)?.fecha || null,

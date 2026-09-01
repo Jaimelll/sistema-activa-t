@@ -184,9 +184,19 @@ export default function DashboardView({ initialData, timelineData = [], years = 
             const matchModalidad = isIgnored(selectedModalidad) || String(item.modalidadId) === String(selectedModalidad);
             return matchYear && matchFase && matchEje && matchLinea && matchModalidad && matchesGrupo(item);
         });
-        const uniqueEtapasSet = new Set(dataForEtapas.filter(d => d.etapaId).map(d => JSON.stringify({ value: String(d.etapaId), label: String(d.etapa) })));
-        const uniqueEtapas = Array.from(uniqueEtapasSet)
-            .map(e => JSON.parse(e))
+        // Una etapa puede llamarse distinto según el eje del proyecto ("Lanzamiento"
+        // en los concursales, "Por aprobar" en los que no lo son; ver
+        // src/config/etapas.ts). El filtro es por id, así que se agrupa por id y se
+        // muestran los rótulos que estén en pantalla: dos opciones con el mismo id
+        // filtrarían lo mismo y parecerían un duplicado.
+        const rotulosPorEtapa = new Map<string, Set<string>>();
+        dataForEtapas.filter(d => d.etapaId).forEach(d => {
+            const id = String(d.etapaId);
+            if (!rotulosPorEtapa.has(id)) rotulosPorEtapa.set(id, new Set());
+            rotulosPorEtapa.get(id)!.add(String(d.etapa));
+        });
+        const uniqueEtapas = Array.from(rotulosPorEtapa.entries())
+            .map(([value, rotulos]) => ({ value, label: Array.from(rotulos).sort().join(' / ') }))
             .sort((a: any, b: any) => Number(a.value) - Number(b.value));
 
         // 4. Opciones de Fases (dependen de Año, Eje, Línea, Etapa, Modalidad)

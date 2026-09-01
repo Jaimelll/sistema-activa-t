@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ReferenceLine, ReferenceDot, Cell } from 'recharts';
 import { FileText } from 'lucide-react';
 import ProyectoModal from '@/components/ProyectoModal';
+import { etiquetaEtapaParaEjes } from '@/config/etapas';
 import { getProyectoCompletoById } from '@/app/dashboard/actions';
 
 interface TimelineChartProps {
@@ -49,19 +50,27 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
 
     // Obtener etapas del catálogo o usar por defecto si no hay
     const allStages = useMemo(() => {
-        if (options.etapas && Array.from(options.etapas).length > 0) {
-            return [...options.etapas].sort((a: any, b: any) => Number(a.value) - Number(b.value));
-        }
-        // Fallback histórico para evitar roturas
-        return [
-            { value: 1, label: 'Bases' },
-            { value: 2, label: 'Lanzamiento' },
-            { value: 3, label: 'Aprobado' },
-            { value: 4, label: 'Firma' },
-            { value: 5, label: 'Ejecución' },
-            { value: 6, label: 'Ejecutado' },
-        ];
-    }, [options.etapas]);
+        const base = (options.etapas && Array.from(options.etapas).length > 0)
+            ? [...options.etapas].sort((a: any, b: any) => Number(a.value) - Number(b.value))
+            // Fallback histórico para evitar roturas
+            : [
+                { value: 1, label: 'Bases' },
+                { value: 2, label: 'Lanzamiento' },
+                { value: 3, label: 'Aprobado' },
+                { value: 4, label: 'Firma' },
+                { value: 5, label: 'Ejecución' },
+                { value: 6, label: 'Ejecutado' },
+            ];
+
+        // El catálogo no sabe de ejes, así que la leyenda se rotula con los ejes
+        // que hay en pantalla: "Lanzamiento" si son concursales, "Por aprobar"
+        // si no lo son, y los dos nombres si conviven (ver src/config/etapas.ts).
+        const ejesEnPantalla = Array.from(new Set((data || []).map((p: any) => p.eje_id)));
+        return base.map((s: any) => ({
+            ...s,
+            label: etiquetaEtapaParaEjes(s.value, ejesEnPantalla, s.label),
+        }));
+    }, [options.etapas, data]);
 
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -163,7 +172,8 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                 avance_tecnico: project.avance_tecnico || 0,
                 fecha_inicio: project.fecha_inicio || null,
                 fecha_fin: project.fecha_fin || null,
-                etapa: project.etapa || project.estado || '-'
+                etapa: project.etapa || project.estado || '-',
+                etapaId: project.etapa_id ?? null,
             });
 
             project.avances.forEach((a: any) => {
@@ -317,11 +327,14 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
     const formatYAxis = (name: string) => name;
 
     /**
-     * Color de una etapa a partir de su descripción, el mismo que pinta su
-     * segmento en la barra (STAGE_PALETTE va indexada por id de etapa). Sirve
-     * para que la columna Estado de la tabla se lea contra la leyenda.
+     * Color de una etapa, el mismo que pinta su segmento en la barra
+     * (STAGE_PALETTE va indexada por id de etapa). Se resuelve por id y no por
+     * el rótulo, porque el rótulo cambia según el eje del proyecto.
      */
-    const colorEtapa = (descripcion?: string) => {
+    const colorEtapa = (etapaId?: number | null, descripcion?: string) => {
+        if (etapaId != null && STAGE_PALETTE[Number(etapaId) - 1]) {
+            return STAGE_PALETTE[Number(etapaId) - 1];
+        }
         const buscada = String(descripcion || '').trim().toLowerCase();
         const etapa = allStages.find((s: any) => String(s.label).trim().toLowerCase() === buscada);
         return (etapa && STAGE_PALETTE[Number(etapa.value) - 1]) || '#64748b';
@@ -674,8 +687,8 @@ export function TimelineChart({ data, options = {}, informesImpacto = [] }: Time
                                                     <span
                                                         className="inline-block rounded-full px-2.5 py-1 text-xs font-bold"
                                                         style={{
-                                                            backgroundColor: `${colorEtapa(p.etapa)}1f`,
-                                                            color: colorEtapa(p.etapa),
+                                                            backgroundColor: `${colorEtapa(p.etapaId, p.etapa)}1f`,
+                                                            color: colorEtapa(p.etapaId, p.etapa),
                                                         }}
                                                     >
                                                         {p.etapa || 'No definida'}
