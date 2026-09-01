@@ -650,6 +650,17 @@ export async function getFasesOptions() { return _getFasesOptions(); }
 
 // --- TIMELINE ACTIONS ---
 
+/**
+ * Grupos que NO se dibujan en la línea de tiempo, aunque sí cuenten en los KPI
+ * y en la tabla. Son cubos de historia: propuestas que no prosperaron, cuyas
+ * fechas antiguas estirarían la barra del eje y darían por vivo lo que no lo está.
+ *
+ *   37 — "Propuestas Sectorial - Eje2 L1, L3 y L4": 7 propuestas 2024-2025 que
+ *        no figuran en los informes sectoriales de ago-2026. Los 11 proyectos
+ *        vigentes viven en el grupo 40 "Sectorial 2026".
+ */
+const GRUPOS_SIN_LINEA_DE_TIEMPO = [37];
+
 export async function getTimelineData(especialistaId?: number) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -689,7 +700,11 @@ export async function getTimelineData(especialistaId?: number) {
     // Filtro seguro en memoria para evitar colapso del inner join
     const proyectosValidos = data.filter((p: any) => {
       const desc = p.etapas?.descripcion?.toLowerCase() || '';
-      return !desc.includes('no habilitada');
+      if (desc.includes('no habilitada')) return false;
+      // Los grupos que solo guardan historia (propuestas que no prosperaron) no
+      // dibujan barra: sus fechas distorsionarían la cascada del eje. Siguen
+      // contando en los KPI y en la tabla, y reaparecen quitándolos de aquí.
+      return !GRUPOS_SIN_LINEA_DE_TIEMPO.includes(Number(p.grupo_id));
     });
 
     return proyectosValidos.map((p: any) => ({
