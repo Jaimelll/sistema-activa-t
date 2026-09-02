@@ -119,6 +119,10 @@ export default function ProyectosServiciosTable({
       'Presupuestado': Number(item.monto_fondoempleo) || 0,
       'Contrapartida': Number(item.contrapartida) || 0,
       'Avance': Number(item.avance) || 0,
+      'Avance (%)': Number(item.monto_fondoempleo) > 0
+        ? Number((((Number(item.avance) || 0) / Number(item.monto_fondoempleo)) * 100).toFixed(1))
+        : 0,
+      'Avance Técnico (%)': Number(item.avance_tecnico) || 0,
       'Beneficiarios': Number(item.beneficiarios) || 0,
       'Gestora': item.gestora || ''
     }));
@@ -127,13 +131,14 @@ export default function ProyectosServiciosTable({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Gestión de Proyectos");
     
-    // Auto-size columns
+    // Auto-size columns (ancho máximo 100)
+    const MAX_COL_WIDTH = 100;
     const maxWidths = Object.keys(dataToExport[0]).map(key => {
         const lengths = dataToExport.map(row => String((row as any)[key]).length);
         lengths.push(key.length);
         return Math.max(...lengths);
     });
-    worksheet['!cols'] = maxWidths.map(w => ({ wch: w + 2 }));
+    worksheet['!cols'] = maxWidths.map(w => ({ wch: Math.min(w + 2, MAX_COL_WIDTH) }));
 
 
     XLSX.writeFile(workbook, `Reporte_Proyectos_Servicios_${new Date().toISOString().split('T')[0]}.xlsx`);
